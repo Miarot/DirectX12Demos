@@ -32,14 +32,17 @@ uint32_t g_Height = 720;
 
 // render parameters
 bool g_UseWarp = false;
-UINT g_BufferCount = 3;
+const uint32_t g_BufferCount = 3;
 bool g_AllowTearing = false;
+uint32_t g_CurrentBackBuffer;
 
 // DirectX objects
 ComPtr<IDXGIAdapter4> g_Adapter;
 ComPtr<ID3D12Device2> g_Device;
 ComPtr<ID3D12CommandQueue> g_CommandQueue;
 ComPtr<IDXGISwapChain4> g_SwapChain;
+ComPtr<ID3D12CommandAllocator> g_CommandAllocators[g_BufferCount];
+ComPtr<ID3D12CommandList> g_CommandList;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -248,6 +251,34 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 	return swapChain4;
 }
 
+ComPtr<ID3D12CommandAllocator> CreateCommandAllocator(ComPtr<ID3D12Device2> device) {
+	ComPtr<ID3D12CommandAllocator> commandAllocator;
+
+	ThrowIfFailed(device->CreateCommandAllocator(
+		D3D12_COMMAND_LIST_TYPE_DIRECT, 
+		IID_PPV_ARGS(&commandAllocator)
+	));
+	
+	return commandAllocator;
+}
+
+ComPtr<ID3D12CommandList> CreateCommandList(
+	ComPtr<ID3D12Device2> device, 
+	ComPtr<ID3D12CommandAllocator> commandAllocator) 
+{
+	ComPtr<ID3D12CommandList> commandList;
+
+	ThrowIfFailed(device->CreateCommandList(
+		0,
+		D3D12_COMMAND_LIST_TYPE_DIRECT,
+		commandAllocator.Get(),
+		nullptr,
+		IID_PPV_ARGS(&commandList)
+	));
+
+	return commandList;
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message)
 	{
@@ -277,6 +308,13 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	g_Device = CreateDevice(g_Adapter);
 	g_CommandQueue = CreateCommandQueue(g_Device);
 	g_SwapChain = CreateSwapChain(g_CommandQueue, g_windowHandl, g_Width, g_Height, g_AllowTearing);
+	g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
+
+	for (int i = 0; i < g_BufferCount; ++i) {
+		g_CommandAllocators[i] = CreateCommandAllocator(g_Device);
+	}
+
+	g_CommandList = CreateCommandList(g_Device, g_CommandAllocators[g_CurrentBackBuffer]);
 
 	::ShowWindow(g_windowHandl, SW_SHOW);
 
