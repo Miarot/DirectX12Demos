@@ -43,6 +43,9 @@ ComPtr<ID3D12CommandQueue> g_CommandQueue;
 ComPtr<IDXGISwapChain4> g_SwapChain;
 ComPtr<ID3D12CommandAllocator> g_CommandAllocators[g_BufferCount];
 ComPtr<ID3D12CommandList> g_CommandList;
+ComPtr<ID3D12Resource> g_BackBuffers[g_BufferCount];
+ComPtr<ID3D12DescriptorHeap> g_DescriptroHeap;
+uint32_t g_DescriptorSize;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -279,6 +282,20 @@ ComPtr<ID3D12CommandList> CreateCommandList(
 	return commandList;
 }
 
+ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(ComPtr<ID3D12Device2> device, UINT numDescriptors) {
+	ComPtr<ID3D12DescriptorHeap> descriptorHeap;
+
+	D3D12_DESCRIPTOR_HEAP_DESC descriptroHeapDesc;
+	descriptroHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	descriptroHeapDesc.NumDescriptors = numDescriptors;
+	descriptroHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	descriptroHeapDesc.NodeMask = 0;
+
+	ThrowIfFailed(device->CreateDescriptorHeap(&descriptroHeapDesc, IID_PPV_ARGS(&descriptorHeap)));
+
+	return descriptorHeap;
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message)
 	{
@@ -315,6 +332,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	}
 
 	g_CommandList = CreateCommandList(g_Device, g_CommandAllocators[g_CurrentBackBuffer]);
+	g_DescriptroHeap = CreateDescriptorHeap(g_Device, g_BufferCount);
 
 	::ShowWindow(g_windowHandl, SW_SHOW);
 
