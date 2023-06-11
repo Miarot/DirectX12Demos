@@ -206,7 +206,7 @@ ComPtr<ID3D12CommandQueue> CreateCommandQueue(ComPtr<ID3D12Device2> device) {
 }
 
 ComPtr<IDXGISwapChain4> CreateSwapChain(
-	ComPtr<ID3D12Device2> device,
+	ComPtr<ID3D12CommandQueue> commandQueue,
 	HWND windowHandl,
 	UINT width, UINT height, bool allowTearing)
 {
@@ -235,7 +235,7 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 	swapChainDesc.Flags = allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
 
 	ThrowIfFailed(factory->CreateSwapChainForHwnd(
-		device.Get(), 
+		commandQueue.Get(), 
 		windowHandl, 
 		&swapChainDesc, 
 		NULL, 
@@ -276,7 +276,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	g_Adapter = CreateAdapter(g_UseWarp);
 	g_Device = CreateDevice(g_Adapter);
 	g_CommandQueue = CreateCommandQueue(g_Device);
-	//g_SwapChain = CreateSwapChain(g_Device, g_windowHandl, g_Width, g_Height, g_AllowTearing);
+	g_SwapChain = CreateSwapChain(g_CommandQueue, g_windowHandl, g_Width, g_Height, g_AllowTearing);
 
 	::ShowWindow(g_windowHandl, SW_SHOW);
 
