@@ -98,10 +98,18 @@ HWND CreateWindow(
 	return windowHandl;
 }
 
+void EnableDebugLayer() {
+#ifdef _DEBUG
+	ComPtr<ID3D12Debug> debugController;
+	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+	debugController->EnableDebugLayer();
+#endif // DEBUG
+}
+
 ComPtr<IDXGIAdapter4> CreateAdapter(bool useWarp) {
 	ComPtr<IDXGIFactory4> factory;
 	UINT factorFlags = 0;
-#ifdef DEBUG
+#ifdef _DEBUG
 	factorFlags = DXGI_CREATE_FACTORY_DEBUG;
 #endif // DEBUG
 
@@ -131,6 +139,12 @@ ComPtr<IDXGIAdapter4> CreateAdapter(bool useWarp) {
 			++i;
 		}
 	}
+
+#ifdef _DEBUG
+	DXGI_ADAPTER_DESC1 adapterDesc;
+	adapter4->GetDesc1(&adapterDesc);
+	OutputDebugStringW(adapterDesc.Description);
+#endif // DEBUG
 	
 	return adapter4;
 }
@@ -155,13 +169,12 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	RegisterWindowClass(hInstance, className);
 	g_windowHandl = CreateWindow(hInstance, className, L"Empty window", g_width, g_height);
 
-	// create DXGI and D3D objects
-	//g_useWarp = true;
-	g_Adapter = CreateAdapter(g_useWarp);
+	// before any DirectX call enable debug
+	EnableDebugLayer();
 
-	DXGI_ADAPTER_DESC1 adapterDesc;
-	g_Adapter->GetDesc1(&adapterDesc);
-	OutputDebugStringW(adapterDesc.Description);
+	// create DXGI and D3D objects
+	// g_useWarp = true;
+	g_Adapter = CreateAdapter(g_useWarp);
 
 	::ShowWindow(g_windowHandl, SW_SHOW);
 
