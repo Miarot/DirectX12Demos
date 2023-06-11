@@ -17,12 +17,24 @@
 #include <dxgi1_6.h>
 #include <d3dx12.h>
 
+#include <wrl.h>
+using Microsoft::WRL::ComPtr;
+
 #include <cassert>
 #include <algorithm>
 
+#include <helpers.h>
+
+// window parameters
 HWND g_windowHandl;
 uint32_t g_width = 1080;
 uint32_t g_height = 720;
+
+// render parameters
+bool g_useWarp = false;
+
+// DirectX objects
+ComPtr<IDXGIAdapter4> g_Adapter;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -86,6 +98,43 @@ HWND CreateWindow(
 	return windowHandl;
 }
 
+ComPtr<IDXGIAdapter4> CreateAdapter(bool useWarp) {
+	ComPtr<IDXGIFactory4> factory;
+	UINT factorFlags = 0;
+#ifdef DEBUG
+	factorFlags = DXGI_CREATE_FACTORY_DEBUG;
+#endif // DEBUG
+
+	ThrowIfFailed(CreateDXGIFactory2(factorFlags, IID_PPV_ARGS(&factory)));
+
+	ComPtr<IDXGIAdapter1> adapter1;
+	ComPtr<IDXGIAdapter4> adapter4;
+
+	if (useWarp) {
+		ThrowIfFailed(factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter4)));
+	} else {
+		UINT i = 0;
+		SIZE_T maxDedicatedMemory = 0;
+
+		while (factory->EnumAdapters1(i, adapter1.GetAddressOf()) != DXGI_ERROR_NOT_FOUND) {
+			DXGI_ADAPTER_DESC1 adapterDesc;
+			adapter1->GetDesc1(&adapterDesc);
+			
+			if ((adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0 &&
+				SUCCEEDED(D3D12CreateDevice(adapter1.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device2), NULL)) &&
+				adapterDesc.DedicatedVideoMemory > maxDedicatedMemory)
+			{
+				ThrowIfFailed(adapter1.As(&adapter4));
+				maxDedicatedMemory = adapterDesc.DedicatedVideoMemory;
+			}
+
+			++i;
+		}
+	}
+	
+	return adapter4;
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message)
 	{
@@ -95,16 +144,24 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	default:
 		return ::DefWindowProcW(hwnd, message, wParam, lParam);
 	}
-
-	return 0;
 }
 
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLine, int nCmdSho) {
+	// allow DPI awareness
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
+	// init and create window
 	const wchar_t * className = L"MainWindowClass";
 	RegisterWindowClass(hInstance, className);
 	g_windowHandl = CreateWindow(hInstance, className, L"Empty window", g_width, g_height);
+
+	// create DXGI and D3D objects
+	//g_useWarp = true;
+	g_Adapter = CreateAdapter(g_useWarp);
+
+	DXGI_ADAPTER_DESC1 adapterDesc;
+	g_Adapter->GetDesc1(&adapterDesc);
+	OutputDebugStringW(adapterDesc.Description);
 
 	::ShowWindow(g_windowHandl, SW_SHOW);
 
