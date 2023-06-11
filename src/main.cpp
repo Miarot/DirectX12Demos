@@ -42,7 +42,7 @@ ComPtr<ID3D12Device2> g_Device;
 ComPtr<ID3D12CommandQueue> g_CommandQueue;
 ComPtr<IDXGISwapChain4> g_SwapChain;
 ComPtr<ID3D12CommandAllocator> g_CommandAllocators[g_BufferCount];
-ComPtr<ID3D12CommandList> g_CommandList;
+ComPtr<ID3D12GraphicsCommandList> g_CommandList;
 ComPtr<ID3D12Resource> g_BackBuffers[g_BufferCount];
 ComPtr<ID3D12DescriptorHeap> g_DescriptroHeap;
 uint32_t g_DescriptorSize;
@@ -265,11 +265,11 @@ ComPtr<ID3D12CommandAllocator> CreateCommandAllocator(ComPtr<ID3D12Device2> devi
 	return commandAllocator;
 }
 
-ComPtr<ID3D12CommandList> CreateCommandList(
+ComPtr<ID3D12GraphicsCommandList> CreateCommandList(
 	ComPtr<ID3D12Device2> device, 
 	ComPtr<ID3D12CommandAllocator> commandAllocator) 
 {
-	ComPtr<ID3D12CommandList> commandList;
+	ComPtr<ID3D12GraphicsCommandList> commandList;
 
 	ThrowIfFailed(device->CreateCommandList(
 		0,
@@ -278,6 +278,8 @@ ComPtr<ID3D12CommandList> CreateCommandList(
 		nullptr,
 		IID_PPV_ARGS(&commandList)
 	));
+
+	commandList->Close();
 
 	return commandList;
 }
@@ -294,6 +296,10 @@ ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(ComPtr<ID3D12Device2> device, 
 	ThrowIfFailed(device->CreateDescriptorHeap(&descriptroHeapDesc, IID_PPV_ARGS(&descriptorHeap)));
 
 	return descriptorHeap;
+}
+
+void UpdateRTV() {
+
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
