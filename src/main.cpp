@@ -35,6 +35,7 @@ bool g_useWarp = false;
 
 // DirectX objects
 ComPtr<IDXGIAdapter4> g_Adapter;
+ComPtr<ID3D12Device2> g_Device;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -149,6 +150,42 @@ ComPtr<IDXGIAdapter4> CreateAdapter(bool useWarp) {
 	return adapter4;
 }
 
+ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter) {
+	ComPtr<ID3D12Device2> device;
+	ThrowIfFailed(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)));
+
+#ifdef _DEBUG
+	ComPtr<ID3D12InfoQueue> infoQueue;
+	ThrowIfFailed(device.As(&infoQueue));
+
+	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+
+	//D3D12_MESSAGE_CATEGORY categories[] = {};
+
+	//D3D12_MESSAGE_SEVERITY severities[] = {
+	//	D3D12_MESSAGE_SEVERITY_INFO
+	//};
+
+	//D3D12_MESSAGE_ID denyIDs[]{
+	//	D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,   // I'm really not sure how to avoid this message.
+	//	D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,                         // This warning occurs when using capture frame while graphics debugging.
+	//	D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,                       // This warning occurs when using capture frame while graphics debugging.
+	//};
+
+	//D3D12_INFO_QUEUE_FILTER filter{};
+	//filter.DenyList.NumSeverities = _countof(severities);
+	//filter.DenyList.pSeverityList = severities;
+	//filter.DenyList.NumIDs = _countof(denyIDs);
+	//filter.DenyList.pIDList = denyIDs;
+	//
+	//ThrowIfFailed(infoQueue->PushStorageFilter(&filter));
+#endif // _DEBUG
+
+	return device;
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message)
 	{
@@ -175,6 +212,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	// create DXGI and D3D objects
 	// g_useWarp = true;
 	g_Adapter = CreateAdapter(g_useWarp);
+	g_Device = CreateDevice(g_Adapter);
 
 	::ShowWindow(g_windowHandl, SW_SHOW);
 
