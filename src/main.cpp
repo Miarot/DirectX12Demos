@@ -26,7 +26,7 @@ using Microsoft::WRL::ComPtr;
 #include <helpers.h>
 
 // window parameters
-HWND g_windowHandl;
+HWND g_windowHandle;
 uint32_t g_Width = 1080;
 uint32_t g_Height = 720;
 
@@ -89,7 +89,7 @@ HWND CreateWindow(
 	int windowX = std::max(0, (systemWidth - windowWidth) / 2);
 	int windowY = std::max(0, (systemHeight - windowHeight) / 2);
 
-	HWND windowHandl = ::CreateWindowExW(
+	HWND windowHandle = ::CreateWindowExW(
 		NULL,
 		className,
 		windowName,
@@ -104,9 +104,9 @@ HWND CreateWindow(
 		NULL
 	);
 
-	assert(windowHandl && "Cant`t create window");
+	assert(windowHandle && "Cant`t create window");
 
-	return windowHandl;
+	return windowHandle;
 }
 
 void EnableDebugLayer() {
@@ -298,8 +298,23 @@ ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(ComPtr<ID3D12Device2> device, 
 	return descriptorHeap;
 }
 
-void UpdateRTV() {
+void UpdateRTV(
+	ComPtr<ID3D12Device2> device,
+	ComPtr<IDXGISwapChain> swapChain,
+	ComPtr<ID3D12DescriptorHeap> descriptorHeap,
+	ComPtr<ID3D12Resource> * resoureces,
+	uint32_t numDescriptors,
+	uint32_t descriptorSize)
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorHandle(descriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	ComPtr<ID3D12Resource> currentResource;
 
+	for (uint32_t i = 0; i < numDescriptors; ++i) {
+		ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&currentResource)));
+		resoureces[i] = currentResource;
+		device->CreateRenderTargetView(currentResource.Get(), nullptr, descriptorHandle);
+		descriptorHandle.Offset(descriptorSize);
+	}
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -320,7 +335,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	// init and create window
 	const wchar_t * className = L"MainWindowClass";
 	RegisterWindowClass(hInstance, className);
-	g_windowHandl = CreateWindow(hInstance, className, L"Empty window", g_Width, g_Height);
+	g_windowHandle = CreateWindow(hInstance, className, L"Empty window", g_Width, g_Height);
 
 	// before any DirectX call enable debug
 	EnableDebugLayer();
@@ -330,7 +345,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	g_Adapter = CreateAdapter(g_UseWarp);
 	g_Device = CreateDevice(g_Adapter);
 	g_CommandQueue = CreateCommandQueue(g_Device);
-	g_SwapChain = CreateSwapChain(g_CommandQueue, g_windowHandl, g_Width, g_Height, g_AllowTearing);
+	g_SwapChain = CreateSwapChain(g_CommandQueue, g_windowHandle, g_Width, g_Height, g_AllowTearing);
 	g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
 
 	for (int i = 0; i < g_BufferCount; ++i) {
@@ -339,8 +354,10 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 
 	g_CommandList = CreateCommandList(g_Device, g_CommandAllocators[g_CurrentBackBuffer]);
 	g_DescriptroHeap = CreateDescriptorHeap(g_Device, g_BufferCount);
+	g_DescriptorSize = g_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	UpdateRTV(g_Device, g_SwapChain, g_DescriptroHeap, g_BackBuffers, g_BufferCount, g_DescriptorSize);
 
-	::ShowWindow(g_windowHandl, SW_SHOW);
+	::ShowWindow(g_windowHandle, SW_SHOW);
 
 	MSG msg{};
 
