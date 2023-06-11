@@ -27,15 +27,19 @@ using Microsoft::WRL::ComPtr;
 
 // window parameters
 HWND g_windowHandl;
-uint32_t g_width = 1080;
-uint32_t g_height = 720;
+uint32_t g_Width = 1080;
+uint32_t g_Height = 720;
 
 // render parameters
-bool g_useWarp = false;
+bool g_UseWarp = false;
+UINT g_BufferCount = 3;
+bool g_AllowTearing = false;
 
 // DirectX objects
 ComPtr<IDXGIAdapter4> g_Adapter;
 ComPtr<ID3D12Device2> g_Device;
+ComPtr<ID3D12CommandQueue> g_CommandQueue;
+ComPtr<IDXGISwapChain4> g_SwapChain;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -186,6 +190,64 @@ ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter) {
 	return device;
 }
 
+ComPtr<ID3D12CommandQueue> CreateCommandQueue(ComPtr<ID3D12Device2> device) {
+	ComPtr<ID3D12CommandQueue> commandQueue;
+
+	D3D12_COMMAND_QUEUE_DESC commandQueueDesc;
+
+	commandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+	commandQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+	commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	commandQueueDesc.NodeMask = 0;
+
+	ThrowIfFailed(device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue)));
+
+	return commandQueue;
+}
+
+ComPtr<IDXGISwapChain4> CreateSwapChain(
+	ComPtr<ID3D12Device2> device,
+	HWND windowHandl,
+	UINT width, UINT height, bool allowTearing)
+{
+	ComPtr<IDXGISwapChain1> swapChain1;
+	ComPtr<IDXGISwapChain4> swapChain4;
+
+	ComPtr<IDXGIFactory4> factory;
+	UINT factorFlags = 0;
+#ifdef _DEBUG
+	factorFlags = DXGI_CREATE_FACTORY_DEBUG;
+#endif // DEBUG
+	ThrowIfFailed(CreateDXGIFactory2(factorFlags, IID_PPV_ARGS(&factory)));
+
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc;
+
+	swapChainDesc.Width = width;
+	swapChainDesc.Height = height;
+	swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	swapChainDesc.Stereo = FALSE;
+	swapChainDesc.SampleDesc = DXGI_SAMPLE_DESC{ 1, 0 };
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.BufferCount = g_BufferCount;
+	swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+	swapChainDesc.Flags = allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+
+	ThrowIfFailed(factory->CreateSwapChainForHwnd(
+		device.Get(), 
+		windowHandl, 
+		&swapChainDesc, 
+		NULL, 
+		NULL, 
+		&swapChain1
+	));
+
+	ThrowIfFailed(swapChain1.As(&swapChain4));
+
+	return swapChain4;
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message)
 	{
@@ -204,15 +266,17 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	// init and create window
 	const wchar_t * className = L"MainWindowClass";
 	RegisterWindowClass(hInstance, className);
-	g_windowHandl = CreateWindow(hInstance, className, L"Empty window", g_width, g_height);
+	g_windowHandl = CreateWindow(hInstance, className, L"Empty window", g_Width, g_Height);
 
 	// before any DirectX call enable debug
 	EnableDebugLayer();
 
 	// create DXGI and D3D objects
-	// g_useWarp = true;
-	g_Adapter = CreateAdapter(g_useWarp);
+	// g_UseWarp = true;
+	g_Adapter = CreateAdapter(g_UseWarp);
 	g_Device = CreateDevice(g_Adapter);
+	g_CommandQueue = CreateCommandQueue(g_Device);
+	//g_SwapChain = CreateSwapChain(g_Device, g_windowHandl, g_Width, g_Height, g_AllowTearing);
 
 	::ShowWindow(g_windowHandl, SW_SHOW);
 
