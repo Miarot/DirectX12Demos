@@ -256,6 +256,7 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 		&swapChain1
 	));
 
+	ThrowIfFailed(factory->MakeWindowAssociation(windowHandl, DXGI_MWA_NO_ALT_ENTER));
 	ThrowIfFailed(swapChain1.As(&swapChain4));
 
 	return swapChain4;
