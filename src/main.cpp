@@ -35,7 +35,9 @@ uint32_t g_Height = 720;
 bool g_UseWarp = false;
 const uint32_t g_BufferCount = 3;
 bool g_AllowTearing = false;
+bool g_Vsync = true;
 uint32_t g_CurrentBackBuffer;
+bool g_IsInit = false;
 
 // DirectX objects
 ComPtr<IDXGIAdapter4> g_Adapter;
@@ -328,7 +330,7 @@ ComPtr<ID3D12Fence> CreateFence(ComPtr<ID3D12Device2> device, UINT64 initValue) 
 	return fence;
 }
 
-UINT64 Signal(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fence, UINT64 value) {
+UINT64 Signal(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fence, UINT64 & value) {
 	UINT64 signalValue = ++value;
 	commandQueue->Signal(fence.Get(), signalValue);
 	return signalValue;
@@ -354,7 +356,7 @@ void WaitForFenceValue(
 void Flush(
 	ComPtr<ID3D12CommandQueue> commandQueue,
 	ComPtr<ID3D12Fence> fence, 
-	HANDLE event, UINT64 fenceValue)
+	HANDLE event, UINT64 & fenceValue)
 {
 	UINT64 valueToWait = Signal(commandQueue, fence, fenceValue);
 	WaitForFenceValue(fence, valueToWait, event);
@@ -383,18 +385,77 @@ void Update() {
 	}
 }
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
-	switch (message)
+void Render() {
+	auto commandAllocator = g_CommandAllocators[g_CurrentBackBuffer];
+	auto backBuffer = g_BackBuffers[g_CurrentBackBuffer];
+
+	ThrowIfFailed(commandAllocator->Reset());
+	ThrowIfFailed(g_CommandList->Reset(commandAllocator.Get(), NULL));
+
+	// Clear RTV
 	{
-	case WM_PAINT:
-		Update();
-		break;
-	case WM_DESTROY:
-		::PostQuitMessage(0);
-		break;
-	default:
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			backBuffer.Get(),
+			D3D12_RESOURCE_STATE_PRESENT,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		);
+
+		g_CommandList->ResourceBarrier(1, &barrier);
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
+			g_DescriptroHeap->GetCPUDescriptorHandleForHeapStart(),
+			g_CurrentBackBuffer, g_DescriptorSize
+		);
+
+		FLOAT backgroundColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
+		g_CommandList->ClearRenderTargetView(rtv, backgroundColor, 0, NULL);
+	}
+
+	// Present
+	{
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			backBuffer.Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PRESENT
+		);
+
+		g_CommandList->ResourceBarrier(1, &barrier);
+		ThrowIfFailed(g_CommandList->Close());
+
+		ID3D12CommandList * const commandLists[] = {
+			g_CommandList.Get()
+		};
+
+		g_CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+
+		UINT syncInterval = g_Vsync ? 1 : 0;
+		UINT flags = g_AllowTearing && !g_Vsync ? DXGI_PRESENT_ALLOW_TEARING : 0;
+		g_SwapChain->Present(syncInterval, flags);
+
+		g_BuffersFenceValues[g_CurrentBackBuffer] = Signal(g_CommandQueue, g_Fence, g_FenceValue);
+		g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
+		WaitForFenceValue(g_Fence, g_BuffersFenceValues[g_CurrentBackBuffer], g_FenceEvent);
+	}
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+	if (g_IsInit) {
+		switch (message)
+		{
+		case WM_PAINT:
+			Update();
+			Render();
+			break;
+		case WM_DESTROY:
+			::PostQuitMessage(0);
+			break;
+		default:
+			return ::DefWindowProcW(hwnd, message, wParam, lParam);
+		}
+	} else {
 		return ::DefWindowProcW(hwnd, message, wParam, lParam);
 	}
+
 }
 
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLine, int nCmdSho) {
@@ -433,6 +494,8 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 		g_BuffersFenceValues[i] = g_FenceValue;
 	}
 
+	g_IsInit = true;
+
 	::ShowWindow(g_windowHandle, SW_SHOW);
 
 	MSG msg{};
@@ -443,6 +506,9 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 			::DispatchMessage(&msg);
 		}
 	}
+
+	Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
+	::CloseHandle(g_FenceEvent);
 
 	return 0;
 }
