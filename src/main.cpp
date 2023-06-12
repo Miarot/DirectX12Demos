@@ -360,9 +360,35 @@ void Flush(
 	WaitForFenceValue(fence, valueToWait, event);
 }
 
+void Update() {
+	static double elapsedTime = 0.0;
+	static uint64_t frameCounter = 0;
+	static std::chrono::high_resolution_clock clock;
+	static auto prevTime = clock.now();
+	
+	auto currentTime = clock.now();
+	auto deltaTime = currentTime - prevTime;
+	prevTime = currentTime;
+	elapsedTime += deltaTime.count() * 1e-9;
+	++frameCounter;
+
+	if (elapsedTime >= 1.0) {
+		char buffer[500];
+		auto fps = frameCounter / elapsedTime;
+		::sprintf_s(buffer, 500, "FPS: %f\n", fps);
+		::OutputDebugString(buffer);
+
+		frameCounter = 0;
+		elapsedTime = 0.0;
+	}
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message)
 	{
+	case WM_PAINT:
+		Update();
+		break;
 	case WM_DESTROY:
 		::PostQuitMessage(0);
 		break;
