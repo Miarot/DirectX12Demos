@@ -3,7 +3,7 @@
 
 #if defined(CreateWindow)
 #undef CreateWindow
-#endif // CreateWindow
+#endif
 
 #if defined(max)
 #undef max
@@ -22,6 +22,7 @@ using Microsoft::WRL::ComPtr;
 
 #include <cassert>
 #include <algorithm>
+#include <chrono>
 
 #include <helpers.h>
 
@@ -46,6 +47,10 @@ ComPtr<ID3D12GraphicsCommandList> g_CommandList;
 ComPtr<ID3D12Resource> g_BackBuffers[g_BufferCount];
 ComPtr<ID3D12DescriptorHeap> g_DescriptroHeap;
 uint32_t g_DescriptorSize;
+ComPtr<ID3D12Fence> g_Fence;
+UINT64 g_FenceValue;
+HANDLE g_FenceEvent;
+UINT64 g_BuffersFenceValues[g_BufferCount];
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -317,6 +322,44 @@ void UpdateRTV(
 	}
 }
 
+ComPtr<ID3D12Fence> CreateFence(ComPtr<ID3D12Device2> device, UINT64 initValue) {
+	ComPtr<ID3D12Fence> fence;
+	ThrowIfFailed(device->CreateFence(initValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
+	return fence;
+}
+
+UINT64 Signal(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fence, UINT64 value) {
+	UINT64 signalValue = ++value;
+	commandQueue->Signal(fence.Get(), signalValue);
+	return signalValue;
+}
+
+HANDLE CreateEventHandle() {
+	HANDLE event = ::CreateEvent(NULL, FALSE, FALSE, NULL);
+	assert(event && "Can`t create event handle");
+	return event;
+}
+
+void WaitForFenceValue(
+	ComPtr<ID3D12Fence> fence,
+	UINT64 value, HANDLE event, 
+	std::chrono::milliseconds time = std::chrono::milliseconds::max())
+{
+	if (fence->GetCompletedValue() < value) {
+		ThrowIfFailed(fence->SetEventOnCompletion(value, event));
+		::WaitForSingleObject(event, time.count());
+	}
+}
+
+void Flush(
+	ComPtr<ID3D12CommandQueue> commandQueue,
+	ComPtr<ID3D12Fence> fence, 
+	HANDLE event, UINT64 fenceValue)
+{
+	UINT64 valueToWait = Signal(commandQueue, fence, fenceValue);
+	WaitForFenceValue(fence, valueToWait, event);
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message)
 	{
@@ -348,7 +391,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	g_SwapChain = CreateSwapChain(g_CommandQueue, g_windowHandle, g_Width, g_Height, g_AllowTearing);
 	g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
 
-	for (int i = 0; i < g_BufferCount; ++i) {
+	for (uint32_t i = 0; i < g_BufferCount; ++i) {
 		g_CommandAllocators[i] = CreateCommandAllocator(g_Device);
 	}
 
@@ -356,6 +399,13 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	g_DescriptroHeap = CreateDescriptorHeap(g_Device, g_BufferCount);
 	g_DescriptorSize = g_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	UpdateRTV(g_Device, g_SwapChain, g_DescriptroHeap, g_BackBuffers, g_BufferCount, g_DescriptorSize);
+	g_FenceValue = 0;
+	g_Fence = CreateFence(g_Device, g_FenceValue);
+	g_FenceEvent = CreateEventHandle();
+
+	for (UINT i = 0; i < g_BufferCount; ++i) {
+		g_BuffersFenceValues[i] = g_FenceValue;
+	}
 
 	::ShowWindow(g_windowHandle, SW_SHOW);
 
