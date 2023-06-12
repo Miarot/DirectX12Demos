@@ -126,6 +126,22 @@ void EnableDebugLayer() {
 #endif // DEBUG
 }
 
+bool CheckTearingSupport() {
+	BOOL allowTearing = FALSE;
+	ComPtr<IDXGIFactory4> factory4;
+	ComPtr<IDXGIFactory5> factory5;
+
+	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&factory4)));
+	ThrowIfFailed(factory4.As(&factory5));
+
+	ThrowIfFailed(factory5->CheckFeatureSupport(
+		DXGI_FEATURE_PRESENT_ALLOW_TEARING, 
+		&allowTearing, sizeof(allowTearing)
+	));
+
+	return allowTearing == TRUE;
+}
+
 ComPtr<IDXGIAdapter4> CreateAdapter(bool useWarp) {
 	ComPtr<IDXGIFactory4> factory;
 	UINT factorFlags = 0;
@@ -580,6 +596,15 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 
 	// before any DirectX call enable debug
 	EnableDebugLayer();
+	g_AllowTearing = CheckTearingSupport();
+
+#ifdef _DEBUG
+	if (g_AllowTearing) {
+		::OutputDebugString("Allow tearing true");
+	} else {
+		::OutputDebugString("Allow tearing false");
+	}
+#endif // _DEBUG
 
 	// create DXGI and D3D objects
 	// g_UseWarp = true;
