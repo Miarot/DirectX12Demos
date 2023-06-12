@@ -137,12 +137,12 @@ ComPtr<IDXGIAdapter4> CreateAdapter(bool useWarp) {
 	ComPtr<IDXGIAdapter4> adapter4;
 
 	if (useWarp) {
-		ThrowIfFailed(factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter4)));
+		ThrowIfFailed(factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter1)));
 	} else {
 		UINT i = 0;
 		SIZE_T maxDedicatedMemory = 0;
 
-		while (factory->EnumAdapters1(i, adapter1.GetAddressOf()) != DXGI_ERROR_NOT_FOUND) {
+		while (factory->EnumAdapters1(i, &adapter1) != DXGI_ERROR_NOT_FOUND) {
 			DXGI_ADAPTER_DESC1 adapterDesc;
 			adapter1->GetDesc1(&adapterDesc);
 			
@@ -427,15 +427,43 @@ void Render() {
 		};
 
 		g_CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+		g_BuffersFenceValues[g_CurrentBackBuffer] = Signal(g_CommandQueue, g_Fence, g_FenceValue);
 
 		UINT syncInterval = g_Vsync ? 1 : 0;
 		UINT flags = g_AllowTearing && !g_Vsync ? DXGI_PRESENT_ALLOW_TEARING : 0;
-		g_SwapChain->Present(syncInterval, flags);
+		ThrowIfFailed(g_SwapChain->Present(syncInterval, flags));
 
-		g_BuffersFenceValues[g_CurrentBackBuffer] = Signal(g_CommandQueue, g_Fence, g_FenceValue);
 		g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
 		WaitForFenceValue(g_Fence, g_BuffersFenceValues[g_CurrentBackBuffer], g_FenceEvent);
 	}
+}
+
+void Resize(uint32_t width, uint32_t height) {
+	if (g_Width != width || g_Height != height) {
+		g_Width = std::max(1u, width);
+		g_Height = std::max(1u, height);
+
+		Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
+
+		for (uint32_t i = 0; i < g_BufferCount; ++i) {
+			g_BackBuffers[i].Reset();
+			g_BuffersFenceValues[i] = g_BuffersFenceValues[g_CurrentBackBuffer];
+		}
+
+		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+		ThrowIfFailed(g_SwapChain->GetDesc(&swapChainDesc));
+
+		ThrowIfFailed(g_SwapChain->ResizeBuffers(
+			g_BufferCount,
+			g_Width, g_Height,
+			swapChainDesc.BufferDesc.Format,
+			swapChainDesc.Flags
+		));
+
+		g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
+		UpdateRTV(g_Device, g_SwapChain, g_DescriptroHeap, g_BackBuffers, g_BufferCount, g_DescriptorSize);
+	}
+
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -446,6 +474,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			Update();
 			Render();
 			break;
+		case WM_SIZE:
+		{
+			RECT clientRect;
+			::GetClientRect(g_windowHandle, &clientRect);
+
+			LONG width = clientRect.right - clientRect.left;
+			LONG height = clientRect.bottom - clientRect.top;
+
+			Resize(width, height);
+			break;
+		}
 		case WM_DESTROY:
 			::PostQuitMessage(0);
 			break;
@@ -474,6 +513,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	// g_UseWarp = true;
 	g_Adapter = CreateAdapter(g_UseWarp);
 	g_Device = CreateDevice(g_Adapter);
+
 	g_CommandQueue = CreateCommandQueue(g_Device);
 	g_SwapChain = CreateSwapChain(g_CommandQueue, g_windowHandle, g_Width, g_Height, g_AllowTearing);
 	g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
