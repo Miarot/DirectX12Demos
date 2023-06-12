@@ -38,6 +38,8 @@ bool g_AllowTearing = false;
 bool g_Vsync = true;
 uint32_t g_CurrentBackBuffer;
 bool g_IsInit = false;
+bool g_FullScreen = false;
+RECT g_WindowRect;
 
 // DirectX objects
 ComPtr<IDXGIAdapter4> g_Adapter;
@@ -467,6 +469,49 @@ void Resize(uint32_t width, uint32_t height) {
 
 }
 
+void FullScreen(bool fullScreen) {
+	if (g_FullScreen != fullScreen) {
+		g_FullScreen = fullScreen;
+
+		if (g_FullScreen) {
+			::GetWindowRect(g_windowHandle, &g_WindowRect);
+
+			UINT windowStyle = WS_OVERLAPPEDWINDOW & ~(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+			::SetWindowLongW(g_windowHandle, GWL_STYLE, windowStyle);
+
+			HMONITOR hMonitor = ::MonitorFromWindow(g_windowHandle, MONITOR_DEFAULTTONEAREST);
+			MONITORINFOEX monitorInfo = {};
+			monitorInfo.cbSize = sizeof(MONITORINFOEX);
+			::GetMonitorInfo(hMonitor, &monitorInfo);
+			::SetWindowPos(
+				g_windowHandle,
+				HWND_TOP,
+				monitorInfo.rcMonitor.left,
+				monitorInfo.rcMonitor.top,
+				monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
+				monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+				SWP_FRAMECHANGED | SWP_NOACTIVATE
+			);
+
+			::ShowWindow(g_windowHandle, SW_MAXIMIZE);
+		} else {
+			::SetWindowLongW(g_windowHandle, GWL_STYLE, WS_OVERLAPPEDWINDOW);
+
+			::SetWindowPos(
+				g_windowHandle,
+				HWND_NOTOPMOST,
+				g_WindowRect.left,
+				g_WindowRect.top,
+				g_WindowRect.right - g_WindowRect.left,
+				g_WindowRect.bottom - g_WindowRect.top,
+				SWP_FRAMECHANGED | SWP_NOACTIVATE
+			);
+
+			::ShowWindow(g_windowHandle, SW_NORMAL);
+		}
+	}
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	if (g_IsInit) {
 		switch (message)
@@ -474,6 +519,31 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		case WM_PAINT:
 			Update();
 			Render();
+			break;
+		case WM_KEYDOWN:
+		case WM_SYSKEYDOWN:
+		{
+			bool alt = (::GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
+
+			switch (wParam)
+			{
+			case 'V':
+				g_Vsync = !g_Vsync;
+				break;
+			case VK_ESCAPE:
+				::PostQuitMessage(0);
+				break;
+			case VK_RETURN:
+				if (alt)
+				{
+			case VK_F11:
+				FullScreen(!g_FullScreen);
+				}
+				break;
+			}
+			break;
+		}
+		case WM_SYSCHAR:
 			break;
 		case WM_SIZE:
 		{
@@ -506,6 +576,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	const wchar_t * className = L"MainWindowClass";
 	RegisterWindowClass(hInstance, className);
 	g_windowHandle = CreateWindow(hInstance, className, L"Empty window", g_Width, g_Height);
+	::GetWindowRect(g_windowHandle, &g_WindowRect);
 
 	// before any DirectX call enable debug
 	EnableDebugLayer();
