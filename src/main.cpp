@@ -28,7 +28,7 @@ using Microsoft::WRL::ComPtr;
 
 // window parameters
 HWND g_windowHandle;
-uint32_t g_Width = 1080;
+uint32_t g_Width = 1280;
 uint32_t g_Height = 720;
 
 // render parameters
@@ -49,8 +49,8 @@ ComPtr<IDXGISwapChain4> g_SwapChain;
 ComPtr<ID3D12CommandAllocator> g_CommandAllocators[g_BufferCount];
 ComPtr<ID3D12GraphicsCommandList> g_CommandList;
 ComPtr<ID3D12Resource> g_BackBuffers[g_BufferCount];
-ComPtr<ID3D12DescriptorHeap> g_DescriptroHeap;
-uint32_t g_DescriptorSize;
+ComPtr<ID3D12DescriptorHeap> g_RTVDescHeap;
+uint32_t g_RTVDescSize;
 ComPtr<ID3D12Fence> g_Fence;
 UINT64 g_FenceValue;
 HANDLE g_FenceEvent;
@@ -310,13 +310,18 @@ ComPtr<ID3D12GraphicsCommandList> CreateCommandList(
 	return commandList;
 }
 
-ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(ComPtr<ID3D12Device2> device, UINT numDescriptors) {
+ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(
+	ComPtr<ID3D12Device2> device,
+	UINT numDescriptors,
+	D3D12_DESCRIPTOR_HEAP_TYPE type,
+	D3D12_DESCRIPTOR_HEAP_FLAGS flags)
+{
 	ComPtr<ID3D12DescriptorHeap> descriptorHeap;
 
 	D3D12_DESCRIPTOR_HEAP_DESC descriptroHeapDesc;
-	descriptroHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	descriptroHeapDesc.Type = type;
 	descriptroHeapDesc.NumDescriptors = numDescriptors;
-	descriptroHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	descriptroHeapDesc.Flags = flags;
 	descriptroHeapDesc.NodeMask = 0;
 
 	ThrowIfFailed(device->CreateDescriptorHeap(&descriptroHeapDesc, IID_PPV_ARGS(&descriptorHeap)));
@@ -422,8 +427,8 @@ void Render() {
 		g_CommandList->ResourceBarrier(1, &barrier);
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
-			g_DescriptroHeap->GetCPUDescriptorHandleForHeapStart(),
-			g_CurrentBackBuffer, g_DescriptorSize
+			g_RTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			g_CurrentBackBuffer, g_RTVDescSize
 		);
 
 		FLOAT backgroundColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
@@ -480,7 +485,7 @@ void Resize(uint32_t width, uint32_t height) {
 		));
 
 		g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
-		UpdateRTV(g_Device, g_SwapChain, g_DescriptroHeap, g_BackBuffers, g_BufferCount, g_DescriptorSize);
+		UpdateRTV(g_Device, g_SwapChain, g_RTVDescHeap, g_BackBuffers, g_BufferCount, g_RTVDescSize);
 	}
 
 }
@@ -526,6 +531,12 @@ void FullScreen(bool fullScreen) {
 			::ShowWindow(g_windowHandle, SW_NORMAL);
 		}
 	}
+}
+
+ComPtr<ID3D12Resource> CreateDepthStencilBuffer() {
+	ComPtr<ID3D12Resource> depthStencilBuffer;
+
+	return depthStencilBuffer;
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -620,9 +631,9 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	}
 
 	g_CommandList = CreateCommandList(g_Device, g_CommandAllocators[g_CurrentBackBuffer]);
-	g_DescriptroHeap = CreateDescriptorHeap(g_Device, g_BufferCount);
-	g_DescriptorSize = g_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	UpdateRTV(g_Device, g_SwapChain, g_DescriptroHeap, g_BackBuffers, g_BufferCount, g_DescriptorSize);
+	g_RTVDescHeap = CreateDescriptorHeap(g_Device, g_BufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+	g_RTVDescSize = g_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	UpdateRTV(g_Device, g_SwapChain, g_RTVDescHeap, g_BackBuffers, g_BufferCount, g_RTVDescSize);
 	g_FenceValue = 0;
 	g_Fence = CreateFence(g_Device, g_FenceValue);
 	g_FenceEvent = CreateEventHandle();
