@@ -465,6 +465,12 @@ void Render() {
 
 		FLOAT backgroundColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
 		g_CommandList->ClearRenderTargetView(rtv, backgroundColor, 0, NULL);
+
+		g_CommandList->ClearDepthStencilView(
+			g_DSVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			D3D12_CLEAR_FLAG_DEPTH,
+			1.0f, 0, 0, NULL 
+		);
 	}
 
 	// Present
