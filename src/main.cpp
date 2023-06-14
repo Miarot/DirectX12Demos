@@ -56,6 +56,8 @@ UINT64 g_FenceValue;
 HANDLE g_FenceEvent;
 UINT64 g_BuffersFenceValues[g_BufferCount];
 
+ComPtr<ID3D12Resource> g_depthStencilBuffer;
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 void RegisterWindowClass(HINSTANCE hInstance, const wchar_t * className) {
@@ -533,8 +535,30 @@ void FullScreen(bool fullScreen) {
 	}
 }
 
-ComPtr<ID3D12Resource> CreateDepthStencilBuffer() {
+ComPtr<ID3D12Resource> CreateDepthStencilBuffer(ComPtr<ID3D12Device2> device, UINT width, UINT height) {
 	ComPtr<ID3D12Resource> depthStencilBuffer;
+
+	D3D12_RESOURCE_DESC dsBufferDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+		DXGI_FORMAT_D32_FLOAT,
+		width, height,
+		1, 0, 1, 0,
+		D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+		D3D12_TEXTURE_LAYOUT_UNKNOWN,
+		0
+	);
+
+	D3D12_CLEAR_VALUE dsClearValue{};
+	dsClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+	dsClearValue.DepthStencil = { 1.0f, 0 };
+
+	ThrowIfFailed(device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&dsBufferDesc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&dsClearValue,
+		IID_PPV_ARGS(&depthStencilBuffer)
+	));
 
 	return depthStencilBuffer;
 }
@@ -641,6 +665,8 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	for (UINT i = 0; i < g_BufferCount; ++i) {
 		g_BuffersFenceValues[i] = g_FenceValue;
 	}
+
+	g_depthStencilBuffer = CreateDepthStencilBuffer(g_Device, g_Width, g_Height);
 
 	g_IsInit = true;
 
