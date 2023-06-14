@@ -56,7 +56,8 @@ UINT64 g_FenceValue;
 HANDLE g_FenceEvent;
 UINT64 g_BuffersFenceValues[g_BufferCount];
 
-ComPtr<ID3D12Resource> g_depthStencilBuffer;
+ComPtr<ID3D12Resource> g_DSBuffer;
+ComPtr<ID3D12DescriptorHeap> g_DSVDescHeap;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -350,6 +351,35 @@ void UpdateRTV(
 	}
 }
 
+ComPtr<ID3D12Resource> CreateDepthStencilBuffer(ComPtr<ID3D12Device2> device, UINT width, UINT height) {
+	ComPtr<ID3D12Resource> depthStencilBuffer;
+
+	D3D12_RESOURCE_DESC dsBufferDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+		DXGI_FORMAT_D32_FLOAT,
+		width, height,
+		1, 0, 1, 0,
+		D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+		D3D12_TEXTURE_LAYOUT_UNKNOWN,
+		0
+	);
+
+	D3D12_CLEAR_VALUE dsClearValue{};
+	dsClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+	dsClearValue.DepthStencil = { 1.0f, 0 };
+
+	ThrowIfFailed(device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&dsBufferDesc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&dsClearValue,
+		IID_PPV_ARGS(&depthStencilBuffer)
+	));
+
+	return depthStencilBuffer;
+}
+
+
 ComPtr<ID3D12Fence> CreateFence(ComPtr<ID3D12Device2> device, UINT64 initValue) {
 	ComPtr<ID3D12Fence> fence;
 	ThrowIfFailed(device->CreateFence(initValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
@@ -464,6 +494,40 @@ void Render() {
 	}
 }
 
+void ResizeBackBuffers(uint32_t width, uint32_t height) {
+	for (uint32_t i = 0; i < g_BufferCount; ++i) {
+		g_BackBuffers[i].Reset();
+		g_BuffersFenceValues[i] = g_BuffersFenceValues[g_CurrentBackBuffer];
+	}
+
+	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+	ThrowIfFailed(g_SwapChain->GetDesc(&swapChainDesc));
+
+	ThrowIfFailed(g_SwapChain->ResizeBuffers(
+		g_BufferCount,
+		g_Width, g_Height,
+		swapChainDesc.BufferDesc.Format,
+		swapChainDesc.Flags
+	));
+
+	g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
+	UpdateRTV(g_Device, g_SwapChain, g_RTVDescHeap, g_BackBuffers, g_BufferCount, g_RTVDescSize);
+}
+
+void ResizeDSBuffer(UINT width, UINT height) {
+	g_DSBuffer.Reset();
+	g_DSBuffer = CreateDepthStencilBuffer(g_Device, width, height);
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+
+	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	dsvDesc.Texture2D.MipSlice = 0;
+	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+
+	g_Device->CreateDepthStencilView(g_DSBuffer.Get(), &dsvDesc, g_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
+}
+
 void Resize(uint32_t width, uint32_t height) {
 	if (g_Width != width || g_Height != height) {
 		g_Width = std::max(1u, width);
@@ -471,25 +535,9 @@ void Resize(uint32_t width, uint32_t height) {
 
 		Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
 
-		for (uint32_t i = 0; i < g_BufferCount; ++i) {
-			g_BackBuffers[i].Reset();
-			g_BuffersFenceValues[i] = g_BuffersFenceValues[g_CurrentBackBuffer];
-		}
-
-		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-		ThrowIfFailed(g_SwapChain->GetDesc(&swapChainDesc));
-
-		ThrowIfFailed(g_SwapChain->ResizeBuffers(
-			g_BufferCount,
-			g_Width, g_Height,
-			swapChainDesc.BufferDesc.Format,
-			swapChainDesc.Flags
-		));
-
-		g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
-		UpdateRTV(g_Device, g_SwapChain, g_RTVDescHeap, g_BackBuffers, g_BufferCount, g_RTVDescSize);
+		ResizeBackBuffers(width, height);
+		ResizeDSBuffer(width, height);
 	}
-
 }
 
 void FullScreen(bool fullScreen) {
@@ -533,34 +581,6 @@ void FullScreen(bool fullScreen) {
 			::ShowWindow(g_windowHandle, SW_NORMAL);
 		}
 	}
-}
-
-ComPtr<ID3D12Resource> CreateDepthStencilBuffer(ComPtr<ID3D12Device2> device, UINT width, UINT height) {
-	ComPtr<ID3D12Resource> depthStencilBuffer;
-
-	D3D12_RESOURCE_DESC dsBufferDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-		DXGI_FORMAT_D32_FLOAT,
-		width, height,
-		1, 0, 1, 0,
-		D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
-		D3D12_TEXTURE_LAYOUT_UNKNOWN,
-		0
-	);
-
-	D3D12_CLEAR_VALUE dsClearValue{};
-	dsClearValue.Format = DXGI_FORMAT_D32_FLOAT;
-	dsClearValue.DepthStencil = { 1.0f, 0 };
-
-	ThrowIfFailed(device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&dsBufferDesc,
-		D3D12_RESOURCE_STATE_DEPTH_WRITE,
-		&dsClearValue,
-		IID_PPV_ARGS(&depthStencilBuffer)
-	));
-
-	return depthStencilBuffer;
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -655,9 +675,14 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	}
 
 	g_CommandList = CreateCommandList(g_Device, g_CommandAllocators[g_CurrentBackBuffer]);
+
 	g_RTVDescHeap = CreateDescriptorHeap(g_Device, g_BufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 	g_RTVDescSize = g_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	UpdateRTV(g_Device, g_SwapChain, g_RTVDescHeap, g_BackBuffers, g_BufferCount, g_RTVDescSize);
+
+	g_DSVDescHeap = CreateDescriptorHeap(g_Device, 1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+	ResizeDSBuffer(g_Width, g_Height);
+
 	g_FenceValue = 0;
 	g_Fence = CreateFence(g_Device, g_FenceValue);
 	g_FenceEvent = CreateEventHandle();
@@ -665,8 +690,6 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	for (UINT i = 0; i < g_BufferCount; ++i) {
 		g_BuffersFenceValues[i] = g_FenceValue;
 	}
-
-	g_depthStencilBuffer = CreateDepthStencilBuffer(g_Device, g_Width, g_Height);
 
 	g_IsInit = true;
 
