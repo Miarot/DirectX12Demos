@@ -14,6 +14,11 @@ struct ModelViewProjection {
 
 ConstantBuffer<ModelViewProjection> ModelViewProjectionCB : register(b0);
 
+// Another way to define mvp gMVP is global name of matrix 
+//cbuffer cbPerObject : register(b0) {
+//    matrix gMVP;
+//}
+
 VertexOut main(VertexIn vin) {
     VertexOut vout;
     
