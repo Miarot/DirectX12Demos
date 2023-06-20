@@ -598,7 +598,8 @@ void FullScreen(bool fullScreen) {
 			);
 
 			::ShowWindow(g_windowHandle, SW_MAXIMIZE);
-		} else {
+		}
+		else {
 			::SetWindowLongW(g_windowHandle, GWL_STYLE, WS_OVERLAPPEDWINDOW);
 
 			::SetWindowPos(
@@ -614,6 +615,49 @@ void FullScreen(bool fullScreen) {
 			::ShowWindow(g_windowHandle, SW_NORMAL);
 		}
 	}
+}
+
+ComPtr<ID3D12Resource> CreateBufferResource(
+	ComPtr<ID3D12Device2> device,
+	ComPtr<ID3D12GraphicsCommandList> commandList,
+	ComPtr<ID3D12Resource>& intermediateResource,
+	const void* pData, size_t numElements, size_t sizeElement
+)
+{
+	ComPtr<ID3D12Resource> destinationResource;
+	size_t dataSize = numElements * sizeElement;
+
+	ThrowIfFailed(device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(dataSize),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		NULL,
+		IID_PPV_ARGS(&destinationResource)
+	));
+
+	ThrowIfFailed(device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(dataSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		NULL,
+		IID_PPV_ARGS(&intermediateResource)
+	));
+
+	D3D12_SUBRESOURCE_DATA subresourceData;
+	subresourceData.pData = pData;
+	subresourceData.RowPitch = dataSize;
+	subresourceData.SlicePitch = dataSize;
+
+	UpdateSubresources(
+		commandList.Get(),
+		destinationResource.Get(),
+		intermediateResource.Get(),
+		0, 0, 1, &subresourceData
+	);
+
+	return destinationResource;
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
