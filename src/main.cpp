@@ -16,6 +16,8 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <d3dx12.h>
+#include <DirectXMath.h>
+using namespace DirectX;
 
 #include <wrl.h>
 using Microsoft::WRL::ComPtr;
@@ -55,9 +57,35 @@ ComPtr<ID3D12Fence> g_Fence;
 UINT64 g_FenceValue;
 HANDLE g_FenceEvent;
 UINT64 g_BuffersFenceValues[g_BufferCount];
-
 ComPtr<ID3D12Resource> g_DSBuffer;
 ComPtr<ID3D12DescriptorHeap> g_DSVDescHeap;
+
+// Game objects and structures
+struct VertexPosColor {
+	XMFLOAT3 Position;
+	XMFLOAT3 Color;
+};
+
+static VertexPosColor g_Vertices[8] = {
+	{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }, // 0
+	{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }, // 1
+	{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }, // 2
+	{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }, // 3
+	{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }, // 4
+	{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }, // 5
+	{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }, // 6
+	{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }  // 7
+};
+
+static WORD g_Indicies[36] =
+{
+	0, 1, 2, 0, 2, 3,
+	4, 6, 5, 4, 7, 6,
+	4, 5, 1, 4, 1, 0,
+	3, 2, 6, 3, 6, 7,
+	1, 5, 6, 1, 6, 2,
+	4, 0, 3, 4, 3, 7
+};
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -379,7 +407,6 @@ ComPtr<ID3D12Resource> CreateDepthStencilBuffer(ComPtr<ID3D12Device2> device, UI
 	return depthStencilBuffer;
 }
 
-
 ComPtr<ID3D12Fence> CreateFence(ComPtr<ID3D12Device2> device, UINT64 initValue) {
 	ComPtr<ID3D12Fence> fence;
 	ThrowIfFailed(device->CreateFence(initValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
@@ -696,6 +723,14 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	for (UINT i = 0; i < g_BufferCount; ++i) {
 		g_BuffersFenceValues[i] = g_FenceValue;
 	}
+
+	// Create input layout
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] {
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+	};
+
+	D3D12_INPUT_LAYOUT_DESC inpuitLayout {inputElementDescs, _countof(inputElementDescs)};
 
 	g_IsInit = true;
 
