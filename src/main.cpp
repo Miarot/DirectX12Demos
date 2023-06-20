@@ -59,6 +59,10 @@ HANDLE g_FenceEvent;
 UINT64 g_BuffersFenceValues[g_BufferCount];
 ComPtr<ID3D12Resource> g_DSBuffer;
 ComPtr<ID3D12DescriptorHeap> g_DSVDescHeap;
+ComPtr<ID3D12Resource> g_VertexesBuffer;
+D3D12_VERTEX_BUFFER_VIEW g_VertexesBufferView;
+ComPtr<ID3D12Resource> g_IndexesBuffer;
+D3D12_INDEX_BUFFER_VIEW g_IndexesBufferView;
 
 // Game objects and structures
 struct VertexPosColor {
@@ -66,7 +70,7 @@ struct VertexPosColor {
 	XMFLOAT3 Color;
 };
 
-static VertexPosColor g_Vertices[8] = {
+static VertexPosColor g_Vertexes[8] = {
 	{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }, // 0
 	{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }, // 1
 	{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }, // 2
@@ -77,7 +81,7 @@ static VertexPosColor g_Vertices[8] = {
 	{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }  // 7
 };
 
-static WORD g_Indicies[36] =
+static WORD g_Indexes[36] =
 {
 	0, 1, 2, 0, 2, 3,
 	4, 6, 5, 4, 7, 6,
@@ -721,19 +725,21 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	// init and create window
-	const wchar_t * className = L"MainWindowClass";
+	const wchar_t* className = L"MainWindowClass";
 	RegisterWindowClass(hInstance, className);
 	g_windowHandle = CreateWindow(hInstance, className, L"Empty window", g_Width, g_Height);
 	::GetWindowRect(g_windowHandle, &g_WindowRect);
 
 	// before any DirectX call enable debug
 	EnableDebugLayer();
+
 	g_AllowTearing = CheckTearingSupport();
 
 #ifdef _DEBUG
 	if (g_AllowTearing) {
 		::OutputDebugString("Allow tearing true");
-	} else {
+	}
+	else {
 		::OutputDebugString("Allow tearing false");
 	}
 #endif // _DEBUG
@@ -769,12 +775,55 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	}
 
 	// Create input layout
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] {
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[]{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 		{"COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
-	D3D12_INPUT_LAYOUT_DESC inpuitLayout {inputElementDescs, _countof(inputElementDescs)};
+	D3D12_INPUT_LAYOUT_DESC inpuitLayout{ inputElementDescs, _countof(inputElementDescs) };
+
+	// Create and load vertexes buffers
+	g_CommandList->Reset(g_CommandAllocators[0].Get(), NULL);
+
+	ComPtr<ID3D12Resource> intermediateVertexesBuffer;
+	ComPtr<ID3D12Resource> intermediateIndexesBuffer;
+
+	g_VertexesBuffer = CreateBufferResource(
+		g_Device,
+		g_CommandList,
+		intermediateVertexesBuffer,
+		g_Vertexes,
+		_countof(g_Vertexes),
+		sizeof(VertexPosColor)
+	);
+
+	// Init vertex buffer view
+	g_VertexesBufferView.BufferLocation = g_VertexesBuffer->GetGPUVirtualAddress();
+	g_VertexesBufferView.SizeInBytes = sizeof(g_Vertexes);
+	g_VertexesBufferView.StrideInBytes = sizeof(VertexPosColor);
+
+	// Create and load indexes buffers
+	g_IndexesBuffer = CreateBufferResource(
+		g_Device,
+		g_CommandList,
+		intermediateIndexesBuffer,
+		g_Indexes,
+		_countof(g_Indexes),
+		sizeof(WORD)
+	);
+
+	// Init index buffer view
+	g_IndexesBufferView.BufferLocation = g_IndexesBuffer->GetGPUVirtualAddress();
+	g_IndexesBufferView.SizeInBytes = sizeof(g_Indexes);
+	g_IndexesBufferView.Format = DXGI_FORMAT_R16_UINT;
+
+	// Wait while loading ends
+	g_CommandList->Close();
+	ID3D12CommandList * const commandLists[] = {
+		g_CommandList.Get()
+	};
+	g_CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+	Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
 
 	g_IsInit = true;
 
