@@ -69,6 +69,7 @@ D3D12_INDEX_BUFFER_VIEW g_IndexesBufferView;
 ComPtr<ID3DBlob> g_PixelShaderBlob;
 ComPtr<ID3DBlob> g_VertexShaderBlob;
 ComPtr<ID3D12Resource> g_ConstantBuffer;
+UINT g_CBSize;
 
 
 // Game objects and structures
@@ -712,22 +713,28 @@ ComPtr<ID3DBlob> CompileShader(
 	return shaderBlob;
 }
 
-ComPtr<ID3D12Resource> CreateConstantBuffer(ComPtr<ID3D12Device2> device) {
+ComPtr<ID3D12Resource> CreateConstantBuffer(ComPtr<ID3D12Device2> device, UINT size) {
 	ComPtr<ID3D12Resource> constantBuffer;
-
-	// align to 255
-	UINT structureByteSize = (sizeof(ObjectConstants) + 255) & ~255;
 
 	ThrowIfFailed(device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(structureByteSize),
+		&CD3DX12_RESOURCE_DESC::Buffer(size),
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		NULL,
 		IID_PPV_ARGS(&constantBuffer)
 	));
 
 	return constantBuffer;
+}
+
+void LoadDataToCB(ComPtr<ID3D12Resource> cb, const ObjectConstants & data, UINT size) {
+	BYTE* pMappedData;
+
+	ThrowIfFailed(cb->Map(0, NULL, reinterpret_cast<void **>(&pMappedData)));
+	memcpy(pMappedData, &data, size);
+
+	cb->Unmap(0, NULL);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -895,7 +902,12 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	g_VertexShaderBlob = CompileShader(L"..\\shaders\\VertexShader.hlsl", "main", "vs_5_1");
 	g_PixelShaderBlob = CompileShader(L"..\\shaders\\PixelShader.hlsl", "main", "ps_5_1");
 
-	g_ConstantBuffer = CreateConstantBuffer(g_Device);
+	// Create constant buffer
+	ObjectConstants objConst;
+	// align size to 256 bytes
+	UINT g_CBSize = (sizeof(ObjectConstants) + 255) & ~255;
+	g_ConstantBuffer = CreateConstantBuffer(g_Device, g_CBSize);
+	LoadDataToCB(g_ConstantBuffer, objConst, g_CBSize);
 
 	g_IsInit = true;
 
