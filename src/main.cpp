@@ -70,6 +70,7 @@ ComPtr<ID3DBlob> g_PixelShaderBlob;
 ComPtr<ID3DBlob> g_VertexShaderBlob;
 ComPtr<ID3D12Resource> g_ConstantBuffer;
 UINT g_CBSize;
+ComPtr<ID3D12DescriptorHeap> g_CBDescHeap;
 
 
 // Game objects and structures
@@ -909,6 +910,19 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	g_ConstantBuffer = CreateConstantBuffer(g_Device, g_CBSize);
 	LoadDataToCB(g_ConstantBuffer, objConst, g_CBSize);
 
+	// Create cb descritor heap and view
+	g_CBDescHeap = CreateDescriptorHeap(g_Device, 1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
+	CBViewDesc.BufferLocation = g_ConstantBuffer->GetGPUVirtualAddress();
+	CBViewDesc.SizeInBytes = g_CBSize;
+
+	g_Device->CreateConstantBufferView(
+		&CBViewDesc,
+		g_CBDescHeap->GetCPUDescriptorHandleForHeapStart()
+	);
+
+	// Initialization ends
 	g_IsInit = true;
 
 	::ShowWindow(g_windowHandle, SW_SHOW);
