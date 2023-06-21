@@ -68,6 +68,7 @@ ComPtr<ID3D12Resource> g_IndexesBuffer;
 D3D12_INDEX_BUFFER_VIEW g_IndexesBufferView;
 ComPtr<ID3DBlob> g_PixelShaderBlob;
 ComPtr<ID3DBlob> g_VertexShaderBlob;
+ComPtr<ID3D12Resource> g_ConstantBuffer;
 
 
 // Game objects and structures
@@ -75,6 +76,12 @@ struct VertexPosColor {
 	XMFLOAT3 Position;
 	XMFLOAT3 Color;
 };
+
+struct ObjectConstants {
+	XMMATRIX MVP = XMMatrixIdentity();
+};
+
+ObjectConstants g_ObjectConstants;
 
 static VertexPosColor g_Vertexes[8] = {
 	{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }, // 0
@@ -705,6 +712,24 @@ ComPtr<ID3DBlob> CompileShader(
 	return shaderBlob;
 }
 
+ComPtr<ID3D12Resource> CreateConstantBuffer(ComPtr<ID3D12Device2> device) {
+	ComPtr<ID3D12Resource> constantBuffer;
+
+	// align to 255
+	UINT structureByteSize = (sizeof(ObjectConstants) + 255) & ~255;
+
+	ThrowIfFailed(device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(structureByteSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		NULL,
+		IID_PPV_ARGS(&constantBuffer)
+	));
+
+	return constantBuffer;
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	if (g_IsInit) {
 		switch (message)
@@ -866,31 +891,11 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	g_CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 	Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
 
-	// Compile shaders
-	WCHAR path[MAX_PATH];
-	HMODULE hModule = GetModuleHandleW(NULL);
-	GetCurrentDirectoryW(MAX_PATH, path);
-	OutputDebugStringW(path);
-	OutputDebugStringW(L"\n");
-
-	StringCchCatW(path, MAX_PATH, L"\\*");
-
-	WIN32_FIND_DATAW ffd;
-	HANDLE hFind = INVALID_HANDLE_VALUE;
-
-	hFind = FindFirstFileW(path, &ffd);
-	
-	if (hFind == INVALID_HANDLE_VALUE) {
-		OutputDebugStringW(L"Can`t find first file\n");
-	} else {
-		do {
-			OutputDebugStringW(ffd.cFileName);
-			OutputDebugStringW(L"\n");
-		} while (FindNextFileW(hFind, &ffd) != 0);
-	}
-	
+	// Compile shaders	
 	g_VertexShaderBlob = CompileShader(L"..\\shaders\\VertexShader.hlsl", "main", "vs_5_1");
 	g_PixelShaderBlob = CompileShader(L"..\\shaders\\PixelShader.hlsl", "main", "ps_5_1");
+
+	g_ConstantBuffer = CreateConstantBuffer(g_Device);
 
 	g_IsInit = true;
 
