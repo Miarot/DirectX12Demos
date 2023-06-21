@@ -71,6 +71,7 @@ ComPtr<ID3DBlob> g_VertexShaderBlob;
 ComPtr<ID3D12Resource> g_ConstantBuffer;
 UINT g_CBSize;
 ComPtr<ID3D12DescriptorHeap> g_CBDescHeap;
+ComPtr<ID3D12RootSignature> g_RootSignature;
 
 
 // Game objects and structures
@@ -729,6 +730,51 @@ ComPtr<ID3D12Resource> CreateConstantBuffer(ComPtr<ID3D12Device2> device, UINT s
 	return constantBuffer;
 }
 
+ComPtr<ID3D12RootSignature> CreateRootSignature(ComPtr<ID3D12Device2> device) {
+	ComPtr<ID3D12RootSignature> rootSignature;
+	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange;
+	descriptorRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+
+	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange);
+
+	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init_1_1(1, rootParameters, 0, NULL, rootSignatureFlags);
+
+	D3D12_FEATURE_DATA_ROOT_SIGNATURE rsVersion;
+	rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+
+	if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &rsVersion, sizeof(rsVersion)))) {
+		rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+	}
+
+	ComPtr<ID3DBlob> rootSignatureBlob;
+	ComPtr<ID3DBlob> errorBlob;
+	ThrowIfFailed(D3DX12SerializeVersionedRootSignature(
+		&rootSignatureDesc,
+		rsVersion.HighestVersion,
+		&rootSignatureBlob,
+		&errorBlob
+	));
+
+	ThrowIfFailed(g_Device->CreateRootSignature(
+		0,
+		rootSignatureBlob->GetBufferPointer(),
+		rootSignatureBlob->GetBufferSize(),
+		IID_PPV_ARGS(&rootSignature)
+	));
+
+	return rootSignature;
+}
+
 void LoadDataToCB(ComPtr<ID3D12Resource> cb, const ObjectConstants & data, UINT size) {
 	BYTE* pMappedData;
 
@@ -921,6 +967,9 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 		&CBViewDesc,
 		g_CBDescHeap->GetCPUDescriptorHandleForHeapStart()
 	);
+
+	// Create root signature
+	g_RootSignature = CreateRootSignature(g_Device);
 
 	// Initialization ends
 	g_IsInit = true;
