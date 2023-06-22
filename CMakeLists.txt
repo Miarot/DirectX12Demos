@@ -21,6 +21,7 @@ set( HEADER_FILES
 	inc/helpers.h
 	inc/d3dx12.h
 	inc/MeshGeometry.h
+	inc/CommandQueue.h
 )
 
 set( SHADER_FILES
@@ -42,6 +43,7 @@ set_source_files_properties( shaders/PixelShader.hlsl PROPERTIES
 
 set( SRC_FILES
 	src/main.cpp
+	src/CommandQueue.cpp
 )
 
 add_executable( ${TARGET_NAME} WIN32

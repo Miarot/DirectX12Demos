@@ -30,6 +30,7 @@ using Microsoft::WRL::ComPtr;
 
 #include <helpers.h>
 #include <MeshGeometry.h>
+#include <CommandQueue.h>
 
 // window parameters
 HWND g_windowHandle;
@@ -51,17 +52,12 @@ D3D12_VIEWPORT g_ViewPort;
 // DirectX objects
 ComPtr<IDXGIAdapter4> g_Adapter;
 ComPtr<ID3D12Device2> g_Device;
-ComPtr<ID3D12CommandQueue> g_CommandQueue;
+
 ComPtr<IDXGISwapChain4> g_SwapChain;
-ComPtr<ID3D12CommandAllocator> g_CommandAllocators[g_BufferCount];
-ComPtr<ID3D12GraphicsCommandList> g_CommandList;
 ComPtr<ID3D12Resource> g_BackBuffers[g_BufferCount];
 ComPtr<ID3D12DescriptorHeap> g_RTVDescHeap;
 uint32_t g_RTVDescSize;
-ComPtr<ID3D12Fence> g_Fence;
-UINT64 g_FenceValue;
-HANDLE g_FenceEvent;
-UINT64 g_BuffersFenceValues[g_BufferCount];
+uint64_t g_BuffersFenceValues[g_BufferCount];
 ComPtr<ID3D12Resource> g_DSBuffer;
 ComPtr<ID3D12DescriptorHeap> g_DSVDescHeap;
 ComPtr<ID3DBlob> g_PixelShaderBlob;
@@ -72,6 +68,7 @@ ComPtr<ID3D12DescriptorHeap> g_CBDescHeap;
 ComPtr<ID3D12RootSignature> g_RootSignature;
 ComPtr<ID3D12PipelineState> g_PSO;
 
+std::shared_ptr<CommandQueue> g_CommandQueue;
 
 // Game objects and structures
 struct VertexPosColor {
@@ -84,8 +81,6 @@ struct ObjectConstants {
 };
 
 ObjectConstants g_ObjectConstants;
-
-
 
 MeshGeometry g_BoxGeo;
 
@@ -253,21 +248,6 @@ ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter) {
 	return device;
 }
 
-ComPtr<ID3D12CommandQueue> CreateCommandQueue(ComPtr<ID3D12Device2> device) {
-	ComPtr<ID3D12CommandQueue> commandQueue;
-
-	D3D12_COMMAND_QUEUE_DESC commandQueueDesc;
-
-	commandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	commandQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-	commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	commandQueueDesc.NodeMask = 0;
-
-	ThrowIfFailed(device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue)));
-
-	return commandQueue;
-}
-
 ComPtr<IDXGISwapChain4> CreateSwapChain(
 	ComPtr<ID3D12CommandQueue> commandQueue,
 	HWND windowHandl,
@@ -312,35 +292,6 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 	return swapChain4;
 }
 
-ComPtr<ID3D12CommandAllocator> CreateCommandAllocator(ComPtr<ID3D12Device2> device) {
-	ComPtr<ID3D12CommandAllocator> commandAllocator;
-
-	ThrowIfFailed(device->CreateCommandAllocator(
-		D3D12_COMMAND_LIST_TYPE_DIRECT, 
-		IID_PPV_ARGS(&commandAllocator)
-	));
-	
-	return commandAllocator;
-}
-
-ComPtr<ID3D12GraphicsCommandList> CreateCommandList(
-	ComPtr<ID3D12Device2> device, 
-	ComPtr<ID3D12CommandAllocator> commandAllocator) 
-{
-	ComPtr<ID3D12GraphicsCommandList> commandList;
-
-	ThrowIfFailed(device->CreateCommandList(
-		0,
-		D3D12_COMMAND_LIST_TYPE_DIRECT,
-		commandAllocator.Get(),
-		nullptr,
-		IID_PPV_ARGS(&commandList)
-	));
-
-	commandList->Close();
-
-	return commandList;
-}
 
 ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(
 	ComPtr<ID3D12Device2> device,
@@ -408,44 +359,6 @@ ComPtr<ID3D12Resource> CreateDepthStencilBuffer(ComPtr<ID3D12Device2> device, UI
 	return depthStencilBuffer;
 }
 
-ComPtr<ID3D12Fence> CreateFence(ComPtr<ID3D12Device2> device, UINT64 initValue) {
-	ComPtr<ID3D12Fence> fence;
-	ThrowIfFailed(device->CreateFence(initValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
-	return fence;
-}
-
-UINT64 Signal(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fence, UINT64 & value) {
-	UINT64 signalValue = ++value;
-	commandQueue->Signal(fence.Get(), signalValue);
-	return signalValue;
-}
-
-HANDLE CreateEventHandle() {
-	HANDLE event = ::CreateEvent(NULL, FALSE, FALSE, NULL);
-	assert(event && "Can`t create event handle");
-	return event;
-}
-
-void WaitForFenceValue(
-	ComPtr<ID3D12Fence> fence,
-	UINT64 value, HANDLE event, 
-	std::chrono::milliseconds time = std::chrono::milliseconds::max())
-{
-	if (fence->GetCompletedValue() < value) {
-		ThrowIfFailed(fence->SetEventOnCompletion(value, event));
-		::WaitForSingleObject(event, time.count());
-	}
-}
-
-void Flush(
-	ComPtr<ID3D12CommandQueue> commandQueue,
-	ComPtr<ID3D12Fence> fence, 
-	HANDLE event, UINT64 & fenceValue)
-{
-	UINT64 valueToWait = Signal(commandQueue, fence, fenceValue);
-	WaitForFenceValue(fence, valueToWait, event);
-}
-
 void LoadDataToCB(ComPtr<ID3D12Resource> cb, const ObjectConstants& data, UINT size) {
 	BYTE* pMappedData;
 
@@ -502,11 +415,8 @@ void Update() {
 }
 
 void Render() {
-	auto commandAllocator = g_CommandAllocators[g_CurrentBackBuffer];
+	ComPtr<ID3D12GraphicsCommandList> commandList = g_CommandQueue->GetCommandList();
 	auto backBuffer = g_BackBuffers[g_CurrentBackBuffer];
-
-	ThrowIfFailed(commandAllocator->Reset());
-	ThrowIfFailed(g_CommandList->Reset(commandAllocator.Get(), NULL));
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
 		g_RTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -521,12 +431,12 @@ void Render() {
 			D3D12_RESOURCE_STATE_RENDER_TARGET
 		);
 
-		g_CommandList->ResourceBarrier(1, &barrier);
+		commandList->ResourceBarrier(1, &barrier);
 
 		FLOAT backgroundColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
-		g_CommandList->ClearRenderTargetView(rtv, backgroundColor, 0, NULL);
+		commandList->ClearRenderTargetView(rtv, backgroundColor, 0, NULL);
 
-		g_CommandList->ClearDepthStencilView(
+		commandList->ClearDepthStencilView(
 			g_DSVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 			D3D12_CLEAR_FLAG_DEPTH,
 			1.0f, 0, 0, NULL 
@@ -534,31 +444,31 @@ void Render() {
 	}
 
 	// Set root signature and its parameters
-	g_CommandList->SetGraphicsRootSignature(g_RootSignature.Get());
+	commandList->SetGraphicsRootSignature(g_RootSignature.Get());
 	ID3D12DescriptorHeap* descriptorHeaps[] = { g_CBDescHeap.Get() };
-	g_CommandList->SetDescriptorHeaps(1, descriptorHeaps);
-	g_CommandList->SetGraphicsRootDescriptorTable(0, g_CBDescHeap->GetGPUDescriptorHandleForHeapStart());
+	commandList->SetDescriptorHeaps(1, descriptorHeaps);
+	commandList->SetGraphicsRootDescriptorTable(0, g_CBDescHeap->GetGPUDescriptorHandleForHeapStart());
 
 	// Set PSO
-	g_CommandList->SetPipelineState(g_PSO.Get());
+	commandList->SetPipelineState(g_PSO.Get());
 
 	// Set Input Asembler Stage
-	g_CommandList->IASetVertexBuffers(0, 1, &g_BoxGeo.VertexBufferView());
-	g_CommandList->IASetIndexBuffer(&g_BoxGeo.IndexBufferView());
-	g_CommandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->IASetVertexBuffers(0, 1, &g_BoxGeo.VertexBufferView());
+	commandList->IASetIndexBuffer(&g_BoxGeo.IndexBufferView());
+	commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Set Rasterizer Stage
 	g_ScissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
-	g_CommandList->RSSetScissorRects(1, &g_ScissorRect);
+	commandList->RSSetScissorRects(1, &g_ScissorRect);
 	g_ViewPort = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(g_Width), static_cast<float>(g_Height));
-	g_CommandList->RSSetViewports(1, &g_ViewPort);
+	commandList->RSSetViewports(1, &g_ViewPort);
 
 	// Set Output Mergere Stage
-	g_CommandList->OMSetRenderTargets(1, &rtv, FALSE, &g_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
+	commandList->OMSetRenderTargets(1, &rtv, FALSE, &g_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
 
 	// Draw vertexes by its indexes and primitive topology
 	SubmeshGeometry submes = g_BoxGeo.DrawArgs["box"];
-	g_CommandList->DrawIndexedInstanced(
+	commandList->DrawIndexedInstanced(
 		submes.IndexCount,
 		1,
 		submes.StartIndexLocation,
@@ -574,22 +484,16 @@ void Render() {
 			D3D12_RESOURCE_STATE_PRESENT
 		);
 
-		g_CommandList->ResourceBarrier(1, &barrier);
-		ThrowIfFailed(g_CommandList->Close());
+		commandList->ResourceBarrier(1, &barrier);
 
-		ID3D12CommandList * const commandLists[] = {
-			g_CommandList.Get()
-		};
-
-		g_CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
-		g_BuffersFenceValues[g_CurrentBackBuffer] = Signal(g_CommandQueue, g_Fence, g_FenceValue);
+		g_BuffersFenceValues[g_CurrentBackBuffer] = g_CommandQueue->ExecuteCommandList(commandList);
 
 		UINT syncInterval = g_Vsync ? 1 : 0;
 		UINT flags = g_AllowTearing && !g_Vsync ? DXGI_PRESENT_ALLOW_TEARING : 0;
 		ThrowIfFailed(g_SwapChain->Present(syncInterval, flags));
 
 		g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
-		WaitForFenceValue(g_Fence, g_BuffersFenceValues[g_CurrentBackBuffer], g_FenceEvent);
+		g_CommandQueue->WaitForFenceValue(g_BuffersFenceValues[g_CurrentBackBuffer]);
 	}
 }
 
@@ -632,7 +536,7 @@ void Resize(uint32_t width, uint32_t height) {
 		g_Width = std::max(1u, width);
 		g_Height = std::max(1u, height);
 
-		Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
+		g_CommandQueue->Flush();
 
 		g_ViewPort = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(g_Width), static_cast<float>(g_Height));
 
@@ -839,7 +743,10 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(ComPtr<ID3D12Device2> device) {
 	return rootSignature;
 }
 
-void BuildBoxGeometry() {
+void BuildBoxGeometry(
+	ComPtr<ID3D12Device2> device, 
+	ComPtr<ID3D12GraphicsCommandList> commandList) 
+{
 	std::array<VertexPosColor, 8> vertexes = {
 		VertexPosColor({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0
 		VertexPosColor({ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }), // 1
@@ -865,8 +772,8 @@ void BuildBoxGeometry() {
 	UINT ibByteSize = indexes.size() * sizeof(uint16_t);
 
 	g_BoxGeo.VertexBufferGPU = CreateBufferResource(
-		g_Device,
-		g_CommandList,
+		device,
+		commandList,
 		g_BoxGeo.VertexBufferUploader,
 		vertexes.data(),
 		vertexes.size(),
@@ -874,8 +781,8 @@ void BuildBoxGeometry() {
 	);
 
 	g_BoxGeo.IndexBufferGPU = CreateBufferResource(
-		g_Device,
-		g_CommandList,
+		device,
+		commandList,
 		g_BoxGeo.IndexBufferUploader,
 		indexes.data(),
 		indexes.size(),
@@ -981,15 +888,9 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	g_Adapter = CreateAdapter(g_UseWarp);
 	g_Device = CreateDevice(g_Adapter);
 
-	g_CommandQueue = CreateCommandQueue(g_Device);
-	g_SwapChain = CreateSwapChain(g_CommandQueue, g_windowHandle, g_Width, g_Height, g_AllowTearing);
+	g_CommandQueue = std::make_shared<CommandQueue>(CommandQueue(g_Device, D3D12_COMMAND_LIST_TYPE_DIRECT));
+	g_SwapChain = CreateSwapChain(g_CommandQueue->GetCommandQueue(), g_windowHandle, g_Width, g_Height, g_AllowTearing);
 	g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
-
-	for (uint32_t i = 0; i < g_BufferCount; ++i) {
-		g_CommandAllocators[i] = CreateCommandAllocator(g_Device);
-	}
-
-	g_CommandList = CreateCommandList(g_Device, g_CommandAllocators[g_CurrentBackBuffer]);
 
 	g_RTVDescHeap = CreateDescriptorHeap(g_Device, g_BufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 	g_RTVDescSize = g_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -998,12 +899,8 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	g_DSVDescHeap = CreateDescriptorHeap(g_Device, 1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 	ResizeDSBuffer(g_Width, g_Height);
 
-	g_FenceValue = 0;
-	g_Fence = CreateFence(g_Device, g_FenceValue);
-	g_FenceEvent = CreateEventHandle();
-
 	for (UINT i = 0; i < g_BufferCount; ++i) {
-		g_BuffersFenceValues[i] = g_FenceValue;
+		g_BuffersFenceValues[i] = 0;
 	}
 
 	// Create input layout
@@ -1015,9 +912,9 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	D3D12_INPUT_LAYOUT_DESC inpuitLayout{ inputElementDescs, _countof(inputElementDescs) };
 
 	// Create and load vertexes buffers
-	g_CommandList->Reset(g_CommandAllocators[0].Get(), NULL);
+	ComPtr<ID3D12GraphicsCommandList> commandList = g_CommandQueue->GetCommandList();
 
-	BuildBoxGeometry();
+	BuildBoxGeometry(g_Device, commandList);
 
 	// Compile shaders	
 	g_VertexShaderBlob = CompileShader(L"..\\shaders\\VertexShader.hlsl", "main", "vs_5_1");
@@ -1067,12 +964,8 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	ThrowIfFailed(g_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&g_PSO)));
 
 	// Wait while loading ends
-	g_CommandList->Close();
-	ID3D12CommandList* const commandLists[] = {
-		g_CommandList.Get()
-	};
-	g_CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
-	Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
+	uint64_t fenceValue = g_CommandQueue->ExecuteCommandList(commandList);
+	g_CommandQueue->WaitForFenceValue(fenceValue);
 
 	g_BoxGeo.DisposeUploaders();
 
@@ -1090,8 +983,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 		}
 	}
 
-	Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
-	::CloseHandle(g_FenceEvent);
+	g_CommandQueue->Flush();
 
 	return 0;
 }
