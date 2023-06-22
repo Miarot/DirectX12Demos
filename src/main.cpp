@@ -72,6 +72,7 @@ ComPtr<ID3D12Resource> g_ConstantBuffer;
 UINT g_CBSize;
 ComPtr<ID3D12DescriptorHeap> g_CBDescHeap;
 ComPtr<ID3D12RootSignature> g_RootSignature;
+ComPtr<ID3D12PipelineState> g_PSO;
 
 
 // Game objects and structures
@@ -978,6 +979,35 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 
 	// Create root signature
 	g_RootSignature = CreateRootSignature(g_Device);
+
+	// Create rasterizer state description
+	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
+	//rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+
+	// Create pipeline state object
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
+	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	psoDesc.pRootSignature = g_RootSignature.Get();
+	psoDesc.VS = {
+		reinterpret_cast<BYTE*>(g_VertexShaderBlob->GetBufferPointer()),
+		g_VertexShaderBlob->GetBufferSize()
+	};
+	psoDesc.PS = {
+	reinterpret_cast<BYTE*>(g_PixelShaderBlob->GetBufferPointer()),
+	g_PixelShaderBlob->GetBufferSize()
+	};
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	psoDesc.SampleMask = UINT_MAX;
+	psoDesc.RasterizerState = rasterizerDesc;
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.InputLayout = inpuitLayout;
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+	psoDesc.SampleDesc = { 1, 0 };
+
+	ThrowIfFailed(g_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&g_PSO)));
 
 	// Initialization ends
 	g_IsInit = true;
