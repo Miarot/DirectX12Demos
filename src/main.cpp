@@ -45,6 +45,8 @@ uint32_t g_CurrentBackBuffer;
 bool g_IsInit = false;
 bool g_FullScreen = false;
 RECT g_WindowRect;
+D3D12_RECT g_ScissorRect;
+D3D12_VIEWPORT g_ViewPort;
 
 // DirectX objects
 ComPtr<IDXGIAdapter4> g_Adapter;
@@ -211,10 +213,15 @@ ComPtr<IDXGIAdapter4> CreateAdapter(bool useWarp) {
 	} else {
 		UINT i = 0;
 		SIZE_T maxDedicatedMemory = 0;
-
+		
 		while (factory->EnumAdapters1(i, &adapter1) != DXGI_ERROR_NOT_FOUND) {
 			DXGI_ADAPTER_DESC1 adapterDesc;
 			adapter1->GetDesc1(&adapterDesc);
+
+#ifdef _DEBUG
+			OutputDebugStringW(adapterDesc.Description);
+			OutputDebugStringW(L"\n");
+#endif // DEBUG
 			
 			if ((adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0 &&
 				SUCCEEDED(D3D12CreateDevice(adapter1.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device2), NULL)) &&
@@ -227,12 +234,6 @@ ComPtr<IDXGIAdapter4> CreateAdapter(bool useWarp) {
 			++i;
 		}
 	}
-
-#ifdef _DEBUG
-	DXGI_ADAPTER_DESC1 adapterDesc;
-	adapter4->GetDesc1(&adapterDesc);
-	OutputDebugStringW(adapterDesc.Description);
-#endif // DEBUG
 	
 	return adapter4;
 }
@@ -307,7 +308,7 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 
 	swapChainDesc.Width = width;
 	swapChainDesc.Height = height;
-	swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	swapChainDesc.Stereo = FALSE;
 	swapChainDesc.SampleDesc = DXGI_SAMPLE_DESC{ 1, 0 };
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -466,8 +467,18 @@ void Flush(
 	WaitForFenceValue(fence, valueToWait, event);
 }
 
+void LoadDataToCB(ComPtr<ID3D12Resource> cb, const ObjectConstants& data, UINT size) {
+	BYTE* pMappedData;
+
+	ThrowIfFailed(cb->Map(0, NULL, reinterpret_cast<void**>(&pMappedData)));
+	memcpy(pMappedData, &data, size);
+
+	cb->Unmap(0, NULL);
+}
+
 void Update() {
 	static double elapsedTime = 0.0;
+	static double totalTime = 0.0;
 	static uint64_t frameCounter = 0;
 	static std::chrono::high_resolution_clock clock;
 	static auto prevTime = clock.now();
@@ -476,6 +487,7 @@ void Update() {
 	auto deltaTime = currentTime - prevTime;
 	prevTime = currentTime;
 	elapsedTime += deltaTime.count() * 1e-9;
+	totalTime += deltaTime.count() * 1e-9;
 	++frameCounter;
 
 	if (elapsedTime >= 1.0) {
@@ -487,6 +499,27 @@ void Update() {
 		frameCounter = 0;
 		elapsedTime = 0.0;
 	}
+
+	float angle = static_cast<float>(totalTime * 90.0);
+	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
+	XMMATRIX modelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
+
+	const XMVECTOR eyePosition = XMVectorSet(0, 0, -10, 1);
+	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
+	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
+	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
+
+	float aspectRatio = g_Width / static_cast<float>(g_Height);
+	XMMATRIX projectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), aspectRatio, 0.1f, 100.0f);
+
+	g_ObjectConstants.MVP = XMMatrixMultiply(modelMatrix, viewMatrix);
+	g_ObjectConstants.MVP = XMMatrixMultiply(g_ObjectConstants.MVP, projectionMatrix);
+
+	// To view components
+	//XMFLOAT4X4 matrix;
+	//XMStoreFloat4x4(&matrix, g_ObjectConstants.MVP);
+	
+	LoadDataToCB(g_ConstantBuffer, g_ObjectConstants, g_CBSize);
 }
 
 void Render() {
@@ -495,6 +528,11 @@ void Render() {
 
 	ThrowIfFailed(commandAllocator->Reset());
 	ThrowIfFailed(g_CommandList->Reset(commandAllocator.Get(), NULL));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
+		g_RTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		g_CurrentBackBuffer, g_RTVDescSize
+	);
 
 	// Clear RTV
 	{
@@ -506,11 +544,6 @@ void Render() {
 
 		g_CommandList->ResourceBarrier(1, &barrier);
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
-			g_RTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-			g_CurrentBackBuffer, g_RTVDescSize
-		);
-
 		FLOAT backgroundColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
 		g_CommandList->ClearRenderTargetView(rtv, backgroundColor, 0, NULL);
 
@@ -520,6 +553,32 @@ void Render() {
 			1.0f, 0, 0, NULL 
 		);
 	}
+
+	// Set root signature and its parameters
+	g_CommandList->SetGraphicsRootSignature(g_RootSignature.Get());
+	ID3D12DescriptorHeap* descriptorHeaps[] = { g_CBDescHeap.Get() };
+	g_CommandList->SetDescriptorHeaps(1, descriptorHeaps);
+	g_CommandList->SetGraphicsRootDescriptorTable(0, g_CBDescHeap->GetGPUDescriptorHandleForHeapStart());
+
+	// Set PSO
+	g_CommandList->SetPipelineState(g_PSO.Get());
+
+	// Set Input Asembler Stage
+	g_CommandList->IASetVertexBuffers(0, 1, &g_VertexesBufferView);
+	g_CommandList->IASetIndexBuffer(&g_IndexesBufferView);
+	g_CommandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// Set Rasterizer Stage
+	g_ScissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
+	g_CommandList->RSSetScissorRects(1, &g_ScissorRect);
+	g_ViewPort = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(g_Width), static_cast<float>(g_Height));
+	g_CommandList->RSSetViewports(1, &g_ViewPort);
+
+	// Set Output Mergere Stage
+	g_CommandList->OMSetRenderTargets(1, &rtv, FALSE, &g_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
+
+	// Draw vertexes by its indexes and primitive topology
+	g_CommandList->DrawIndexedInstanced(_countof(g_Indexes), 1, 0, 0, 0);
 
 	// Present
 	{
@@ -588,6 +647,8 @@ void Resize(uint32_t width, uint32_t height) {
 		g_Height = std::max(1u, height);
 
 		Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
+
+		g_ViewPort = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(g_Width), static_cast<float>(g_Height));
 
 		ResizeBackBuffers(width, height);
 		ResizeDSBuffer(width, height);
@@ -792,14 +853,7 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(ComPtr<ID3D12Device2> device) {
 	return rootSignature;
 }
 
-void LoadDataToCB(ComPtr<ID3D12Resource> cb, const ObjectConstants & data, UINT size) {
-	BYTE* pMappedData;
 
-	ThrowIfFailed(cb->Map(0, NULL, reinterpret_cast<void **>(&pMappedData)));
-	memcpy(pMappedData, &data, size);
-
-	cb->Unmap(0, NULL);
-}
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	if (g_IsInit) {
@@ -874,10 +928,10 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 
 #ifdef _DEBUG
 	if (g_AllowTearing) {
-		::OutputDebugString("Allow tearing true");
+		::OutputDebugStringW(L"Allow tearing true\n");
 	}
 	else {
-		::OutputDebugString("Allow tearing false");
+		::OutputDebugStringW(L"Allow tearing false\n");
 	}
 #endif // _DEBUG
 
@@ -954,14 +1008,6 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	g_IndexesBufferView.SizeInBytes = sizeof(g_Indexes);
 	g_IndexesBufferView.Format = DXGI_FORMAT_R16_UINT;
 
-	// Wait while loading ends
-	g_CommandList->Close();
-	ID3D12CommandList * const commandLists[] = {
-		g_CommandList.Get()
-	};
-	g_CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
-	Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
-
 	// Compile shaders	
 	g_VertexShaderBlob = CompileShader(L"..\\shaders\\VertexShader.hlsl", "main", "vs_5_1");
 	g_PixelShaderBlob = CompileShader(L"..\\shaders\\PixelShader.hlsl", "main", "ps_5_1");
@@ -969,7 +1015,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	// Create constant buffer
 	ObjectConstants objConst;
 	// align size to 256 bytes
-	UINT g_CBSize = (sizeof(ObjectConstants) + 255) & ~255;
+	g_CBSize = (sizeof(ObjectConstants) + 255) & ~255;
 	g_ConstantBuffer = CreateConstantBuffer(g_Device, g_CBSize);
 	LoadDataToCB(g_ConstantBuffer, objConst, g_CBSize);
 
@@ -1008,6 +1054,14 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	psoDesc.SampleDesc = { 1, 0 };
 
 	ThrowIfFailed(g_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&g_PSO)));
+
+	// Wait while loading ends
+	g_CommandList->Close();
+	ID3D12CommandList* const commandLists[] = {
+		g_CommandList.Get()
+	};
+	g_CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+	Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
 
 	// Initialization ends
 	g_IsInit = true;
