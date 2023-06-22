@@ -64,10 +64,6 @@ HANDLE g_FenceEvent;
 UINT64 g_BuffersFenceValues[g_BufferCount];
 ComPtr<ID3D12Resource> g_DSBuffer;
 ComPtr<ID3D12DescriptorHeap> g_DSVDescHeap;
-ComPtr<ID3D12Resource> g_VertexesBuffer;
-D3D12_VERTEX_BUFFER_VIEW g_VertexesBufferView;
-ComPtr<ID3D12Resource> g_IndexesBuffer;
-D3D12_INDEX_BUFFER_VIEW g_IndexesBufferView;
 ComPtr<ID3DBlob> g_PixelShaderBlob;
 ComPtr<ID3DBlob> g_VertexShaderBlob;
 ComPtr<ID3D12Resource> g_ConstantBuffer;
@@ -877,10 +873,10 @@ void BuildBoxGeometry() {
 		sizeof(VertexPosColor)
 	);
 
-	g_IndexesBuffer = CreateBufferResource(
+	g_BoxGeo.IndexBufferGPU = CreateBufferResource(
 		g_Device,
 		g_CommandList,
-		g_BoxGeo.IndexBufferGPU,
+		g_BoxGeo.IndexBufferUploader,
 		indexes.data(),
 		indexes.size(),
 		sizeof(uint16_t)
