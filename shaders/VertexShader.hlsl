@@ -1,6 +1,6 @@
 struct VertexIn
 {
-    float3 position : POSITIONT;
+    float3 position : POSITION;
     float3 color : COLOR;
 };
 
@@ -27,7 +27,7 @@ VertexOut main(VertexIn vin)
     VertexOut vout;
     
     vout.color = float4(vin.color, 1.0f);
-    vout.position = mul(float4(vin.position, 1.0f), ModelViewProjectionCB.MVP);
+    vout.position = mul(ModelViewProjectionCB.MVP, float4(vin.position, 1.0f));
     
     return vout;
 }
