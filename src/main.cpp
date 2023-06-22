@@ -730,6 +730,22 @@ ComPtr<ID3D12Resource> CreateConstantBuffer(ComPtr<ID3D12Device2> device, UINT s
 	return constantBuffer;
 }
 
+void CreateConstantBufferView(
+	ComPtr<ID3D12Device2> device,
+	ComPtr<ID3D12Resource> cb, 
+	UINT size, 
+	ComPtr<ID3D12DescriptorHeap> cbDescHeap) 
+{
+	D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
+	CBViewDesc.BufferLocation = cb->GetGPUVirtualAddress();
+	CBViewDesc.SizeInBytes = size;
+
+	device->CreateConstantBufferView(
+		&CBViewDesc,
+		cbDescHeap->GetCPUDescriptorHandleForHeapStart()
+	);
+}
+
 ComPtr<ID3D12RootSignature> CreateRootSignature(ComPtr<ID3D12Device2> device) {
 	ComPtr<ID3D12RootSignature> rootSignature;
 	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
@@ -958,15 +974,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 
 	// Create cb descritor heap and view
 	g_CBDescHeap = CreateDescriptorHeap(g_Device, 1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-
-	D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
-	CBViewDesc.BufferLocation = g_ConstantBuffer->GetGPUVirtualAddress();
-	CBViewDesc.SizeInBytes = g_CBSize;
-
-	g_Device->CreateConstantBufferView(
-		&CBViewDesc,
-		g_CBDescHeap->GetCPUDescriptorHandleForHeapStart()
-	);
+	CreateConstantBufferView(g_Device, g_ConstantBuffer, g_CBSize, g_CBDescHeap);
 
 	// Create root signature
 	g_RootSignature = CreateRootSignature(g_Device);
