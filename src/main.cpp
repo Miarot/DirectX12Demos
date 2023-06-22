@@ -25,11 +25,11 @@ using Microsoft::WRL::ComPtr;
 
 #include <cassert>
 #include <algorithm>
+#include <array>
 #include <chrono>
 
 #include <helpers.h>
-
-#include <strsafe.h>
+#include <MeshGeometry.h>
 
 // window parameters
 HWND g_windowHandle;
@@ -89,26 +89,9 @@ struct ObjectConstants {
 
 ObjectConstants g_ObjectConstants;
 
-static VertexPosColor g_Vertexes[8] = {
-	{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }, // 0
-	{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }, // 1
-	{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }, // 2
-	{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }, // 3
-	{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }, // 4
-	{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }, // 5
-	{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }, // 6
-	{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }  // 7
-};
 
-static WORD g_Indexes[36] =
-{
-	0, 1, 2, 0, 2, 3,
-	4, 6, 5, 4, 7, 6,
-	4, 5, 1, 4, 1, 0,
-	3, 2, 6, 3, 6, 7,
-	1, 5, 6, 1, 6, 2,
-	4, 0, 3, 4, 3, 7
-};
+
+MeshGeometry g_BoxGeo;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -564,8 +547,8 @@ void Render() {
 	g_CommandList->SetPipelineState(g_PSO.Get());
 
 	// Set Input Asembler Stage
-	g_CommandList->IASetVertexBuffers(0, 1, &g_VertexesBufferView);
-	g_CommandList->IASetIndexBuffer(&g_IndexesBufferView);
+	g_CommandList->IASetVertexBuffers(0, 1, &g_BoxGeo.VertexBufferView());
+	g_CommandList->IASetIndexBuffer(&g_BoxGeo.IndexBufferView());
 	g_CommandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Set Rasterizer Stage
@@ -578,7 +561,14 @@ void Render() {
 	g_CommandList->OMSetRenderTargets(1, &rtv, FALSE, &g_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
 
 	// Draw vertexes by its indexes and primitive topology
-	g_CommandList->DrawIndexedInstanced(_countof(g_Indexes), 1, 0, 0, 0);
+	SubmeshGeometry submes = g_BoxGeo.DrawArgs["box"];
+	g_CommandList->DrawIndexedInstanced(
+		submes.IndexCount,
+		1,
+		submes.StartIndexLocation,
+		submes.BaseVertexLocation,
+		0
+	);
 
 	// Present
 	{
@@ -853,7 +843,62 @@ ComPtr<ID3D12RootSignature> CreateRootSignature(ComPtr<ID3D12Device2> device) {
 	return rootSignature;
 }
 
+void BuildBoxGeometry() {
+	std::array<VertexPosColor, 8> vertexes = {
+		VertexPosColor({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0
+		VertexPosColor({ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }), // 1
+		VertexPosColor({ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }), // 2
+		VertexPosColor({ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 3
+		VertexPosColor({ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 4
+		VertexPosColor({ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }), // 5
+		VertexPosColor({ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }), // 6
+		VertexPosColor({ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) })  // 7
+	};
 
+	std::array<uint16_t, 36> indexes =
+	{
+		0, 1, 2, 0, 2, 3,
+		4, 6, 5, 4, 7, 6,
+		4, 5, 1, 4, 1, 0,
+		3, 2, 6, 3, 6, 7,
+		1, 5, 6, 1, 6, 2,
+		4, 0, 3, 4, 3, 7
+	};
+
+	UINT vbByteSize = vertexes.size() * sizeof(VertexPosColor);
+	UINT ibByteSize = indexes.size() * sizeof(uint16_t);
+
+	g_BoxGeo.VertexBufferGPU = CreateBufferResource(
+		g_Device,
+		g_CommandList,
+		g_BoxGeo.VertexBufferUploader,
+		vertexes.data(),
+		vertexes.size(),
+		sizeof(VertexPosColor)
+	);
+
+	g_IndexesBuffer = CreateBufferResource(
+		g_Device,
+		g_CommandList,
+		g_BoxGeo.IndexBufferGPU,
+		indexes.data(),
+		indexes.size(),
+		sizeof(uint16_t)
+	);
+
+	g_BoxGeo.name = "BoxGeo";
+	g_BoxGeo.VertexBufferByteSize = vbByteSize;
+	g_BoxGeo.VertexByteStride = sizeof(VertexPosColor);
+	g_BoxGeo.IndexBufferByteSize = ibByteSize;
+	g_BoxGeo.IndexBufferFormat = DXGI_FORMAT_R16_UINT;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = indexes.size();
+	submesh.BaseVertexLocation = 0;
+	submesh.StartIndexLocation = 0;
+
+	g_BoxGeo.DrawArgs["box"] = submesh;
+}
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	if (g_IsInit) {
@@ -976,37 +1021,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	// Create and load vertexes buffers
 	g_CommandList->Reset(g_CommandAllocators[0].Get(), NULL);
 
-	ComPtr<ID3D12Resource> intermediateVertexesBuffer;
-	ComPtr<ID3D12Resource> intermediateIndexesBuffer;
-
-	g_VertexesBuffer = CreateBufferResource(
-		g_Device,
-		g_CommandList,
-		intermediateVertexesBuffer,
-		g_Vertexes,
-		_countof(g_Vertexes),
-		sizeof(VertexPosColor)
-	);
-
-	// Init vertex buffer view
-	g_VertexesBufferView.BufferLocation = g_VertexesBuffer->GetGPUVirtualAddress();
-	g_VertexesBufferView.SizeInBytes = sizeof(g_Vertexes);
-	g_VertexesBufferView.StrideInBytes = sizeof(VertexPosColor);
-
-	// Create and load indexes buffers
-	g_IndexesBuffer = CreateBufferResource(
-		g_Device,
-		g_CommandList,
-		intermediateIndexesBuffer,
-		g_Indexes,
-		_countof(g_Indexes),
-		sizeof(WORD)
-	);
-
-	// Init index buffer view
-	g_IndexesBufferView.BufferLocation = g_IndexesBuffer->GetGPUVirtualAddress();
-	g_IndexesBufferView.SizeInBytes = sizeof(g_Indexes);
-	g_IndexesBufferView.Format = DXGI_FORMAT_R16_UINT;
+	BuildBoxGeometry();
 
 	// Compile shaders	
 	g_VertexShaderBlob = CompileShader(L"..\\shaders\\VertexShader.hlsl", "main", "vs_5_1");
@@ -1062,6 +1077,8 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	};
 	g_CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 	Flush(g_CommandQueue, g_Fence, g_FenceEvent, g_FenceValue);
+
+	g_BoxGeo.DisposeUploaders();
 
 	// Initialization ends
 	g_IsInit = true;

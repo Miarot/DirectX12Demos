@@ -20,6 +20,7 @@ set( TARGET_NAME DirectXAppFromScratch )
 set( HEADER_FILES 
 	inc/helpers.h
 	inc/d3dx12.h
+	inc/MeshGeometry.h
 )
 
 set( SHADER_FILES
