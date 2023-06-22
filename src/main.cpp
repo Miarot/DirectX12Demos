@@ -540,8 +540,8 @@ void Resize(uint32_t width, uint32_t height) {
 
 		g_ViewPort = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(g_Width), static_cast<float>(g_Height));
 
-		ResizeBackBuffers(width, height);
-		ResizeDSBuffer(width, height);
+		ResizeBackBuffers(g_Width, g_Height);
+		ResizeDSBuffer(g_Width, g_Height);
 	}
 }
 
@@ -887,7 +887,6 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	// g_UseWarp = true;
 	g_Adapter = CreateAdapter(g_UseWarp);
 	g_Device = CreateDevice(g_Adapter);
-
 	g_CommandQueue = std::make_shared<CommandQueue>(CommandQueue(g_Device, D3D12_COMMAND_LIST_TYPE_DIRECT));
 	g_SwapChain = CreateSwapChain(g_CommandQueue->GetCommandQueue(), g_windowHandle, g_Width, g_Height, g_AllowTearing);
 	g_CurrentBackBuffer = g_SwapChain->GetCurrentBackBufferIndex();
