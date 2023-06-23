@@ -75,7 +75,7 @@ void SimpleGeoApp::OnUpdate() {
 	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
 
 	float aspectRatio = m_ClientWidth / static_cast<float>(m_ClientHeight);
-	XMMATRIX projectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), aspectRatio, 0.1f, 100.0f);
+	XMMATRIX projectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(m_FoV), aspectRatio, 0.1f, 100.0f);
 
 	m_BoxMVP.MVP = XMMatrixMultiply(modelMatrix, viewMatrix);
 	m_BoxMVP.MVP = XMMatrixMultiply(m_BoxMVP.MVP, projectionMatrix);
@@ -166,6 +166,17 @@ void SimpleGeoApp::OnRender() {
 		m_CurrentBackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
 		m_DirectCommandQueue->WaitForFenceValue(m_BackBuffersFenceValues[m_CurrentBackBufferIndex]);
 	}
+}
+
+void SimpleGeoApp::OnResize() {
+	BaseApp::OnResize();
+}
+
+void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {}
+
+void SimpleGeoApp::OnMouseWheel(int wheelDelta) {
+	m_FoV += wheelDelta / 10.0f;
+	m_FoV = clamp(m_FoV, 12.0f, 90.0f);
 }
 
 void SimpleGeoApp::BuildRootSignature() {

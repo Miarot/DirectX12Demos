@@ -88,6 +88,7 @@ protected:
 	virtual void OnRender();
 	virtual void OnResize();
 	virtual void OnKeyPressed(WPARAM wParam);
+	virtual void OnMouseWheel(int wheelDelta);
 
 protected:
 	static BaseApp * m_App;

@@ -20,8 +20,9 @@ public:
 private:
 	virtual void OnUpdate() override;
 	virtual void OnRender() override;
-	//virtual void OnResize() override;
-	//virtual void OnKeyPressed(WPARAM wParam) override;
+	virtual void OnResize() override;
+	virtual void OnKeyPressed(WPARAM wParam) override;
+	virtual void OnMouseWheel(int wheelDelta) override;
 
 	void BuildRootSignature();
 	void BuildBoxGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
@@ -49,4 +50,6 @@ private:
 
 	ObjectConstants m_BoxMVP;
 	MeshGeometry m_BoxGeo;
+
+	float m_FoV = 45.0;
 };

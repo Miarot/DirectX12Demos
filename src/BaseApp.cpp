@@ -143,6 +143,9 @@ LRESULT BaseApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	case WM_DESTROY:
 		::PostQuitMessage(0);
 		break;
+	case WM_MOUSEWHEEL:
+		OnMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam));
+		
 	default:
 		return ::DefWindowProcW(hwnd, msg, wParam, lParam);
 	}
@@ -624,3 +627,4 @@ void BaseApp::OnResize() {
 }
 
 void BaseApp::OnKeyPressed(WPARAM wParam) {}
+void BaseApp::OnMouseWheel(int wheelDelta) {}
