@@ -67,14 +67,20 @@ void SimpleGeoApp::OnUpdate() {
 		elapsedTime = 0.0;
 	}
 
-	float angle = static_cast<float>(totalTime * 90.0);
+	float angle = static_cast<float>(0 * 90.0);
 	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
 	XMMATRIX modelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
 
-	const XMVECTOR eyePosition = XMVectorSet(0, 0, -10, 1);
-	const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
-	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
-	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
+	// spherical coordinates to cartesian
+	float x = m_Radius * sinf(m_Phi) * cosf(m_Theta);
+	float z = m_Radius * sinf(m_Phi) * sinf(m_Theta);
+	float y = m_Radius * cosf(m_Phi);
+
+	m_CameraPos = m_FocusPos + XMVectorSet(x, y, z, 1);
+	m_CameraForwardDirection = -XMVector3Normalize(XMVectorSet(x, y, z, 0));
+	m_CameraRightDirection = XMVector3Normalize(XMVector3Cross(m_CameraForwardDirection, m_CameraUpDirection));
+
+	XMMATRIX viewMatrix = XMMatrixLookAtLH(m_CameraPos, m_FocusPos, m_CameraUpDirection);
 
 	XMMATRIX projectionMatrix = GetProjectionMatrix();
 
@@ -197,12 +203,65 @@ void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {
 
 		m_DirectCommandQueue->Flush();
 		ResizeDSBuffer();
+	case 'W':
+		// Forward
+		m_FocusPos += 0.4 * m_CameraForwardDirection;
+		break;
+	case 'S':
+		// Backward
+		m_FocusPos -= 0.4 * m_CameraForwardDirection;
+		break;
+	case 'A':
+		// Left
+		m_FocusPos += 0.4 * m_CameraRightDirection;
+		break;
+	case 'D':
+		// Right
+		m_FocusPos -= 0.4 * m_CameraRightDirection;
+		break;
 	}
 }
 
 void SimpleGeoApp::OnMouseWheel(int wheelDelta) {
 	m_FoV += wheelDelta / 10.0f;
 	m_FoV = clamp(m_FoV, 12.0f, 90.0f);
+}
+
+void SimpleGeoApp::OnMouseDown(WPARAM wParam, int x, int y) {
+	m_LastMousePos.x = x;
+	m_LastMousePos.y = y;
+
+	::SetCapture(m_WindowHandle);
+}
+
+void SimpleGeoApp::OnMouseUp(WPARAM wParam, int x, int y) {
+	::ReleaseCapture();
+}
+
+void SimpleGeoApp::OnMouseMove(WPARAM wParam, int x, int y) {
+	if ((wParam & MK_LBUTTON) != 0) {
+		// Make each pixel correspond to a quarter of a degree.
+		float dx = XMConvertToRadians(0.25f * static_cast<float>(x -
+			m_LastMousePos.x));
+		float dy = XMConvertToRadians(0.25f * static_cast<float>(y -
+			m_LastMousePos.y));
+		// Update angles based on input to orbit camera around box.
+		m_Theta -= dx;
+		m_Phi -= dy;
+		// Restrict the angle mPhi.
+		m_Phi = clamp(m_Phi, 0.1f, XM_PI - 0.1f);
+	} else if ((wParam & MK_RBUTTON) != 0) {
+		// Make each pixel correspond to 0.005 unit in the scene.
+		float dx = 0.005f * static_cast<float>(x - m_LastMousePos.x);
+		float dy = 0.005f * static_cast<float>(y - m_LastMousePos.y);
+		// Update the camera radius based on input.
+		m_Radius += dx - dy;
+		// Restrict the radius.
+		m_Radius = clamp(m_Radius, 3.0f, 15.0f);
+	}
+
+	m_LastMousePos.x = x;
+	m_LastMousePos.y = y;
 }
 
 void SimpleGeoApp::BuildRootSignature() {
