@@ -22,6 +22,8 @@ set( HEADER_FILES
 	inc/d3dx12.h
 	inc/MeshGeometry.h
 	inc/CommandQueue.h
+	inc/BaseApp.h
+	inc/SimpleGeoApp.h
 )
 
 set( SHADER_FILES
@@ -44,6 +46,8 @@ set_source_files_properties( shaders/PixelShader.hlsl PROPERTIES
 set( SRC_FILES
 	src/main.cpp
 	src/CommandQueue.cpp
+	src/BaseApp.cpp
+	src/SimpleGeoApp.cpp
 )
 
 add_executable( ${TARGET_NAME} WIN32

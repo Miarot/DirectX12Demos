@@ -28,6 +28,8 @@ public:
 	void WaitForFenceValue(uint64_t fenceValue);
 
 	void Flush();
+	
+	void CloseHandle();
 
 private:
 	ComPtr<ID3D12CommandAllocator> CreateCommandAllocator();

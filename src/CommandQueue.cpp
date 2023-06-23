@@ -100,6 +100,10 @@ void CommandQueue::Flush() {
 	WaitForFenceValue(Signal());
 }
 
+void CommandQueue::CloseHandle() {
+	::CloseHandle(m_EventHandle);
+}
+
 ComPtr<ID3D12CommandAllocator> CommandQueue::CreateCommandAllocator() {
 	ComPtr<ID3D12CommandAllocator> commandAllocator;
 
