@@ -109,7 +109,8 @@ void SimpleGeoApp::OnRender() {
 		commandList->ClearDepthStencilView(
 			m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 			D3D12_CLEAR_FLAG_DEPTH,
-			1.0f, 0, 0, NULL
+			m_DepthClearValue, 
+			0, 0, NULL
 		);
 	}
 
@@ -120,7 +121,17 @@ void SimpleGeoApp::OnRender() {
 	commandList->SetGraphicsRootDescriptorTable(0, m_BoxCBDescHeap->GetGPUDescriptorHandleForHeapStart());
 
 	// Set PSO
-	commandList->SetPipelineState(m_PSO.Get());
+	// chose pso depending on z-buffer type
+	ComPtr<ID3D12PipelineState> pso;
+
+	if (m_IsInverseDepth) {
+		pso = m_PSOs["inverseDepth"];
+	}
+	else {
+		pso = m_PSOs["straightDepth"];
+	}
+
+	commandList->SetPipelineState(pso.Get());
 
 	// Set Input Asembler Stage
 	commandList->IASetVertexBuffers(0, 1, &m_BoxGeo.VertexBufferView());
@@ -175,6 +186,17 @@ void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {
 	case '1':
 		m_IsShakeEffect = !m_IsShakeEffect;
 		break;
+	case '2':
+		m_IsInverseDepth = !m_IsInverseDepth;
+
+		if (m_IsInverseDepth) {
+			m_DepthClearValue = 0.0f;
+		} else {
+			m_DepthClearValue = 1.0f;
+		}
+
+		m_DirectCommandQueue->Flush();
+		ResizeDSBuffer();
 	}
 }
 
@@ -337,7 +359,20 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	psoDesc.SampleDesc = { 1, 0 };
 
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PSO)));
+	ComPtr<ID3D12PipelineState> straightDepthPSO;
+	ComPtr<ID3D12PipelineState> inverseDepthPSO;
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
+
+	CD3DX12_DEPTH_STENCIL_DESC inverseDepthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	inverseDepthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
+
+	psoDesc.DepthStencilState = inverseDepthStencilDesc;
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
+
+	m_PSOs["straightDepth"] = straightDepthPSO;
+	m_PSOs["inverseDepth"] = inverseDepthPSO;
 }
 
 XMMATRIX SimpleGeoApp::GetProjectionMatrix() {

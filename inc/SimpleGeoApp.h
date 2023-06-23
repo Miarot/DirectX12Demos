@@ -3,6 +3,8 @@
 #include <DirectXMath.h>
 using namespace DirectX;
 
+#include <map>
+
 #include <BaseApp.h>
 #include <MeshGeometry.h>
 
@@ -49,7 +51,7 @@ private:
 	uint32_t m_BoxCBSize;
 	ComPtr<ID3D12DescriptorHeap> m_BoxCBDescHeap;
 	ComPtr<ID3D12RootSignature> m_RootSignature;
-	ComPtr<ID3D12PipelineState> m_PSO;
+	std::map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
 
 	ObjectConstants m_BoxMVP;
 	MeshGeometry m_BoxGeo;

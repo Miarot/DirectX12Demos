@@ -371,7 +371,7 @@ ComPtr<ID3D12Resource> BaseApp::CreateDepthStencilBuffer() {
 
 	D3D12_CLEAR_VALUE dsClearValue{};
 	dsClearValue.Format = DXGI_FORMAT_D32_FLOAT;
-	dsClearValue.DepthStencil = { 1.0f, 0 };
+	dsClearValue.DepthStencil = { m_DepthClearValue, 0 };
 
 	ThrowIfFailed(m_Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),

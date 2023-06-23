@@ -102,6 +102,7 @@ protected:
 	bool m_FullScreen = false;
 	uint32_t m_ClientWidth = 1280;
 	uint32_t m_ClientHeight = 720;
+	float m_DepthClearValue = 1.0f;
 
 	ComPtr<IDXGIAdapter4> m_Adapter;
 	ComPtr<ID3D12Device2> m_Device;
