@@ -203,6 +203,7 @@ void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {
 
 		m_DirectCommandQueue->Flush();
 		ResizeDSBuffer();
+		break;
 	case 'W':
 		// Forward
 		m_FocusPos += 0.4 * m_CameraForwardDirection;
