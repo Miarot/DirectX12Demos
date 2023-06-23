@@ -14,3 +14,8 @@ inline void ThrowIfFailed(HRESULT hr)
         throw std::exception();
     }
 }
+
+template<class T>
+constexpr const T& clamp(const T& val, const T& min, const T& max) {
+    return val < min ? min : val > max ? max : val;
+}

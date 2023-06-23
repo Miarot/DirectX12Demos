@@ -26,6 +26,7 @@ private:
 
 	void BuildRootSignature();
 	void BuildBoxGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
+	void BuildBoxConstantBuffer();
 	void BuildPipelineStateObject();
 
 	// Vertex Shader input data structure
@@ -38,6 +39,8 @@ private:
 	struct ObjectConstants {
 		XMMATRIX MVP = XMMatrixIdentity();
 	};
+
+	XMMATRIX GetProjectionMatrix();
 
 private:
 	ComPtr<ID3DBlob> m_PixelShaderBlob;
@@ -52,4 +55,11 @@ private:
 	MeshGeometry m_BoxGeo;
 
 	float m_FoV = 45.0;
+	bool m_IsInverseDepth = false;
+
+	// Shake effect state data
+	bool m_IsShakeEffect = false;
+	float m_ShakePixelAmplitude;
+	std::vector<XMVECTOR> m_ShakeDirections;
+	size_t m_ShakeDirectionIndex;
 };

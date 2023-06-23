@@ -14,28 +14,30 @@ bool SimpleGeoApp::Initialize() {
 		return false;
 	}
 
+	// init shake effect state data
+	m_ShakePixelAmplitude = 5.0f;
+	m_ShakeDirections = {
+		{ 0.0f,     1.0f,  0.0f,    0.0f },
+		{ 0.0f,     -1.0f, 0.0f,    0.0f },
+		{ 1.0f,     0.0f,  0.0f,    0.0f },
+		{ -1.0f,    0.0f,  0.0f,    0.0f }
+	};
+	m_ShakeDirectionIndex = 0;
+	//
+
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
 
 	BuildBoxGeometry(commandList);
-
-	m_BoxCBSize = (sizeof(ObjectConstants) + 255) & ~255;
-	m_BoxConstBuffer = CreateConstantBuffer(m_BoxCBSize);
-	LoadDataToCB<ObjectConstants>(m_BoxConstBuffer, m_BoxMVP, m_BoxCBSize);
-
-	m_BoxCBDescHeap = CreateDescriptorHeap(
-		1, 
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 
-		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
-	);
-
-	UpdateCBView(m_BoxConstBuffer, m_BoxCBSize, m_BoxCBDescHeap);
+	BuildBoxConstantBuffer();
 
 	BuildRootSignature();
 	BuildPipelineStateObject();
 
+	// wait while all data loaded
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
 	m_DirectCommandQueue->WaitForFenceValue(fenceValue);
 
+	// release upload heaps after vertex and inedx loading
 	m_BoxGeo.DisposeUploaders();
 
 	return true;
@@ -74,15 +76,10 @@ void SimpleGeoApp::OnUpdate() {
 	const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
 	XMMATRIX viewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
 
-	float aspectRatio = m_ClientWidth / static_cast<float>(m_ClientHeight);
-	XMMATRIX projectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(m_FoV), aspectRatio, 0.1f, 100.0f);
+	XMMATRIX projectionMatrix = GetProjectionMatrix();
 
 	m_BoxMVP.MVP = XMMatrixMultiply(modelMatrix, viewMatrix);
 	m_BoxMVP.MVP = XMMatrixMultiply(m_BoxMVP.MVP, projectionMatrix);
-
-	// To view components
-	//XMFLOAT4X4 matrix;
-	//XMStoreFloat4x4(&matrix, g_ObjectConstants.MVP);
 
 	LoadDataToCB<ObjectConstants>(m_BoxConstBuffer, m_BoxMVP, m_BoxCBSize);
 }
@@ -172,7 +169,14 @@ void SimpleGeoApp::OnResize() {
 	BaseApp::OnResize();
 }
 
-void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {}
+void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {
+	switch (wParam)
+	{
+	case '1':
+		m_IsShakeEffect = !m_IsShakeEffect;
+		break;
+	}
+}
 
 void SimpleGeoApp::OnMouseWheel(int wheelDelta) {
 	m_FoV += wheelDelta / 10.0f;
@@ -274,6 +278,20 @@ void SimpleGeoApp::BuildBoxGeometry(ComPtr<ID3D12GraphicsCommandList> commandLis
 	m_BoxGeo.DrawArgs["box"] = submesh;
 }
 
+void SimpleGeoApp::BuildBoxConstantBuffer() {
+	m_BoxCBSize = (sizeof(ObjectConstants) + 255) & ~255;
+	m_BoxConstBuffer = CreateConstantBuffer(m_BoxCBSize);
+	LoadDataToCB<ObjectConstants>(m_BoxConstBuffer, m_BoxMVP, m_BoxCBSize);
+
+	m_BoxCBDescHeap = CreateDescriptorHeap(
+		1,
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+	);
+
+	UpdateCBView(m_BoxConstBuffer, m_BoxCBSize, m_BoxCBDescHeap);
+}
+
 void SimpleGeoApp::BuildPipelineStateObject() {
 	// Compile shaders	
 	m_VertexShaderBlob = CompileShader(L"..\\shaders\\VertexShader.hlsl", "main", "vs_5_1");
@@ -320,4 +338,42 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 	psoDesc.SampleDesc = { 1, 0 };
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PSO)));
+}
+
+XMMATRIX SimpleGeoApp::GetProjectionMatrix() {
+	float aspectRatio = m_ClientHeight / static_cast<float>(m_ClientWidth);
+	float focalLengh = 1 / tan(XMConvertToRadians(m_FoV) / 2);
+
+	float n = 0.1f;
+	float f = 100.0f;
+
+	float l = -n / focalLengh;
+	float r = n / focalLengh;
+	float b = -aspectRatio * n / focalLengh;
+	float t = aspectRatio * n / focalLengh;
+
+	float alpha = 0.0f;
+	float beta = 1.0f;
+
+	if (m_IsInverseDepth) {
+		alpha = 1.0f;
+		beta = 0.0f;
+	}
+
+	XMVECTOR xProj = { 2 * n / (r - l), 0.0f, (r + l) / (r - l), 0.0f };
+	XMVECTOR yProj = { 0.0f, 2 * n / (t - b), (t + b) / (t - b), 0.0f };
+	XMVECTOR zProj = { 0.0f, 0.0f, -(alpha * n - beta * f) / (f - n), (alpha - beta) * n * f / (f - n) };
+	XMVECTOR wProj = { 0.0f, 0.0f, 1.0f, 0.0f };
+	XMMATRIX projectionMatrix = { xProj, yProj, zProj, wProj };
+	projectionMatrix = XMMatrixTranspose(projectionMatrix);
+
+	if (m_IsShakeEffect) {
+		XMVECTOR pixelNorm = { 2.0f / m_ClientWidth, 2.0f / m_ClientHeight, 0.0f, 0.0f };
+		XMVECTOR displacement = m_ShakeDirections[m_ShakeDirectionIndex] * pixelNorm;
+
+		projectionMatrix.r[2] += displacement * m_ShakePixelAmplitude;
+		m_ShakeDirectionIndex = (m_ShakeDirectionIndex + 1) % m_ShakeDirections.size();
+	}
+
+	return projectionMatrix;
 }
