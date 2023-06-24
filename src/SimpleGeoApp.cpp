@@ -28,7 +28,9 @@ bool SimpleGeoApp::Initialize() {
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
 
 	BuildBoxGeometry(commandList);
-	BuildBoxConstantBuffer();
+	BuildPiramidGeometry(commandList);
+
+	BuildGeoConstantBufferAndViews();
 
 	BuildRootSignature();
 	BuildPipelineStateObject();
@@ -67,9 +69,11 @@ void SimpleGeoApp::OnUpdate() {
 		elapsedTime = 0.0;
 	}
 
-	float angle = static_cast<float>(0 * 90.0);
+	float angle = static_cast<float>(totalTime * 90.0);
 	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
-	XMMATRIX modelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
+	XMMATRIX boxModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
+
+	XMMATRIX piramidModelMatrix = XMMatrixTranslation(2, 0, 2);
 
 	// spherical coordinates to cartesian
 	float x = m_Radius * sinf(m_Phi) * cosf(m_Theta);
@@ -84,10 +88,15 @@ void SimpleGeoApp::OnUpdate() {
 
 	XMMATRIX projectionMatrix = GetProjectionMatrix();
 
-	m_BoxMVP.MVP = XMMatrixMultiply(modelMatrix, viewMatrix);
+	m_BoxMVP.MVP = XMMatrixMultiply(boxModelMatrix, viewMatrix);
 	m_BoxMVP.MVP = XMMatrixMultiply(m_BoxMVP.MVP, projectionMatrix);
 
-	LoadDataToCB<ObjectConstants>(m_BoxConstBuffer, m_BoxMVP, m_BoxCBSize);
+	m_PiramidMVP.MVP = XMMatrixMultiply(piramidModelMatrix, viewMatrix);
+	m_PiramidMVP.MVP = XMMatrixMultiply(m_PiramidMVP.MVP, projectionMatrix);
+
+
+	LoadDataToCB<ObjectConstants>(m_GeoConstBuffer, 0, m_BoxMVP, m_GeoCBSize);
+	LoadDataToCB<ObjectConstants>(m_GeoConstBuffer, 1, m_PiramidMVP, m_GeoCBSize);
 }
 
 void SimpleGeoApp::OnRender() {
@@ -120,12 +129,6 @@ void SimpleGeoApp::OnRender() {
 		);
 	}
 
-	// Set root signature and its parameters
-	commandList->SetGraphicsRootSignature(m_RootSignature.Get());
-	ID3D12DescriptorHeap* descriptorHeaps[] = { m_BoxCBDescHeap.Get() };
-	commandList->SetDescriptorHeaps(1, descriptorHeaps);
-	commandList->SetGraphicsRootDescriptorTable(0, m_BoxCBDescHeap->GetGPUDescriptorHandleForHeapStart());
-
 	// Set PSO
 	// chose pso depending on z-buffer type
 	ComPtr<ID3D12PipelineState> pso;
@@ -139,11 +142,6 @@ void SimpleGeoApp::OnRender() {
 
 	commandList->SetPipelineState(pso.Get());
 
-	// Set Input Asembler Stage
-	commandList->IASetVertexBuffers(0, 1, &m_BoxGeo.VertexBufferView());
-	commandList->IASetIndexBuffer(&m_BoxGeo.IndexBufferView());
-	commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 	// Set Rasterizer Stage
 	commandList->RSSetScissorRects(1, &m_ScissorRect);
 	commandList->RSSetViewports(1, &m_ViewPort);
@@ -151,8 +149,38 @@ void SimpleGeoApp::OnRender() {
 	// Set Output Mergere Stage
 	commandList->OMSetRenderTargets(1, &rtv, FALSE, &m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
 
+	// draw box
+	// Set root signature and its parameters
+	commandList->SetGraphicsRootSignature(m_RootSignature.Get());
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_GeoCBDescHeap.Get() };
+	commandList->SetDescriptorHeaps(1, descriptorHeaps);
+	commandList->SetGraphicsRootDescriptorTable(0, m_GeoCBDescHeap->GetGPUDescriptorHandleForHeapStart());
+
+	// Set Input Asembler Stage
+	commandList->IASetVertexBuffers(0, 1, &m_BoxGeo.VertexBufferView());
+	commandList->IASetIndexBuffer(&m_BoxGeo.IndexBufferView());
+	commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 	// Draw vertexes by its indexes and primitive topology
 	SubmeshGeometry submes = m_BoxGeo.DrawArgs["box"];
+	commandList->DrawIndexedInstanced(
+		submes.IndexCount,
+		1,
+		submes.StartIndexLocation,
+		submes.BaseVertexLocation,
+		0
+	);
+
+	// draw piramid
+	commandList->SetGraphicsRootDescriptorTable(0, CD3DX12_GPU_DESCRIPTOR_HANDLE(m_GeoCBDescHeap->GetGPUDescriptorHandleForHeapStart()).Offset(m_CBDescSize));
+	
+	// Set Input Asembler Stage
+	commandList->IASetVertexBuffers(0, 1, &m_PiramidGeo.VertexBufferView());
+	commandList->IASetIndexBuffer(&m_PiramidGeo.IndexBufferView());
+	commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// Draw vertexes by its indexes and primitive topology
+	submes = m_PiramidGeo.DrawArgs["piramid"];
 	commandList->DrawIndexedInstanced(
 		submes.IndexCount,
 		1,
@@ -308,43 +336,26 @@ void SimpleGeoApp::BuildRootSignature() {
 }
 
 void SimpleGeoApp::BuildBoxGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
-	//std::array<VertexPosColor, 8> vertexes = {
-	//	VertexPosColor({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0
-	//	VertexPosColor({ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }), // 1
-	//	VertexPosColor({ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }), // 2
-	//	VertexPosColor({ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 3
-	//	VertexPosColor({ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 4
-	//	VertexPosColor({ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }), // 5
-	//	VertexPosColor({ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }), // 6
-	//	VertexPosColor({ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) })  // 7
-	//};
-
-	std::array<VertexPosColor, 5> vertexes = {
-		VertexPosColor({ XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0
-		VertexPosColor({ XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }), // 1
-		VertexPosColor({ XMFLOAT3(1.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }), // 2
-		VertexPosColor({ XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 3
-		VertexPosColor({ XMFLOAT3(0.5f, 1.0f, 0.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 4
+	std::array<VertexPosColor, 8> vertexes = {
+		VertexPosColor({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0
+		VertexPosColor({ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }), // 1
+		VertexPosColor({ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }), // 2
+		VertexPosColor({ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 3
+		VertexPosColor({ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 4
+		VertexPosColor({ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }), // 5
+		VertexPosColor({ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }), // 6
+		VertexPosColor({ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) })  // 7
 	};
 
-	//std::array<uint16_t, 36> indexes =
-	//{
-	//	0, 1, 2, 0, 2, 3,
-	//	4, 6, 5, 4, 7, 6,
-	//	4, 5, 1, 4, 1, 0,
-	//	3, 2, 6, 3, 6, 7,
-	//	1, 5, 6, 1, 6, 2,
-	//	4, 0, 3, 4, 3, 7
-	//};
 
-	std::array<uint16_t, 18> indexes =
+	std::array<uint16_t, 36> indexes =
 	{
-		0, 1, 3,
-		1, 2, 3,
-		0, 4, 1,
-		1, 4, 2,
-		2, 4, 3,
-		0, 3, 4
+		0, 1, 2, 0, 2, 3,
+		4, 6, 5, 4, 7, 6,
+		4, 5, 1, 4, 1, 0,
+		3, 2, 6, 3, 6, 7,
+		1, 5, 6, 1, 6, 2,
+		4, 0, 3, 4, 3, 7
 	};
 
 	UINT vbByteSize = vertexes.size() * sizeof(VertexPosColor);
@@ -378,18 +389,73 @@ void SimpleGeoApp::BuildBoxGeometry(ComPtr<ID3D12GraphicsCommandList> commandLis
 	m_BoxGeo.DrawArgs["box"] = submesh;
 }
 
-void SimpleGeoApp::BuildBoxConstantBuffer() {
-	m_BoxCBSize = (sizeof(ObjectConstants) + 255) & ~255;
-	m_BoxConstBuffer = CreateConstantBuffer(m_BoxCBSize);
-	LoadDataToCB<ObjectConstants>(m_BoxConstBuffer, m_BoxMVP, m_BoxCBSize);
+void SimpleGeoApp::BuildPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
+	std::array<VertexPosColor, 5> vertexes = {
+		VertexPosColor({ XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0
+		VertexPosColor({ XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }), // 1
+		VertexPosColor({ XMFLOAT3(1.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }), // 2
+		VertexPosColor({ XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 3
+		VertexPosColor({ XMFLOAT3(0.5f, 1.0f, 0.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 4
+	};
 
-	m_BoxCBDescHeap = CreateDescriptorHeap(
-		1,
+	std::array<uint16_t, 18> indexes =
+	{
+		0, 1, 3,
+		1, 2, 3,
+		0, 4, 1,
+		1, 4, 2,
+		2, 4, 3,
+		0, 3, 4
+	};
+
+	UINT vbByteSize = vertexes.size() * sizeof(VertexPosColor);
+	UINT ibByteSize = indexes.size() * sizeof(uint16_t);
+
+	m_PiramidGeo.VertexBufferGPU = CreateGPUResourceAndLoadData(
+		commandList,
+		m_PiramidGeo.VertexBufferUploader,
+		vertexes.data(),
+		vbByteSize
+	);
+
+	m_PiramidGeo.IndexBufferGPU = CreateGPUResourceAndLoadData(
+		commandList,
+		m_PiramidGeo.IndexBufferUploader,
+		indexes.data(),
+		ibByteSize
+	);
+
+	m_PiramidGeo.name = "PiramidGeo";
+	m_PiramidGeo.VertexBufferByteSize = vbByteSize;
+	m_PiramidGeo.VertexByteStride = sizeof(VertexPosColor);
+	m_PiramidGeo.IndexBufferByteSize = ibByteSize;
+	m_PiramidGeo.IndexBufferFormat = DXGI_FORMAT_R16_UINT;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = indexes.size();
+	submesh.BaseVertexLocation = 0;
+	submesh.StartIndexLocation = 0;
+
+	m_PiramidGeo.DrawArgs["piramid"] = submesh;
+}
+
+void SimpleGeoApp::BuildGeoConstantBufferAndViews() {
+	m_GeoCBSize = (sizeof(ObjectConstants) + 255) & ~255;
+	m_GeoConstBuffer = CreateConstantBuffer(m_NumGeo * m_GeoCBSize);
+	m_GeoConstBuffer->SetName(L"Constant Buffer");
+
+	LoadDataToCB<ObjectConstants>(m_GeoConstBuffer, 0, m_BoxMVP, m_GeoCBSize);
+	LoadDataToCB<ObjectConstants>(m_GeoConstBuffer, 1,  m_PiramidMVP, m_GeoCBSize);
+
+	m_GeoCBDescHeap = CreateDescriptorHeap(
+		m_NumGeo,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
 
-	UpdateCBView(m_BoxConstBuffer, m_BoxCBSize, m_BoxCBDescHeap);
+	m_CBDescSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	UpdateCBViews(m_GeoConstBuffer, m_GeoCBSize, m_NumGeo, m_GeoCBDescHeap);
 }
 
 void SimpleGeoApp::BuildPipelineStateObject() {
