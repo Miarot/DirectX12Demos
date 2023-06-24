@@ -535,17 +535,17 @@ void BaseApp::UpdateDSView() {
 
 void BaseApp::UpdateCBViews(
 	ComPtr<ID3D12Resource> constantBuffer,
-	uint32_t bufferSize,
-	uint32_t numBuffers,
+	uint32_t subBufferSize,
+	uint32_t numSubBuffers,
 	ComPtr<ID3D12DescriptorHeap> constantBufferDescHeap)
 {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(constantBufferDescHeap->GetCPUDescriptorHandleForHeapStart());
 
-	for (uint32_t i = 0; i < numBuffers; ++i) {
+	for (uint32_t i = 0; i < numSubBuffers; ++i) {
 		D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
 
-		CBViewDesc.BufferLocation = constantBuffer->GetGPUVirtualAddress() + i * bufferSize;
-		CBViewDesc.SizeInBytes = bufferSize;
+		CBViewDesc.BufferLocation = constantBuffer->GetGPUVirtualAddress() + i * subBufferSize;
+		CBViewDesc.SizeInBytes = subBufferSize;
 
 		m_Device->CreateConstantBufferView(
 			&CBViewDesc,

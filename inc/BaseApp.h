@@ -72,13 +72,13 @@ protected:
 
 	void UpdateCBViews(
 		ComPtr<ID3D12Resource> constantBuffer, 
-		uint32_t bufferSize,
-		uint32_t numBuffers,
+		uint32_t subBufferSize,
+		uint32_t numSubBuffers,
 		ComPtr<ID3D12DescriptorHeap> constantBufferDescHeap
 	);
 
 	template<class T>
-	void LoadDataToCB(ComPtr<ID3D12Resource> constantBuffer, uint32_t bufferIndex, const T& data, size_t dataSize);
+	void LoadDataToCB(ComPtr<ID3D12Resource> constantBuffer, uint32_t subBufferIndex, const T& data, size_t dataSize);
 
 	void ResizeBackBuffers();
 	void ResizeDSBuffer();
@@ -133,14 +133,14 @@ protected:
 template<class T>
 void BaseApp::LoadDataToCB(
 	ComPtr<ID3D12Resource> constantBuffer, 
-	uint32_t bufferIndex,
+	uint32_t subBufferIndex,
 	const T& data, 
 	size_t dataSize) 
 {
 	BYTE* pMappedData;
 
 	ThrowIfFailed(constantBuffer->Map(0, NULL, reinterpret_cast<void**>(&pMappedData)));
-	memcpy(pMappedData + bufferIndex * dataSize, &data, dataSize);
+	memcpy(pMappedData + subBufferIndex * dataSize, &data, dataSize);
 
 	constantBuffer->Unmap(0, NULL);
 }

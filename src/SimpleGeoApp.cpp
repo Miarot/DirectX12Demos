@@ -246,6 +246,9 @@ void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {
 		// Right
 		m_FocusPos -= 0.4 * m_CameraRightDirection;
 		break;
+	case 'R':
+		m_DirectCommandQueue->Flush();
+		BuildPipelineStateObject();
 	}
 }
 
@@ -413,9 +416,6 @@ void SimpleGeoApp::BuildGeoConstantBufferAndViews() {
 	m_GeoConstBuffer = CreateConstantBuffer(m_NumGeo * m_GeoCBSize);
 	m_GeoConstBuffer->SetName(L"Constant Buffer");
 
-	LoadDataToCB<ObjectConstants>(m_GeoConstBuffer, 0, m_BoxMVP, m_GeoCBSize);
-	LoadDataToCB<ObjectConstants>(m_GeoConstBuffer, 1,  m_PiramidMVP, m_GeoCBSize);
-
 	m_GeoCBDescHeap = CreateDescriptorHeap(
 		m_NumGeo,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
@@ -477,10 +477,7 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
 
-	CD3DX12_DEPTH_STENCIL_DESC inverseDepthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	inverseDepthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
-
-	psoDesc.DepthStencilState = inverseDepthStencilDesc;
+	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
 
