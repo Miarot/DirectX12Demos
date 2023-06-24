@@ -30,8 +30,9 @@ private:
 	virtual void OnMouseMove(WPARAM wParam, int x, int y) override;
 
 	void BuildRootSignature();
-	void BuildBoxGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
-	void BuildBoxConstantBuffer();
+	void BuildBoxAndPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
+	void BuildPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
+	void BuildGeoConstantBufferAndViews();
 	void BuildPipelineStateObject();
 
 	// Vertex Shader input data structure
@@ -50,14 +51,17 @@ private:
 private:
 	ComPtr<ID3DBlob> m_PixelShaderBlob;
 	ComPtr<ID3DBlob> m_VertexShaderBlob;
-	ComPtr<ID3D12Resource> m_BoxConstBuffer;
-	uint32_t m_BoxCBSize;
-	ComPtr<ID3D12DescriptorHeap> m_BoxCBDescHeap;
+	ComPtr<ID3D12Resource> m_GeoConstBuffer;
+	uint32_t m_GeoCBSize;
+	uint32_t m_PiramidCBSize;
+	ComPtr<ID3D12DescriptorHeap> m_GeoCBDescHeap;
 	ComPtr<ID3D12RootSignature> m_RootSignature;
 	std::map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
 
+	uint32_t m_NumGeo = 2;
+	MeshGeometry m_BoxAndPiramidGeo;
 	ObjectConstants m_BoxMVP;
-	MeshGeometry m_BoxGeo;
+	ObjectConstants m_PiramidMVP;
 
 	float m_FoV = 45.0;
 	bool m_IsInverseDepth = false;

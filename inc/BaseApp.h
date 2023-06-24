@@ -70,14 +70,15 @@ protected:
 	void UpdateBackBuffersView();
 	void UpdateDSView();
 
-	void UpdateCBView(
+	void UpdateCBViews(
 		ComPtr<ID3D12Resource> constantBuffer, 
-		uint32_t bufferSize, 
+		uint32_t bufferSize,
+		uint32_t numBuffers,
 		ComPtr<ID3D12DescriptorHeap> constantBufferDescHeap
 	);
 
 	template<class T>
-	void LoadDataToCB(ComPtr<ID3D12Resource> constantBuffer, const T& data, size_t dataSize);
+	void LoadDataToCB(ComPtr<ID3D12Resource> constantBuffer, uint32_t bufferIndex, const T& data, size_t dataSize);
 
 	void ResizeBackBuffers();
 	void ResizeDSBuffer();
@@ -116,6 +117,7 @@ protected:
 	uint32_t m_CurrentBackBufferIndex;
 	ComPtr<ID3D12DescriptorHeap> m_BackBuffersDescHeap;
 	uint32_t m_RTVDescSize;
+	uint32_t m_CBDescSize;
 	ComPtr<ID3D12DescriptorHeap> m_DSVDescHeap;
 	ComPtr<ID3D12Resource> m_DSBuffer;
 
@@ -129,11 +131,16 @@ protected:
 };
 
 template<class T>
-void BaseApp::LoadDataToCB(ComPtr<ID3D12Resource> constantBuffer, const T& data, size_t dataSize) {
+void BaseApp::LoadDataToCB(
+	ComPtr<ID3D12Resource> constantBuffer, 
+	uint32_t bufferIndex,
+	const T& data, 
+	size_t dataSize) 
+{
 	BYTE* pMappedData;
 
 	ThrowIfFailed(constantBuffer->Map(0, NULL, reinterpret_cast<void**>(&pMappedData)));
-	memcpy(pMappedData, &data, dataSize);
+	memcpy(pMappedData + bufferIndex * dataSize, &data, dataSize);
 
 	constantBuffer->Unmap(0, NULL);
 }

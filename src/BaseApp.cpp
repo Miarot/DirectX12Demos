@@ -533,19 +533,27 @@ void BaseApp::UpdateDSView() {
 	m_Device->CreateDepthStencilView(m_DSBuffer.Get(), &dsvDesc, m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
-void BaseApp::UpdateCBView(
+void BaseApp::UpdateCBViews(
 	ComPtr<ID3D12Resource> constantBuffer,
 	uint32_t bufferSize,
+	uint32_t numBuffers,
 	ComPtr<ID3D12DescriptorHeap> constantBufferDescHeap)
 {
-	D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
-	CBViewDesc.BufferLocation = constantBuffer->GetGPUVirtualAddress();
-	CBViewDesc.SizeInBytes = bufferSize;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(constantBufferDescHeap->GetCPUDescriptorHandleForHeapStart());
 
-	m_Device->CreateConstantBufferView(
-		&CBViewDesc,
-		constantBufferDescHeap->GetCPUDescriptorHandleForHeapStart()
-	);
+	for (uint32_t i = 0; i < numBuffers; ++i) {
+		D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
+
+		CBViewDesc.BufferLocation = constantBuffer->GetGPUVirtualAddress() + i * bufferSize;
+		CBViewDesc.SizeInBytes = bufferSize;
+
+		m_Device->CreateConstantBufferView(
+			&CBViewDesc,
+			descHandle
+		);
+
+		descHandle.Offset(m_CBDescSize);
+	}
 }
 
 void BaseApp::ResizeDSBuffer() {
