@@ -7,6 +7,7 @@ using namespace DirectX;
 
 #include <BaseApp.h>
 #include <MeshGeometry.h>
+#include <Camera.h>
 
 class SimpleGeoApp : public BaseApp {
 public:
@@ -29,6 +30,7 @@ private:
 	virtual void OnMouseUp(WPARAM wParam, int x, int y) override;
 	virtual void OnMouseMove(WPARAM wParam, int x, int y) override;
 
+	void InitAppState();
 	void BuildRootSignature();
 	void BuildBoxAndPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
 	void BuildPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
@@ -58,16 +60,15 @@ private:
 	ComPtr<ID3D12RootSignature> m_RootSignature;
 	std::map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
 
-	uint32_t m_NumGeo = 2;
+	const uint32_t m_NumGeo = 2;
 	MeshGeometry m_BoxAndPiramidGeo;
 	ObjectConstants m_BoxMVP;
 	ObjectConstants m_PiramidMVP;
 
-	float m_FoV = 45.0;
-	bool m_IsInverseDepth = false;
+	bool m_IsInverseDepth;
 
 	// shake effect state data
-	bool m_IsShakeEffect = false;
+	bool m_IsShakeEffect;
 	float m_ShakePixelAmplitude;
 	std::vector<XMVECTOR> m_ShakeDirections;
 	size_t m_ShakeDirectionIndex;
@@ -75,13 +76,5 @@ private:
 	// mouse position
 	POINT m_LastMousePos;
 
-	// camera state
-	float m_Theta = 1.5f * XM_PI;
-	float m_Phi = XM_PIDIV4;
-	float m_Radius = 5.0f;
-	XMVECTOR m_CameraPos;
-	XMVECTOR m_FocusPos = { 0.0f, 0.0f, 0.0f, 1.0f };
-	XMVECTOR m_CameraUpDirection = { 0.0f, 1.0f, 0.0f, 0.0f };
-	XMVECTOR m_CameraForwardDirection;
-	XMVECTOR m_CameraRightDirection;
+	Camera m_Camera;
 };

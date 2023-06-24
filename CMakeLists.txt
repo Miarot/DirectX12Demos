@@ -24,6 +24,7 @@ set( HEADER_FILES
 	inc/CommandQueue.h
 	inc/BaseApp.h
 	inc/SimpleGeoApp.h
+	inc/Camera.h
 )
 
 set( SHADER_FILES
@@ -48,6 +49,7 @@ set( SRC_FILES
 	src/CommandQueue.cpp
 	src/BaseApp.cpp
 	src/SimpleGeoApp.cpp
+	src/Camera.cpp
 )
 
 add_executable( ${TARGET_NAME} WIN32

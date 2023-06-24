@@ -14,18 +14,9 @@ bool SimpleGeoApp::Initialize() {
 		return false;
 	}
 
-	// init shake effect state data
-	m_ShakePixelAmplitude = 5.0f;
-	m_ShakeDirections = {
-		{ 0.0f,     1.0f,  0.0f,    0.0f },
-		{ 0.0f,     -1.0f, 0.0f,    0.0f },
-		{ 1.0f,     0.0f,  0.0f,    0.0f },
-		{ -1.0f,    0.0f,  0.0f,    0.0f }
-	};
-	m_ShakeDirectionIndex = 0;
-	//
-
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
+
+	InitAppState();
 
 	BuildBoxAndPiramidGeometry(commandList);
 
@@ -74,16 +65,7 @@ void SimpleGeoApp::OnUpdate() {
 
 	XMMATRIX piramidModelMatrix = XMMatrixTranslation(2, 0, 2);
 
-	// spherical coordinates to cartesian
-	float x = m_Radius * sinf(m_Phi) * cosf(m_Theta);
-	float z = m_Radius * sinf(m_Phi) * sinf(m_Theta);
-	float y = m_Radius * cosf(m_Phi);
-
-	m_CameraPos = m_FocusPos + XMVectorSet(x, y, z, 1);
-	m_CameraForwardDirection = -XMVector3Normalize(XMVectorSet(x, y, z, 0));
-	m_CameraRightDirection = XMVector3Normalize(XMVector3Cross(m_CameraForwardDirection, m_CameraUpDirection));
-
-	XMMATRIX viewMatrix = XMMatrixLookAtLH(m_CameraPos, m_FocusPos, m_CameraUpDirection);
+	XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
 
 	XMMATRIX projectionMatrix = GetProjectionMatrix();
 
@@ -92,7 +74,6 @@ void SimpleGeoApp::OnUpdate() {
 
 	m_PiramidMVP.MVP = XMMatrixMultiply(piramidModelMatrix, viewMatrix);
 	m_PiramidMVP.MVP = XMMatrixMultiply(m_PiramidMVP.MVP, projectionMatrix);
-
 
 	LoadDataToCB<ObjectConstants>(m_GeoConstBuffer, 0, m_BoxMVP, m_GeoCBSize);
 	LoadDataToCB<ObjectConstants>(m_GeoConstBuffer, 1, m_PiramidMVP, m_GeoCBSize);
@@ -215,6 +196,9 @@ void SimpleGeoApp::OnResize() {
 void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {
 	switch (wParam)
 	{
+	case '0':
+		InitAppState();
+		break;
 	case '1':
 		m_IsShakeEffect = !m_IsShakeEffect;
 		break;
@@ -231,30 +215,20 @@ void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {
 		ResizeDSBuffer();
 		break;
 	case 'W':
-		// Forward
-		m_FocusPos += 0.4 * m_CameraForwardDirection;
-		break;
 	case 'S':
-		// Backward
-		m_FocusPos -= 0.4 * m_CameraForwardDirection;
-		break;
 	case 'A':
-		// Left
-		m_FocusPos += 0.4 * m_CameraRightDirection;
-		break;
 	case 'D':
-		// Right
-		m_FocusPos -= 0.4 * m_CameraRightDirection;
+		m_Camera.MoveCamera(wParam);
 		break;
 	case 'R':
 		m_DirectCommandQueue->Flush();
 		BuildPipelineStateObject();
+		break;
 	}
 }
 
 void SimpleGeoApp::OnMouseWheel(int wheelDelta) {
-	m_FoV += wheelDelta / 10.0f;
-	m_FoV = clamp(m_FoV, 12.0f, 90.0f);
+	m_Camera.ChangeFoV(wheelDelta);
 }
 
 void SimpleGeoApp::OnMouseDown(WPARAM wParam, int x, int y) {
@@ -270,28 +244,31 @@ void SimpleGeoApp::OnMouseUp(WPARAM wParam, int x, int y) {
 
 void SimpleGeoApp::OnMouseMove(WPARAM wParam, int x, int y) {
 	if ((wParam & MK_LBUTTON) != 0) {
-		// Make each pixel correspond to a quarter of a degree.
-		float dx = XMConvertToRadians(0.25f * static_cast<float>(x -
-			m_LastMousePos.x));
-		float dy = XMConvertToRadians(0.25f * static_cast<float>(y -
-			m_LastMousePos.y));
-		// Update angles based on input to orbit camera around box.
-		m_Theta -= dx;
-		m_Phi -= dy;
-		// Restrict the angle mPhi.
-		m_Phi = clamp(m_Phi, 0.1f, XM_PI - 0.1f);
+		m_Camera.RotateCamera(x - m_LastMousePos.x, y - m_LastMousePos.y);
 	} else if ((wParam & MK_RBUTTON) != 0) {
-		// Make each pixel correspond to 0.005 unit in the scene.
-		float dx = 0.005f * static_cast<float>(x - m_LastMousePos.x);
-		float dy = 0.005f * static_cast<float>(y - m_LastMousePos.y);
-		// Update the camera radius based on input.
-		m_Radius += dx - dy;
-		// Restrict the radius.
-		m_Radius = clamp(m_Radius, 3.0f, 15.0f);
+		m_Camera.ChangeRadius(x - m_LastMousePos.x, y - m_LastMousePos.y);
 	}
 
 	m_LastMousePos.x = x;
 	m_LastMousePos.y = y;
+}
+
+void SimpleGeoApp::InitAppState() {
+	m_Camera = Camera();
+
+	m_IsInverseDepth = false;
+
+	// init shake effect state data
+	m_IsShakeEffect = false;
+	m_ShakePixelAmplitude = 5.0f;
+	m_ShakeDirections = {
+		{ 0.0f,     1.0f,  0.0f,    0.0f },
+		{ 0.0f,     -1.0f, 0.0f,    0.0f },
+		{ 1.0f,     0.0f,  0.0f,    0.0f },
+		{ -1.0f,    0.0f,  0.0f,    0.0f }
+	};
+	m_ShakeDirectionIndex = 0;
+	//
 }
 
 void SimpleGeoApp::BuildRootSignature() {
@@ -487,7 +464,7 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 
 XMMATRIX SimpleGeoApp::GetProjectionMatrix() {
 	float aspectRatio = m_ClientHeight / static_cast<float>(m_ClientWidth);
-	float focalLengh = 1 / tan(XMConvertToRadians(m_FoV) / 2);
+	float focalLengh = 1 / tan(XMConvertToRadians(m_Camera.GetFoV()) / 2);
 
 	float n = 0.1f;
 	float f = 100.0f;
