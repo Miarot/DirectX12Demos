@@ -36,6 +36,11 @@ private:
 	void BuildGeoConstantBufferAndViews();
 	void BuildPipelineStateObject();
 
+	// for Sobel filter
+	void UpdateFramesTextures();
+	void BuildSobelRootSignature();
+	void BuildSobelPipelineStateObject();
+
 	// Vertex Shader input data structure
 	struct VertexPosColor {
 		XMFLOAT3 Position;
@@ -49,10 +54,6 @@ private:
 
 	XMMATRIX GetProjectionMatrix();
 
-	void CreateRTV_SRV_2DTexture();
-	void BuildSobelRootSignature();
-	void BuildSobelPipelineStateObject();
-
 private:
 	ComPtr<ID3DBlob> m_PixelShaderBlob;
 	ComPtr<ID3DBlob> m_VertexShaderBlob;
@@ -62,6 +63,16 @@ private:
 	ComPtr<ID3D12DescriptorHeap> m_GeoCBDescHeap;
 	ComPtr<ID3D12RootSignature> m_RootSignature;
 	std::map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
+
+	// for Sobel filter
+	bool m_IsSobelFilter = false;
+	ComPtr<ID3D12Resource> m_FrameTexturesBuffers[m_NumBackBuffers];
+	ComPtr<ID3D12DescriptorHeap> m_FrameTextureRTVDescHeap;
+	ComPtr<ID3D12DescriptorHeap> m_FrameTextureSRVDescHeap;
+	ComPtr<ID3D12RootSignature> m_SobelRootSignature;
+	ComPtr<ID3DBlob> m_SobelPixelShaderBlob;
+	ComPtr<ID3DBlob> m_SobelVertexShaderBlob;
+	ComPtr<ID3D12PipelineState> m_SobelPSO;
 
 	FLOAT m_BackGroundColor[4] = {0.4f, 0.6f, 0.9f, 1.0f};
 
@@ -75,18 +86,9 @@ private:
 	POINT m_LastMousePos;
 	Camera m_Camera;
 
-	// for shake effect state data
+	// for shake effect
 	bool m_IsShakeEffect;
 	float m_ShakePixelAmplitude;
 	std::vector<XMVECTOR> m_ShakeDirections;
 	size_t m_ShakeDirectionIndex;
-
-	// for Sobel filter
-	ComPtr<ID3D12Resource> m_InterimRTBuffers[m_NumBackBuffers];
-	ComPtr<ID3D12DescriptorHeap> m_InterimRTDescHeap;
-	ComPtr<ID3D12DescriptorHeap> m_SRVDescHeap;
-	ComPtr<ID3D12RootSignature> m_SobelRootSignature;
-	ComPtr<ID3DBlob> m_SobelPixelShaderBlob;
-	ComPtr<ID3DBlob> m_SobelVertexShaderBlob;
-	ComPtr<ID3D12PipelineState> m_SobelPSO;
 };
