@@ -30,6 +30,8 @@ set( HEADER_FILES
 set( SHADER_FILES
 	shaders/VertexShader.hlsl
 	shaders/PixelShader.hlsl
+	shaders/SobelVertexShader.hlsl
+	shaders/SobelPixelShader.hlsl
 )
 
 source_group( "Resources\\Shaders" FILES ${SHADER_FILES} )
@@ -39,7 +41,17 @@ set_source_files_properties( shaders/VertexShader.hlsl PROPERTIES
     VS_SHADER_MODEL 5.1
 )
 
+set_source_files_properties( shaders/SobelVertexShader.hlsl PROPERTIES 
+    VS_SHADER_TYPE Vertex
+    VS_SHADER_MODEL 5.1
+)
+
 set_source_files_properties( shaders/PixelShader.hlsl PROPERTIES 
+    VS_SHADER_TYPE Pixel
+    VS_SHADER_MODEL 5.1
+)
+
+set_source_files_properties( shaders/SobelPixelShader.hlsl PROPERTIES 
     VS_SHADER_TYPE Pixel
     VS_SHADER_MODEL 5.1
 )

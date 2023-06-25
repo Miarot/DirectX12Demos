@@ -33,7 +33,6 @@ private:
 	void InitAppState();
 	void BuildRootSignature();
 	void BuildBoxAndPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
-	void BuildPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
 	void BuildGeoConstantBufferAndViews();
 	void BuildPipelineStateObject();
 
@@ -50,6 +49,10 @@ private:
 
 	XMMATRIX GetProjectionMatrix();
 
+	void CreateRTV_SRV_2DTexture();
+	void BuildSobelRootSignature();
+	void BuildSobelPipelineStateObject();
+
 private:
 	ComPtr<ID3DBlob> m_PixelShaderBlob;
 	ComPtr<ID3DBlob> m_VertexShaderBlob;
@@ -60,21 +63,30 @@ private:
 	ComPtr<ID3D12RootSignature> m_RootSignature;
 	std::map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
 
+	FLOAT m_BackGroundColor[4] = {0.4f, 0.6f, 0.9f, 1.0f};
+
 	const uint32_t m_NumGeo = 2;
 	MeshGeometry m_BoxAndPiramidGeo;
 	ObjectConstants m_BoxMVP;
 	ObjectConstants m_PiramidMVP;
 
-	bool m_IsInverseDepth;
+	bool m_IsInverseDepth = false;
 
-	// shake effect state data
+	POINT m_LastMousePos;
+	Camera m_Camera;
+
+	// for shake effect state data
 	bool m_IsShakeEffect;
 	float m_ShakePixelAmplitude;
 	std::vector<XMVECTOR> m_ShakeDirections;
 	size_t m_ShakeDirectionIndex;
 
-	// mouse position
-	POINT m_LastMousePos;
-
-	Camera m_Camera;
+	// for Sobel filter
+	ComPtr<ID3D12Resource> m_InterimRTBuffers[m_NumBackBuffers];
+	ComPtr<ID3D12DescriptorHeap> m_InterimRTDescHeap;
+	ComPtr<ID3D12DescriptorHeap> m_SRVDescHeap;
+	ComPtr<ID3D12RootSignature> m_SobelRootSignature;
+	ComPtr<ID3DBlob> m_SobelPixelShaderBlob;
+	ComPtr<ID3DBlob> m_SobelVertexShaderBlob;
+	ComPtr<ID3D12PipelineState> m_SobelPSO;
 };

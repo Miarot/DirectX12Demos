@@ -25,6 +25,11 @@ bool SimpleGeoApp::Initialize() {
 	BuildRootSignature();
 	BuildPipelineStateObject();
 
+	// for Sobel filter
+	CreateRTV_SRV_2DTexture();
+	BuildSobelRootSignature();
+	BuildSobelPipelineStateObject();
+
 	// wait while all data loaded
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
 	m_DirectCommandQueue->WaitForFenceValue(fenceValue);
@@ -81,25 +86,39 @@ void SimpleGeoApp::OnUpdate() {
 
 void SimpleGeoApp::OnRender() {
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
+
 	auto backBuffer = m_BackBuffers[m_CurrentBackBufferIndex];
+	auto interimBackBuffer = m_InterimRTBuffers[m_CurrentBackBufferIndex];
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
 		m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart(),
 		m_CurrentBackBufferIndex, m_RTVDescSize
 	);
 
-	// Clear RTV
+	CD3DX12_CPU_DESCRIPTOR_HANDLE interimRTV(
+		m_InterimRTDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_CurrentBackBufferIndex, m_RTVDescSize
+	);
+
+	// clear RTs and DS buffer
 	{
-		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		CD3DX12_RESOURCE_BARRIER rtvBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
 			backBuffer.Get(),
 			D3D12_RESOURCE_STATE_PRESENT,
 			D3D12_RESOURCE_STATE_RENDER_TARGET
 		);
 
-		commandList->ResourceBarrier(1, &barrier);
+		CD3DX12_RESOURCE_BARRIER interimRTVBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			interimBackBuffer.Get(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		);
 
-		FLOAT backgroundColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
-		commandList->ClearRenderTargetView(rtv, backgroundColor, 0, NULL);
+		D3D12_RESOURCE_BARRIER bariers[] = { rtvBarrier, interimRTVBarrier };
+		commandList->ResourceBarrier(2, bariers);
+
+		commandList->ClearRenderTargetView(rtv, m_BackGroundColor, 0, NULL);
+		commandList->ClearRenderTargetView(interimRTV, m_BackGroundColor, 0, NULL);
 
 		commandList->ClearDepthStencilView(
 			m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -109,64 +128,109 @@ void SimpleGeoApp::OnRender() {
 		);
 	}
 
-	// Set root signature and descripotr heaps
-	commandList->SetGraphicsRootSignature(m_RootSignature.Get());
-	ID3D12DescriptorHeap* descriptorHeaps[] = { m_GeoCBDescHeap.Get() };
-	commandList->SetDescriptorHeaps(1, descriptorHeaps);
+	// draw to interim render target
+	{
+		// set root signature and descripotr heaps
+		commandList->SetGraphicsRootSignature(m_RootSignature.Get());
+		ID3D12DescriptorHeap* descriptorHeaps[] = { m_GeoCBDescHeap.Get() };
+		commandList->SetDescriptorHeaps(1, descriptorHeaps);
 
-	// Set PSO
-	// chose pso depending on z-buffer type
-	ComPtr<ID3D12PipelineState> pso;
+		// set PSO
+		// chose pso depending on z-buffer type
+		ComPtr<ID3D12PipelineState> pso;
 
-	if (m_IsInverseDepth) {
-		pso = m_PSOs["inverseDepth"];
+		if (m_IsInverseDepth) {
+			pso = m_PSOs["inverseDepth"];
+		}
+		else {
+			pso = m_PSOs["straightDepth"];
+		}
+
+		commandList->SetPipelineState(pso.Get());
+
+		// set Rasterizer Stage
+		commandList->RSSetScissorRects(1, &m_ScissorRect);
+		commandList->RSSetViewports(1, &m_ViewPort);
+
+		// set Output Mergere Stage
+		commandList->OMSetRenderTargets(1, &interimRTV, FALSE, &m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
+
+		// set Input Asembler Stage
+		commandList->IASetVertexBuffers(0, 1, &m_BoxAndPiramidGeo.VertexBufferView());
+		commandList->IASetIndexBuffer(&m_BoxAndPiramidGeo.IndexBufferView());
+		commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// draw box
+		// set box descriptor to root signature
+		CD3DX12_GPU_DESCRIPTOR_HANDLE geoCBDescHandle(m_GeoCBDescHeap->GetGPUDescriptorHandleForHeapStart());
+		commandList->SetGraphicsRootDescriptorTable(0, geoCBDescHandle);
+
+		// draw vertexes by its indexes and primitive topology
+		SubmeshGeometry submes = m_BoxAndPiramidGeo.DrawArgs["box"];
+		commandList->DrawIndexedInstanced(
+			submes.IndexCount,
+			1,
+			submes.StartIndexLocation,
+			submes.BaseVertexLocation,
+			0
+		);
+
+		// draw piramid
+		// set piramid descriptor to root signature
+		commandList->SetGraphicsRootDescriptorTable(0, geoCBDescHandle.Offset(m_CBDescSize));
+
+		// draw vertexes by its indexes and primitive topology
+		submes = m_BoxAndPiramidGeo.DrawArgs["piramid"];
+		commandList->DrawIndexedInstanced(
+			submes.IndexCount,
+			1,
+			submes.StartIndexLocation,
+			submes.BaseVertexLocation,
+			0
+		);
 	}
-	else {
-		pso = m_PSOs["straightDepth"];
+
+	// apply filter and draw to main render target
+	{
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			interimBackBuffer.Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+		);
+
+		commandList->ResourceBarrier(1, &barrier);
+
+
+		// unbind all resources of commandlist
+		commandList->ClearState(NULL);
+
+		// set root signature and descripotr heaps
+		commandList->SetGraphicsRootSignature(m_SobelRootSignature.Get());
+		ID3D12DescriptorHeap* descriptorHeaps[] = { m_SRVDescHeap.Get() };
+		commandList->SetDescriptorHeaps(1, descriptorHeaps);
+
+		// set pso
+		commandList->SetPipelineState(m_SobelPSO.Get());
+
+		// set Rasterizer Stage
+		commandList->RSSetScissorRects(1, &m_ScissorRect);
+		commandList->RSSetViewports(1, &m_ViewPort);
+
+		// set Output Mergere Stage
+		commandList->OMSetRenderTargets(1, &rtv, FALSE, NULL);
+
+		// set Input Asembler Stage
+		commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// set root parameter
+		CD3DX12_GPU_DESCRIPTOR_HANDLE srv(
+			m_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+			m_CurrentBackBufferIndex, m_CBDescSize
+		);
+		commandList->SetGraphicsRootDescriptorTable(0, srv);
+
+		commandList->DrawInstanced(3, 1, 0, 0);
 	}
-
-	commandList->SetPipelineState(pso.Get());
-
-	// Set Rasterizer Stage
-	commandList->RSSetScissorRects(1, &m_ScissorRect);
-	commandList->RSSetViewports(1, &m_ViewPort);
-
-	// Set Output Mergere Stage
-	commandList->OMSetRenderTargets(1, &rtv, FALSE, &m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
-
-	// Set Input Asembler Stage
-	commandList->IASetVertexBuffers(0, 1, &m_BoxAndPiramidGeo.VertexBufferView());
-	commandList->IASetIndexBuffer(&m_BoxAndPiramidGeo.IndexBufferView());
-	commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	// draw box
-	// set box descriptor to root signature
-	CD3DX12_GPU_DESCRIPTOR_HANDLE geoCBDescHandle(m_GeoCBDescHeap->GetGPUDescriptorHandleForHeapStart());
-	commandList->SetGraphicsRootDescriptorTable(0, geoCBDescHandle);
-
-	// Draw vertexes by its indexes and primitive topology
-	SubmeshGeometry submes = m_BoxAndPiramidGeo.DrawArgs["box"];
-	commandList->DrawIndexedInstanced(
-		submes.IndexCount,
-		1,
-		submes.StartIndexLocation,
-		submes.BaseVertexLocation,
-		0
-	);
-
-	// draw piramid
-	// set piramid descriptor to root signature
-	commandList->SetGraphicsRootDescriptorTable(0, geoCBDescHandle.Offset(m_CBDescSize));
-
-	// Draw vertexes by its indexes and primitive topology
-	submes = m_BoxAndPiramidGeo.DrawArgs["piramid"];
-	commandList->DrawIndexedInstanced(
-		submes.IndexCount,
-		1,
-		submes.StartIndexLocation,
-		submes.BaseVertexLocation,
-		0
-	);
 
 	// Present
 	{
@@ -191,6 +255,7 @@ void SimpleGeoApp::OnRender() {
 
 void SimpleGeoApp::OnResize() {
 	BaseApp::OnResize();
+	CreateRTV_SRV_2DTexture();
 }
 
 void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {
@@ -223,6 +288,7 @@ void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {
 	case 'R':
 		m_DirectCommandQueue->Flush();
 		BuildPipelineStateObject();
+		BuildSobelPipelineStateObject();
 		break;
 	}
 }
@@ -255,8 +321,6 @@ void SimpleGeoApp::OnMouseMove(WPARAM wParam, int x, int y) {
 
 void SimpleGeoApp::InitAppState() {
 	m_Camera = Camera();
-
-	m_IsInverseDepth = false;
 
 	// init shake effect state data
 	m_IsShakeEffect = false;
@@ -368,7 +432,7 @@ void SimpleGeoApp::BuildBoxAndPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> 
 		ibByteSize
 	);
 
-	m_BoxAndPiramidGeo.name = "BoxGeo";
+	m_BoxAndPiramidGeo.name = "BoxAndPiramidGeo";
 	m_BoxAndPiramidGeo.VertexBufferByteSize = vbByteSize;
 	m_BoxAndPiramidGeo.VertexByteStride = sizeof(VertexPosColor);
 	m_BoxAndPiramidGeo.IndexBufferByteSize = ibByteSize;
@@ -498,4 +562,114 @@ XMMATRIX SimpleGeoApp::GetProjectionMatrix() {
 	}
 
 	return projectionMatrix;
+}
+
+void SimpleGeoApp::CreateRTV_SRV_2DTexture() {
+	m_InterimRTDescHeap = CreateDescriptorHeap(3, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+	m_SRVDescHeap = CreateDescriptorHeap(3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescHandle(m_InterimRTDescHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE srvDescHandle(m_SRVDescHeap->GetCPUDescriptorHandleForHeapStart());
+
+	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, m_ClientWidth, m_ClientHeight);
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+	CD3DX12_CLEAR_VALUE clearValue{ DXGI_FORMAT_R8G8B8A8_UNORM , m_BackGroundColor };
+
+	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
+		ThrowIfFailed(m_Device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+			&resourceDesc,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+			&clearValue,
+			IID_PPV_ARGS(&m_InterimRTBuffers[i])
+		));
+
+		m_Device->CreateRenderTargetView(m_InterimRTBuffers[i].Get(), nullptr, rtvDescHandle);
+		m_Device->CreateShaderResourceView(m_InterimRTBuffers[i].Get(), nullptr, srvDescHandle);
+
+		rtvDescHandle.Offset(m_RTVDescSize);
+		srvDescHandle.Offset(m_CBDescSize);
+	}
+}
+
+void SimpleGeoApp::BuildSobelRootSignature() {
+	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange;
+	descriptorRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange);
+
+	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init_1_1(1, rootParameters, 0, NULL, rootSignatureFlags);
+
+	D3D12_FEATURE_DATA_ROOT_SIGNATURE rsVersion;
+	rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+
+	if (FAILED(m_Device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &rsVersion, sizeof(rsVersion)))) {
+		rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+	}
+
+	ComPtr<ID3DBlob> rootSignatureBlob;
+	ComPtr<ID3DBlob> errorBlob;
+	ThrowIfFailed(D3DX12SerializeVersionedRootSignature(
+		&rootSignatureDesc,
+		rsVersion.HighestVersion,
+		&rootSignatureBlob,
+		&errorBlob
+	));
+
+	ThrowIfFailed(m_Device->CreateRootSignature(
+		0,
+		rootSignatureBlob->GetBufferPointer(),
+		rootSignatureBlob->GetBufferSize(),
+		IID_PPV_ARGS(&m_SobelRootSignature)
+	));
+}
+
+void SimpleGeoApp::BuildSobelPipelineStateObject() {
+	// Compile shaders	
+	m_SobelVertexShaderBlob = CompileShader(L"..\\shaders\\SobelVertexShader.hlsl", "main", "vs_5_1");
+	m_SobelPixelShaderBlob = CompileShader(L"..\\shaders\\SobelPixelShader.hlsl", "main", "ps_5_1");
+
+	// Create pipeline state object description
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
+
+	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+
+	psoDesc.pRootSignature = m_SobelRootSignature.Get();
+
+	psoDesc.VS = {
+		reinterpret_cast<BYTE*>(m_SobelVertexShaderBlob->GetBufferPointer()),
+		m_SobelVertexShaderBlob->GetBufferSize()
+	};
+
+	psoDesc.PS = {
+		reinterpret_cast<BYTE*>(m_SobelPixelShaderBlob->GetBufferPointer()),
+		m_SobelPixelShaderBlob->GetBufferSize()
+	};
+
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	psoDesc.SampleMask = UINT_MAX;
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+
+	CD3DX12_DEPTH_STENCIL_DESC depthStencilState(D3D12_DEFAULT);
+	depthStencilState.DepthEnable = FALSE;
+	psoDesc.DepthStencilState = depthStencilState;
+
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
+	psoDesc.SampleDesc = { 1, 0 };
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_SobelPSO)));
 }
