@@ -9,6 +9,7 @@ using namespace DirectX;
 #include <MeshGeometry.h>
 #include <Camera.h>
 #include <Timer.h>
+#include <UploadBuffer.h>
 
 class SimpleGeoApp : public BaseApp {
 public:
@@ -34,7 +35,7 @@ private:
 	void InitAppState();
 	void BuildRootSignature();
 	void BuildBoxAndPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
-	void BuildGeoConstantBufferAndViews();
+	void BuildObjectsConstantsBufferAndViews();
 	void BuildPipelineStateObject();
 
 	// for Sobel filter
@@ -53,14 +54,16 @@ private:
 		XMMATRIX MVP = XMMatrixIdentity();
 	};
 
+	struct PassConstants {
+		float g_TotalTime = 0.0;
+	};
+
 	XMMATRIX GetProjectionMatrix();
 
 private:
 	ComPtr<ID3DBlob> m_PixelShaderBlob;
 	ComPtr<ID3DBlob> m_VertexShaderBlob;
-	ComPtr<ID3D12Resource> m_GeoConstBuffer;
-	uint32_t m_GeoCBSize;
-	uint32_t m_PiramidCBSize;
+	std::unique_ptr<UploadBuffer<ObjectConstants>> m_ObjectsConstantsBuffer;
 	ComPtr<ID3D12DescriptorHeap> m_GeoCBDescHeap;
 	ComPtr<ID3D12RootSignature> m_RootSignature;
 	std::map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;

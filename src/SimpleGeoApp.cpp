@@ -20,7 +20,7 @@ bool SimpleGeoApp::Initialize() {
 
 	BuildBoxAndPiramidGeometry(commandList);
 
-	BuildGeoConstantBufferAndViews();
+	BuildObjectsConstantsBufferAndViews();
 
 	BuildRootSignature();
 	BuildPipelineStateObject();
@@ -70,8 +70,8 @@ void SimpleGeoApp::OnUpdate() {
 	m_PiramidMVP.MVP = XMMatrixMultiply(piramidModelMatrix, viewMatrix);
 	m_PiramidMVP.MVP = XMMatrixMultiply(m_PiramidMVP.MVP, projectionMatrix);
 
-	LoadDataToCB<ObjectConstants>(m_GeoConstBuffer, 0, m_BoxMVP, m_GeoCBSize);
-	LoadDataToCB<ObjectConstants>(m_GeoConstBuffer, 1, m_PiramidMVP, m_GeoCBSize);
+	m_ObjectsConstantsBuffer->CopyData(0, m_BoxMVP);
+	m_ObjectsConstantsBuffer->CopyData(1, m_PiramidMVP);
 }
 
 void SimpleGeoApp::OnRender() {
@@ -454,10 +454,8 @@ void SimpleGeoApp::BuildBoxAndPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> 
 	m_BoxAndPiramidGeo.DrawArgs["box"] = boxSubmesh;
 }
 
-void SimpleGeoApp::BuildGeoConstantBufferAndViews() {
-	m_GeoCBSize = (sizeof(ObjectConstants) + 255) & ~255;
-	m_GeoConstBuffer = CreateConstantBuffer(m_NumGeo * m_GeoCBSize);
-	m_GeoConstBuffer->SetName(L"Constant Buffer");
+void SimpleGeoApp::BuildObjectsConstantsBufferAndViews() {
+	m_ObjectsConstantsBuffer = std::make_unique<UploadBuffer<ObjectConstants>>(m_Device, m_NumGeo, true);
 
 	m_GeoCBDescHeap = CreateDescriptorHeap(
 		m_NumGeo,
@@ -467,7 +465,23 @@ void SimpleGeoApp::BuildGeoConstantBufferAndViews() {
 
 	m_CBDescSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	UpdateCBViews(m_GeoConstBuffer, m_GeoCBSize, m_NumGeo, m_GeoCBDescHeap);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_GeoCBDescHeap->GetCPUDescriptorHandleForHeapStart());
+	D3D12_GPU_VIRTUAL_ADDRESS bufferGPUAdress = m_ObjectsConstantsBuffer->Get()->GetGPUVirtualAddress();
+
+	for (uint32_t i = 0; i < m_NumGeo; ++i) {
+		D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
+
+		CBViewDesc.BufferLocation = bufferGPUAdress;
+		CBViewDesc.SizeInBytes = m_ObjectsConstantsBuffer->GetElementByteSize();
+
+		m_Device->CreateConstantBufferView(
+			&CBViewDesc,
+			descHandle
+		);
+
+		descHandle.Offset(m_CBDescSize);
+		bufferGPUAdress += m_ObjectsConstantsBuffer->GetElementByteSize();
+	}
 }
 
 void SimpleGeoApp::BuildPipelineStateObject() {

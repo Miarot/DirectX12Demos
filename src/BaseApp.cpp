@@ -400,21 +400,6 @@ ComPtr<ID3D12Resource> BaseApp::CreateDepthStencilBuffer() {
 	return depthStencilBuffer;
 }
 
-ComPtr<ID3D12Resource> BaseApp::CreateConstantBuffer(uint32_t bufferSize) {
-	ComPtr<ID3D12Resource> constantBuffer;
-
-	ThrowIfFailed(m_Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		NULL,
-		IID_PPV_ARGS(&constantBuffer)
-	));
-
-	return constantBuffer;
-}
-
 ComPtr<ID3D12DescriptorHeap> BaseApp::CreateDescriptorHeap(
 	UINT numDescriptors,
 	D3D12_DESCRIPTOR_HEAP_TYPE type,
@@ -531,29 +516,6 @@ void BaseApp::UpdateDSView() {
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 
 	m_Device->CreateDepthStencilView(m_DSBuffer.Get(), &dsvDesc, m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
-}
-
-void BaseApp::UpdateCBViews(
-	ComPtr<ID3D12Resource> constantBuffer,
-	uint32_t subBufferSize,
-	uint32_t numSubBuffers,
-	ComPtr<ID3D12DescriptorHeap> constantBufferDescHeap)
-{
-	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(constantBufferDescHeap->GetCPUDescriptorHandleForHeapStart());
-
-	for (uint32_t i = 0; i < numSubBuffers; ++i) {
-		D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
-
-		CBViewDesc.BufferLocation = constantBuffer->GetGPUVirtualAddress() + i * subBufferSize;
-		CBViewDesc.SizeInBytes = subBufferSize;
-
-		m_Device->CreateConstantBufferView(
-			&CBViewDesc,
-			descHandle
-		);
-
-		descHandle.Offset(m_CBDescSize);
-	}
 }
 
 void BaseApp::ResizeDSBuffer() {

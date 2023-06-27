@@ -26,6 +26,7 @@ set( HEADER_FILES
 	inc/SimpleGeoApp.h
 	inc/Camera.h
 	inc/Timer.h
+	inc/UploadBuffer.h
 )
 
 set( SHADER_FILES

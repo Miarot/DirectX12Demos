@@ -46,7 +46,6 @@ protected:
 	ComPtr<ID3D12Device2> CreateDevice();
 	ComPtr<IDXGISwapChain4> CreateSwapChain();
 	ComPtr<ID3D12Resource> CreateDepthStencilBuffer();
-	ComPtr<ID3D12Resource> CreateConstantBuffer(uint32_t bufferSize);
 
 	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(
 		UINT numDescriptors,
@@ -76,9 +75,6 @@ protected:
 		uint32_t numSubBuffers,
 		ComPtr<ID3D12DescriptorHeap> constantBufferDescHeap
 	);
-
-	template<class T>
-	void LoadDataToCB(ComPtr<ID3D12Resource> constantBuffer, uint32_t subBufferIndex, const T& data, size_t dataSize);
 
 	void ResizeBackBuffers();
 	void ResizeDSBuffer();
@@ -128,18 +124,3 @@ protected:
 
 	std::shared_ptr<CommandQueue> m_DirectCommandQueue;
 };
-
-template<class T>
-void BaseApp::LoadDataToCB(
-	ComPtr<ID3D12Resource> constantBuffer, 
-	uint32_t subBufferIndex,
-	const T& data, 
-	size_t dataSize) 
-{
-	BYTE* pMappedData;
-
-	ThrowIfFailed(constantBuffer->Map(0, NULL, reinterpret_cast<void**>(&pMappedData)));
-	memcpy(pMappedData + subBufferIndex * dataSize, &data, dataSize);
-
-	constantBuffer->Unmap(0, NULL);
-}
