@@ -43,30 +43,18 @@ bool SimpleGeoApp::Initialize() {
 }
 
 void SimpleGeoApp::OnUpdate() {
-	static double elapsedTime = 0.0;
-	static double totalTime = 0.0;
-	static uint64_t frameCounter = 0;
-	static std::chrono::high_resolution_clock clock;
-	static auto prevTime = clock.now();
+	m_Timer.Tick();
 
-	auto currentTime = clock.now();
-	auto deltaTime = currentTime - prevTime;
-	prevTime = currentTime;
-	elapsedTime += deltaTime.count() * 1e-9;
-	totalTime += deltaTime.count() * 1e-9;
-	++frameCounter;
-
-	if (elapsedTime >= 1.0) {
+	if (m_Timer.GetMeasuredTime() >= 1.0) {
 		char buffer[500];
-		auto fps = frameCounter / elapsedTime;
+		auto fps = m_Timer.GetMeasuredTicks() / m_Timer.GetMeasuredTime();
 		::sprintf_s(buffer, 500, "FPS: %f\n", fps);
 		::OutputDebugString(buffer);
 
-		frameCounter = 0;
-		elapsedTime = 0.0;
+		m_Timer.StartMeasurement();
 	}
 
-	float angle = static_cast<float>(totalTime * 90.0);
+	float angle = static_cast<float>(m_Timer.GetTotalTime() * 90.0);
 	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
 	XMMATRIX boxModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
 
@@ -332,6 +320,9 @@ void SimpleGeoApp::OnMouseMove(WPARAM wParam, int x, int y) {
 
 void SimpleGeoApp::InitAppState() {
 	m_Camera = Camera();
+
+	m_Timer = Timer();
+	m_Timer.StartMeasurement();
 
 	// init shake effect state data
 	m_IsShakeEffect = false;

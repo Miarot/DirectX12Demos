@@ -8,6 +8,7 @@ using namespace DirectX;
 #include <BaseApp.h>
 #include <MeshGeometry.h>
 #include <Camera.h>
+#include <Timer.h>
 
 class SimpleGeoApp : public BaseApp {
 public:
@@ -85,6 +86,7 @@ private:
 
 	POINT m_LastMousePos;
 	Camera m_Camera;
+	Timer m_Timer;
 
 	// for shake effect
 	bool m_IsShakeEffect;

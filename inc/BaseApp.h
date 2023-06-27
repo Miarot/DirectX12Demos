@@ -94,7 +94,6 @@ protected:
 	virtual void OnMouseUp(WPARAM wParam, int x, int y);
 	virtual void OnMouseMove(WPARAM wParam, int x, int y);
 
-
 protected:
 	static BaseApp * m_App;
 	HINSTANCE m_hInstance = NULL;
