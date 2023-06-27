@@ -26,8 +26,8 @@ bool SimpleGeoApp::Initialize() {
 	BuildPipelineStateObject();
 
 	// for Sobel filter
-	m_FrameTextureRTVDescHeap = CreateDescriptorHeap(3, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
-	m_FrameTextureSRVDescHeap = CreateDescriptorHeap(3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	m_FrameTextureRTVDescHeap = CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+	m_FrameTextureSRVDescHeap = CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	UpdateFramesTextures();
 	BuildSobelRootSignature();
 	BuildSobelPipelineStateObject();
@@ -90,17 +90,14 @@ void SimpleGeoApp::OnRender() {
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
 
 	auto backBuffer = m_BackBuffers[m_CurrentBackBufferIndex];
-	auto frameTextureBuffer = m_FrameTexturesBuffers[m_CurrentBackBufferIndex];
+	auto frameTextureBuffer = m_FrameTexturesBuffers;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE mainRTV(
 		m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart(),
 		m_CurrentBackBufferIndex, m_RTVDescSize
 	);
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE textureRTV(
-		m_FrameTextureRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-		m_CurrentBackBufferIndex, m_RTVDescSize
-	);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE textureRTV(m_FrameTextureRTVDescHeap->GetCPUDescriptorHandleForHeapStart());
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE geometryRTV;
 
@@ -238,11 +235,7 @@ void SimpleGeoApp::OnRender() {
 		commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		// set root parameter
-		CD3DX12_GPU_DESCRIPTOR_HANDLE srv(
-			m_FrameTextureSRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-			m_CurrentBackBufferIndex, m_CBDescSize
-		);
-		commandList->SetGraphicsRootDescriptorTable(0, srv);
+		commandList->SetGraphicsRootDescriptorTable(0, m_FrameTextureSRVDescHeap->GetGPUDescriptorHandleForHeapStart());
 
 		commandList->DrawInstanced(3, 1, 0, 0);
 	}
@@ -583,30 +576,31 @@ XMMATRIX SimpleGeoApp::GetProjectionMatrix() {
 }
 
 void SimpleGeoApp::UpdateFramesTextures() {
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescHandle(m_FrameTextureRTVDescHeap->GetCPUDescriptorHandleForHeapStart());
-	CD3DX12_CPU_DESCRIPTOR_HANDLE srvDescHandle(m_FrameTextureSRVDescHeap->GetCPUDescriptorHandleForHeapStart());
-
 	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, m_ClientWidth, m_ClientHeight);
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
 	CD3DX12_CLEAR_VALUE clearValue{ DXGI_FORMAT_R8G8B8A8_UNORM , m_BackGroundColor };
 
-	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
-		ThrowIfFailed(m_Device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-			D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
-			&resourceDesc,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-			&clearValue,
-			IID_PPV_ARGS(&m_FrameTexturesBuffers[i])
-		));
+	ThrowIfFailed(m_Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+		&clearValue,
+		IID_PPV_ARGS(&m_FrameTexturesBuffers)
+	));
 
-		m_Device->CreateRenderTargetView(m_FrameTexturesBuffers[i].Get(), nullptr, rtvDescHandle);
-		m_Device->CreateShaderResourceView(m_FrameTexturesBuffers[i].Get(), nullptr, srvDescHandle);
+	m_Device->CreateRenderTargetView(
+		m_FrameTexturesBuffers.Get(), 
+		nullptr, 
+		m_FrameTextureRTVDescHeap->GetCPUDescriptorHandleForHeapStart()
+	);
 
-		rtvDescHandle.Offset(m_RTVDescSize);
-		srvDescHandle.Offset(m_CBDescSize);
-	}
+	m_Device->CreateShaderResourceView(
+		m_FrameTexturesBuffers.Get(),
+		nullptr, 
+		m_FrameTextureSRVDescHeap->GetCPUDescriptorHandleForHeapStart()
+	);
 }
 
 void SimpleGeoApp::BuildSobelRootSignature() {

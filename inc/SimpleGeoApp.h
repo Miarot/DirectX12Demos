@@ -66,7 +66,7 @@ private:
 
 	// for Sobel filter
 	bool m_IsSobelFilter = false;
-	ComPtr<ID3D12Resource> m_FrameTexturesBuffers[m_NumBackBuffers];
+	ComPtr<ID3D12Resource> m_FrameTexturesBuffers;
 	ComPtr<ID3D12DescriptorHeap> m_FrameTextureRTVDescHeap;
 	ComPtr<ID3D12DescriptorHeap> m_FrameTextureSRVDescHeap;
 	ComPtr<ID3D12RootSignature> m_SobelRootSignature;
