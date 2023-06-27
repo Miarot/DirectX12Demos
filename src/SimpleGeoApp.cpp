@@ -21,6 +21,7 @@ bool SimpleGeoApp::Initialize() {
 	BuildBoxAndPiramidGeometry(commandList);
 
 	BuildObjectsConstantsBufferAndViews();
+	BuildPassConstantsBufferAndView();
 
 	BuildRootSignature();
 	BuildPipelineStateObject();
@@ -53,6 +54,8 @@ void SimpleGeoApp::OnUpdate() {
 
 		m_Timer.StartMeasurement();
 	}
+
+	m_PassConstantsBuffer->CopyData(0, { float(m_Timer.GetTotalTime()) });
 
 	float angle = static_cast<float>(m_Timer.GetTotalTime() * 90.0);
 	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
@@ -131,10 +134,15 @@ void SimpleGeoApp::OnRender() {
 
 	// draw geometry
 	{
-		// set root signature and descripotr heaps
+		// set root signature
 		commandList->SetGraphicsRootSignature(m_RootSignature.Get());
-		ID3D12DescriptorHeap* descriptorHeaps[] = { m_GeoCBDescHeap.Get() };
-		commandList->SetDescriptorHeaps(1, descriptorHeaps);
+
+		// set descripotr heaps for pass constants
+		ID3D12DescriptorHeap* descriptorHeaps[] = { m_PassConstantsDescHeap.Get() };
+		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+		// set pass constants
+		commandList->SetGraphicsRootDescriptorTable(1, m_PassConstantsDescHeap->GetGPUDescriptorHandleForHeapStart());
 
 		// set PSO
 		// chose pso depending on z-buffer type
@@ -160,6 +168,10 @@ void SimpleGeoApp::OnRender() {
 		commandList->IASetVertexBuffers(0, 1, &m_BoxAndPiramidGeo.VertexBufferView());
 		commandList->IASetIndexBuffer(&m_BoxAndPiramidGeo.IndexBufferView());
 		commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// set descripotr heaps for object constants
+		descriptorHeaps[0] = m_GeoCBDescHeap.Get();
+		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 		// draw box
 		// set box descriptor to root signature
@@ -338,12 +350,16 @@ void SimpleGeoApp::InitAppState() {
 }
 
 void SimpleGeoApp::BuildRootSignature() {
-	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
 
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange;
-	descriptorRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange1;
+	descriptorRange1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 
-	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange);
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange2;
+	descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+
+	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange1);
+	rootParameters[1].InitAsDescriptorTable(1, &descriptorRange2);
 
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
@@ -353,7 +369,7 @@ void SimpleGeoApp::BuildRootSignature() {
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-	rootSignatureDesc.Init_1_1(1, rootParameters, 0, NULL, rootSignatureFlags);
+	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 0, NULL, rootSignatureFlags);
 
 	D3D12_FEATURE_DATA_ROOT_SIGNATURE rsVersion;
 	rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
@@ -482,6 +498,25 @@ void SimpleGeoApp::BuildObjectsConstantsBufferAndViews() {
 		descHandle.Offset(m_CBDescSize);
 		bufferGPUAdress += m_ObjectsConstantsBuffer->GetElementByteSize();
 	}
+}
+
+void SimpleGeoApp::BuildPassConstantsBufferAndView() {
+	m_PassConstantsBuffer = std::make_unique<UploadBuffer<PassConstants>>(m_Device, 1, true);
+
+	m_PassConstantsDescHeap = CreateDescriptorHeap(
+		1,
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+	);
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
+	CBViewDesc.BufferLocation = m_PassConstantsBuffer->Get()->GetGPUVirtualAddress();
+	CBViewDesc.SizeInBytes = m_PassConstantsBuffer->GetElementByteSize();
+
+	m_Device->CreateConstantBufferView(
+		&CBViewDesc,
+		m_PassConstantsDescHeap->GetCPUDescriptorHandleForHeapStart()
+	);
 }
 
 void SimpleGeoApp::BuildPipelineStateObject() {
