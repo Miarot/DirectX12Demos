@@ -35,8 +35,8 @@ private:
 	void InitAppState();
 	void BuildRootSignature();
 	void BuildBoxAndPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
-	void BuildObjectsConstantsBufferAndViews();
-	void BuildPassConstantsBufferAndView();
+	void BuildFrameResources();
+	void BuildObjectsAndPassConstantsBufferViews();
 	void BuildPipelineStateObject();
 
 	// for Sobel filter
@@ -59,15 +59,16 @@ private:
 		float TotalTime = 0.0;
 	};
 
+	class FrameResources;
+
 	XMMATRIX GetProjectionMatrix();
 
 private:
 	ComPtr<ID3DBlob> m_PixelShaderBlob;
 	ComPtr<ID3DBlob> m_VertexShaderBlob;
-	std::unique_ptr<UploadBuffer<ObjectConstants>> m_ObjectsConstantsBuffer;
-	std::unique_ptr<UploadBuffer<PassConstants>> m_PassConstantsBuffer;
-	ComPtr<ID3D12DescriptorHeap> m_GeoCBDescHeap;
-	ComPtr<ID3D12DescriptorHeap> m_PassConstantsDescHeap;
+	std::vector<std::unique_ptr<FrameResources>> m_FramesResources;
+	FrameResources* m_CurrentFrameResources;
+	ComPtr<ID3D12DescriptorHeap> m_CBDescHeap;
 	ComPtr<ID3D12RootSignature> m_RootSignature;
 	std::map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
 

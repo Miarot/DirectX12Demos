@@ -4,6 +4,7 @@
 #include <array>
 
 #include <SimpleGeoApp.h>
+#include <FrameResources.h>
 
 SimpleGeoApp::SimpleGeoApp(HINSTANCE hInstance) : BaseApp(hInstance) {}
 
@@ -20,8 +21,14 @@ bool SimpleGeoApp::Initialize() {
 
 	BuildBoxAndPiramidGeometry(commandList);
 
-	BuildObjectsConstantsBufferAndViews();
-	BuildPassConstantsBufferAndView();
+	BuildFrameResources();
+
+	m_CBDescHeap = CreateDescriptorHeap(
+		(m_NumGeo + 1) * m_NumBackBuffers,
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+	);
+	BuildObjectsAndPassConstantsBufferViews();
 
 	BuildRootSignature();
 	BuildPipelineStateObject();
@@ -55,7 +62,8 @@ void SimpleGeoApp::OnUpdate() {
 		m_Timer.StartMeasurement();
 	}
 
-	m_PassConstantsBuffer->CopyData(0, { float(m_Timer.GetTotalTime()) });
+	m_CurrentFrameResources = m_FramesResources[m_CurrentBackBufferIndex].get();
+	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(0, { float(m_Timer.GetTotalTime()) });
 
 	float angle = static_cast<float>(m_Timer.GetTotalTime() * 90.0);
 	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
@@ -73,8 +81,8 @@ void SimpleGeoApp::OnUpdate() {
 	m_PiramidMVP.MVP = XMMatrixMultiply(piramidModelMatrix, viewMatrix);
 	m_PiramidMVP.MVP = XMMatrixMultiply(m_PiramidMVP.MVP, projectionMatrix);
 
-	m_ObjectsConstantsBuffer->CopyData(0, m_BoxMVP);
-	m_ObjectsConstantsBuffer->CopyData(1, m_PiramidMVP);
+	m_CurrentFrameResources->m_ObjectsConstantsBuffer->CopyData(0, m_BoxMVP);
+	m_CurrentFrameResources->m_ObjectsConstantsBuffer->CopyData(1, m_PiramidMVP);
 }
 
 void SimpleGeoApp::OnRender() {
@@ -137,12 +145,19 @@ void SimpleGeoApp::OnRender() {
 		// set root signature
 		commandList->SetGraphicsRootSignature(m_RootSignature.Get());
 
-		// set descripotr heaps for pass constants
-		ID3D12DescriptorHeap* descriptorHeaps[] = { m_PassConstantsDescHeap.Get() };
+		// set descripotr heaps
+		ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBDescHeap.Get() };
 		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 		// set pass constants
-		commandList->SetGraphicsRootDescriptorTable(1, m_PassConstantsDescHeap->GetGPUDescriptorHandleForHeapStart());
+		commandList->SetGraphicsRootDescriptorTable(
+			1, 
+			CD3DX12_GPU_DESCRIPTOR_HANDLE(
+				m_CBDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_NumGeo * m_NumBackBuffers + m_CurrentBackBufferIndex,
+				m_CBDescSize
+			)
+		);
 
 		// set PSO
 		// chose pso depending on z-buffer type
@@ -169,13 +184,14 @@ void SimpleGeoApp::OnRender() {
 		commandList->IASetIndexBuffer(&m_BoxAndPiramidGeo.IndexBufferView());
 		commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		// set descripotr heaps for object constants
-		descriptorHeaps[0] = m_GeoCBDescHeap.Get();
-		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
 		// draw box
 		// set box descriptor to root signature
-		CD3DX12_GPU_DESCRIPTOR_HANDLE geoCBDescHandle(m_GeoCBDescHeap->GetGPUDescriptorHandleForHeapStart());
+		CD3DX12_GPU_DESCRIPTOR_HANDLE geoCBDescHandle(
+			m_CBDescHeap->GetGPUDescriptorHandleForHeapStart(),
+			m_CurrentBackBufferIndex * m_NumGeo,
+			m_CBDescSize
+		);
+
 		commandList->SetGraphicsRootDescriptorTable(0, geoCBDescHandle);
 
 		// draw vertexes by its indexes and primitive topology
@@ -470,25 +486,49 @@ void SimpleGeoApp::BuildBoxAndPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> 
 	m_BoxAndPiramidGeo.DrawArgs["box"] = boxSubmesh;
 }
 
-void SimpleGeoApp::BuildObjectsConstantsBufferAndViews() {
-	m_ObjectsConstantsBuffer = std::make_unique<UploadBuffer<ObjectConstants>>(m_Device, m_NumGeo, true);
+void SimpleGeoApp::BuildFrameResources() {
+	m_FramesResources.reserve(m_NumBackBuffers);
 
-	m_GeoCBDescHeap = CreateDescriptorHeap(
-		m_NumGeo,
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
-	);
+	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
+		m_FramesResources.push_back(std::make_unique<FrameResources>(m_Device, 1, m_NumGeo));
+	}
+}
 
+void SimpleGeoApp::BuildObjectsAndPassConstantsBufferViews() {
 	m_CBDescSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_CBDescHeap->GetCPUDescriptorHandleForHeapStart());
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_GeoCBDescHeap->GetCPUDescriptorHandleForHeapStart());
-	D3D12_GPU_VIRTUAL_ADDRESS bufferGPUAdress = m_ObjectsConstantsBuffer->Get()->GetGPUVirtualAddress();
+	uint32_t objectConstansElementByteSize = m_FramesResources[0]->m_ObjectsConstantsBuffer->GetElementByteSize();
 
-	for (uint32_t i = 0; i < m_NumGeo; ++i) {
+	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
+		auto objectsConstantsBuffer = m_FramesResources[i]->m_ObjectsConstantsBuffer->Get();
+		D3D12_GPU_VIRTUAL_ADDRESS objectConstantsBufferGPUAdress = objectsConstantsBuffer->GetGPUVirtualAddress();
+
+		for (uint32_t j = 0; j < m_NumGeo; ++j) {
+			D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
+
+			CBViewDesc.BufferLocation = objectConstantsBufferGPUAdress;
+			CBViewDesc.SizeInBytes = objectConstansElementByteSize;
+
+			m_Device->CreateConstantBufferView(
+				&CBViewDesc,
+				descHandle
+			);
+
+			descHandle.Offset(m_CBDescSize);
+			objectConstantsBufferGPUAdress += objectConstansElementByteSize;
+		}
+	}
+
+	uint32_t passConstansElementByteSize = m_FramesResources[0]->m_PassConstantsBuffer->GetElementByteSize();
+
+	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
+		auto passConstantsBuffer = m_FramesResources[i]->m_PassConstantsBuffer->Get();
+
 		D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
 
-		CBViewDesc.BufferLocation = bufferGPUAdress;
-		CBViewDesc.SizeInBytes = m_ObjectsConstantsBuffer->GetElementByteSize();
+		CBViewDesc.BufferLocation = passConstantsBuffer->GetGPUVirtualAddress();
+		CBViewDesc.SizeInBytes = passConstansElementByteSize;
 
 		m_Device->CreateConstantBufferView(
 			&CBViewDesc,
@@ -496,27 +536,7 @@ void SimpleGeoApp::BuildObjectsConstantsBufferAndViews() {
 		);
 
 		descHandle.Offset(m_CBDescSize);
-		bufferGPUAdress += m_ObjectsConstantsBuffer->GetElementByteSize();
 	}
-}
-
-void SimpleGeoApp::BuildPassConstantsBufferAndView() {
-	m_PassConstantsBuffer = std::make_unique<UploadBuffer<PassConstants>>(m_Device, 1, true);
-
-	m_PassConstantsDescHeap = CreateDescriptorHeap(
-		1,
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
-	);
-
-	D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
-	CBViewDesc.BufferLocation = m_PassConstantsBuffer->Get()->GetGPUVirtualAddress();
-	CBViewDesc.SizeInBytes = m_PassConstantsBuffer->GetElementByteSize();
-
-	m_Device->CreateConstantBufferView(
-		&CBViewDesc,
-		m_PassConstantsDescHeap->GetCPUDescriptorHandleForHeapStart()
-	);
 }
 
 void SimpleGeoApp::BuildPipelineStateObject() {

@@ -27,6 +27,7 @@ set( HEADER_FILES
 	inc/Camera.h
 	inc/Timer.h
 	inc/UploadBuffer.h
+	inc/FrameResources.h
 )
 
 set( SHADER_FILES
@@ -65,6 +66,7 @@ set( SRC_FILES
 	src/SimpleGeoApp.cpp
 	src/Camera.cpp
 	src/Timer.cpp
+	src/FrameResources.cpp
 )
 
 add_executable( ${TARGET_NAME} WIN32
