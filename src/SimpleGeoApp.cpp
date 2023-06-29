@@ -19,9 +19,15 @@ bool SimpleGeoApp::Initialize() {
 
 	InitAppState();
 
+	BuildFrameResources();
+
 	BuildBoxAndPiramidGeometry(commandList);
 
-	BuildFrameResources();
+	m_PiramidMVP.ModelMatrix = XMMatrixTranslation(2, 0, 2);
+
+	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
+		m_FramesResources[i]->m_ObjectsConstantsBuffer->CopyData(1, m_PiramidMVP);
+	}
 
 	m_CBDescHeap = CreateDescriptorHeap(
 		(m_NumGeo + 1) * m_NumBackBuffers,
@@ -61,28 +67,30 @@ void SimpleGeoApp::OnUpdate() {
 
 		m_Timer.StartMeasurement();
 	}
-
+	
 	m_CurrentFrameResources = m_FramesResources[m_CurrentBackBufferIndex].get();
-	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(0, { float(m_Timer.GetTotalTime()) });
 
+	// update pass constants
+	XMMATRIX View = m_Camera.GetViewMatrix();
+	XMMATRIX Proj = GetProjectionMatrix();
+	XMMATRIX ViewProj = XMMatrixMultiply(View, Proj);
+
+	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(
+		0,
+		{
+			float(m_Timer.GetTotalTime()),
+			View,
+			Proj,
+			ViewProj
+		}
+	);
+
+	// update objects constants
 	float angle = static_cast<float>(m_Timer.GetTotalTime() * 90.0);
 	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
-	XMMATRIX boxModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
-
-	XMMATRIX piramidModelMatrix = XMMatrixTranslation(2, 0, 2);
-
-	XMMATRIX viewMatrix = m_Camera.GetViewMatrix();
-
-	XMMATRIX projectionMatrix = GetProjectionMatrix();
-
-	m_BoxMVP.MVP = XMMatrixMultiply(boxModelMatrix, viewMatrix);
-	m_BoxMVP.MVP = XMMatrixMultiply(m_BoxMVP.MVP, projectionMatrix);
-
-	m_PiramidMVP.MVP = XMMatrixMultiply(piramidModelMatrix, viewMatrix);
-	m_PiramidMVP.MVP = XMMatrixMultiply(m_PiramidMVP.MVP, projectionMatrix);
+	m_BoxMVP.ModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
 
 	m_CurrentFrameResources->m_ObjectsConstantsBuffer->CopyData(0, m_BoxMVP);
-	m_CurrentFrameResources->m_ObjectsConstantsBuffer->CopyData(1, m_PiramidMVP);
 }
 
 void SimpleGeoApp::OnRender() {

@@ -52,14 +52,20 @@ private:
 
 	// Vertex Shader parameter data structure
 	struct ObjectConstants {
-		XMMATRIX MVP = XMMatrixIdentity();
+		XMMATRIX ModelMatrix = XMMatrixIdentity();
 	};
 
 	struct PassConstants {
 		float TotalTime = 0.0;
+
+		XMMATRIX View = XMMatrixIdentity();
+		XMMATRIX Proj = XMMatrixIdentity();
+		XMMATRIX ViewProj = XMMatrixIdentity();
 	};
 
 	class FrameResources;
+
+	class RenderTarget;
 
 	XMMATRIX GetProjectionMatrix();
 
