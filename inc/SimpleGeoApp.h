@@ -34,7 +34,8 @@ private:
 
 	void InitAppState();
 	void BuildRootSignature();
-	void BuildBoxAndPiramidGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
+	void BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
+	void BuildRenderItems();
 	void BuildFrameResources();
 	void BuildObjectsAndPassConstantsBufferViews();
 	void BuildPipelineStateObject();
@@ -65,7 +66,7 @@ private:
 
 	class FrameResources;
 
-	class RenderTarget;
+	class RenderItem;
 
 	XMMATRIX GetProjectionMatrix();
 
@@ -76,7 +77,7 @@ private:
 	FrameResources* m_CurrentFrameResources;
 	ComPtr<ID3D12DescriptorHeap> m_CBDescHeap;
 	ComPtr<ID3D12RootSignature> m_RootSignature;
-	std::map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
+	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
 
 	// for Sobel filter
 	bool m_IsSobelFilter = false;
@@ -90,10 +91,8 @@ private:
 
 	FLOAT m_BackGroundColor[4] = {0.4f, 0.6f, 0.9f, 1.0f};
 
-	const uint32_t m_NumGeo = 2;
-	MeshGeometry m_BoxAndPiramidGeo;
-	ObjectConstants m_BoxMVP;
-	ObjectConstants m_PiramidMVP;
+	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;
+	std::vector<std::unique_ptr<RenderItem>> m_RenderItems;
 
 	bool m_IsInverseDepth = false;
 

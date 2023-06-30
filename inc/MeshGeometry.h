@@ -12,9 +12,9 @@ using Microsoft::WRL::ComPtr;
 #include <unordered_map>
 
 struct SubmeshGeometry {
-	UINT IndexCount = 0;
-	UINT StartIndexLocation = 0;
-	UINT BaseVertexLocation = 0;
+	uint32_t IndexCount = 0;
+	uint32_t StartIndexLocation = 0;
+	uint32_t BaseVertexLocation = 0;
 };
 
 struct MeshGeometry {
@@ -26,10 +26,10 @@ struct MeshGeometry {
 	ComPtr<ID3D12Resource> VertexBufferUploader = nullptr;
 	ComPtr<ID3D12Resource> IndexBufferUploader = nullptr;
 
-	UINT VertexByteStride = 0;
-	UINT VertexBufferByteSize = 0;
+	uint32_t VertexByteStride = 0;
+	uint32_t VertexBufferByteSize = 0;
 	DXGI_FORMAT IndexBufferFormat = DXGI_FORMAT_R16_UINT;
-	UINT IndexBufferByteSize = 0;
+	uint32_t IndexBufferByteSize = 0;
 
 	std::unordered_map<std::string, SubmeshGeometry> DrawArgs;
 
