@@ -5,9 +5,11 @@ using namespace DirectX;
 
 #include <map>
 
+#include <AppStructures.h>
 #include <BaseApp.h>
-#include <MeshGeometry.h>
 #include <Camera.h>
+#include <FrameResources.h>
+#include <MeshGeometry.h>
 #include <Timer.h>
 #include <UploadBuffer.h>
 
@@ -45,39 +47,6 @@ private:
 	void UpdateFramesTextures();
 	void BuildSobelRootSignature();
 	void BuildSobelPipelineStateObject();
-
-	// Vertex Shader input data structure
-	struct VertexPosNorm {
-		XMFLOAT3 Position;
-		XMFLOAT3 Norm;
-	};
-
-	// Shaders parameters structures
-	struct ObjectConstants {
-		XMMATRIX ModelMatrix = XMMatrixIdentity();
-	};
-
-	struct PassConstants {
-		XMMATRIX View = XMMatrixIdentity();
-		XMMATRIX Proj = XMMatrixIdentity();
-		XMMATRIX ViewProj = XMMatrixIdentity();
-
-		float TotalTime = 0.0;
-		uint32_t isDrawNorm = 0;
-	};
-
-	struct MaterialConstants {
-		XMFLOAT4 DiffuseAlbedo;
-		XMFLOAT3 FresnelR0;
-		float Roughness;
-	};
-
-	// Usefull classes
-	class FrameResources;
-
-	class RenderItem;
-
-	class Material;
 
 	XMMATRIX GetProjectionMatrix();
 

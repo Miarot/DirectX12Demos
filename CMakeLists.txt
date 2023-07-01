@@ -2,37 +2,38 @@ cmake_minimum_required( VERSION 3.25.1 )
 
 project( DirectXDemos LANGUAGES CXX )
 
-set( HEADER_FILES 
-	inc/helpers.h
-	inc/d3dx12.h
-	inc/MeshGeometry.h
-	inc/CommandQueue.h
+set( HEADER_FILES
+	inc/AppStructures.h
 	inc/BaseApp.h
-	inc/SimpleGeoApp.h
 	inc/Camera.h
+	inc/CommandQueue.h
+	inc/d3dx12.h
+	inc/FrameResources.h
+	inc/Helpers.h
+	inc/MeshGeometry.h
+	inc/SimpleGeoApp.h
 	inc/Timer.h
 	inc/UploadBuffer.h
-	inc/FrameResources.h
-	inc/RenderItem.h
-	inc/Material.h
-	inc/Light.h
 )
 
 set( SRC_FILES
-	src/main.cpp
-	src/CommandQueue.cpp
 	src/BaseApp.cpp
-	src/SimpleGeoApp.cpp
 	src/Camera.cpp
-	src/Timer.cpp
+	src/CommandQueue.cpp
 	src/FrameResources.cpp
+	src/main.cpp
+	src/MeshGeometry.cpp
+	src/SimpleGeoApp.cpp
+	src/Timer.cpp
 )
 
 set( SHADER_FILES
-	shaders/VertexShader.hlsl
-	shaders/PixelShader.hlsl
-	shaders/SobelVertexShader.hlsl
+	shaders/GeoConstantsStructures.hlsl
+	shaders/GeoPixelShader.hlsl
+	shaders/GeoVertexShader.hlsl
+	shaders/LightUtils.hlsl
 	shaders/SobelPixelShader.hlsl
+	shaders/SobelVertexShader.hlsl
 )
 
 add_executable( ${PROJECT_NAME} WIN32

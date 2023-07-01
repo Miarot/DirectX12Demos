@@ -1,11 +1,10 @@
 #pragma once
 
 #include <memory>
-
-#include <SimpleGeoApp.h>
+#include <AppStructures.h>
 #include <UploadBuffer.h>
 
-class SimpleGeoApp::FrameResources {
+class FrameResources {
 public:
 	FrameResources(
 		ComPtr<ID3D12Device> device, 

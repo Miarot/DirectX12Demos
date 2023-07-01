@@ -18,6 +18,8 @@ using Microsoft::WRL::ComPtr;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+constexpr int32_t m_NumBackBuffers = 3;
+
 class BaseApp {
 protected:
 	explicit BaseApp(HINSTANCE hInstance);

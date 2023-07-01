@@ -1,6 +1,6 @@
 #include <FrameResources.h>
 
-SimpleGeoApp::FrameResources::FrameResources(
+FrameResources::FrameResources(
 	ComPtr<ID3D12Device> device, 
 	UINT numPassConstants, 
 	UINT numObjectConstants,
@@ -11,4 +11,4 @@ SimpleGeoApp::FrameResources::FrameResources(
 	m_MaterialsConstantsBuffer = std::make_unique <UploadBuffer<MaterialConstants>>(device, numMaterialConstants, true);
 }
 
-SimpleGeoApp::FrameResources::~FrameResources() {}
+FrameResources::~FrameResources() {}

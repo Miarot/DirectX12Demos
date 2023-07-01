@@ -4,9 +4,6 @@
 #include <array>
 
 #include <SimpleGeoApp.h>
-#include <FrameResources.h>
-#include <RenderItem.h>
-#include <Material.h>
 
 SimpleGeoApp::SimpleGeoApp(HINSTANCE hInstance) : BaseApp(hInstance) {}
 
@@ -809,8 +806,8 @@ void SimpleGeoApp::BuildCBViews() {
 
 void SimpleGeoApp::BuildPipelineStateObject() {
 	// Compile shaders	
-	m_VertexShaderBlob = CompileShader(L"..\\shaders\\VertexShader.hlsl", "main", "vs_5_1");
-	m_PixelShaderBlob = CompileShader(L"..\\shaders\\PixelShader.hlsl", "main", "ps_5_1");
+	m_VertexShaderBlob = CompileShader(L"..\\..\\shaders\\GeoVertexShader.hlsl", "main", "vs_5_1");
+	m_PixelShaderBlob = CompileShader(L"..\\..\\shaders\\GeoPixelShader.hlsl", "main", "ps_5_1");
 
 	// Create rasterizer state description
 	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
@@ -974,8 +971,8 @@ void SimpleGeoApp::BuildSobelRootSignature() {
 
 void SimpleGeoApp::BuildSobelPipelineStateObject() {
 	// Compile shaders	
-	m_SobelVertexShaderBlob = CompileShader(L"..\\shaders\\SobelVertexShader.hlsl", "main", "vs_5_1");
-	m_SobelPixelShaderBlob = CompileShader(L"..\\shaders\\SobelPixelShader.hlsl", "main", "ps_5_1");
+	m_SobelVertexShaderBlob = CompileShader(L"..\\..\\shaders\\SobelVertexShader.hlsl", "main", "vs_5_1");
+	m_SobelPixelShaderBlob = CompileShader(L"..\\..\\shaders\\SobelPixelShader.hlsl", "main", "ps_5_1");
 
 	// Create pipeline state object description
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
