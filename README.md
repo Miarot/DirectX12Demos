@@ -2,10 +2,6 @@
 
 Demo to learn and explore DirectX 12 and different rendering technics.
 
-## Installation
-
-Use GenerateProject.bat to generate Visual Studio project and solution (change the version if necessary, current version is Visual Studio 17 2022, the "C++ game development" workload should be installed in this version).
-
 ## Demo control
 - WASD to move camera
 - left mouse button to rotate camera
