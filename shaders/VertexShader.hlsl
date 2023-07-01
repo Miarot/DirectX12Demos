@@ -18,12 +18,11 @@ struct ObjectConstants
 ConstantBuffer<ObjectConstants> ObjectConstantsCB : register(b0);
 
 struct PassConstants 
-{
-    float TotalTime;
-    
+{ 
     matrix View;
     matrix Proj;
     matrix ViewProj;
+    float TotalTime;
 };
 
 ConstantBuffer<PassConstants> PassConstantsCB :register(b1);

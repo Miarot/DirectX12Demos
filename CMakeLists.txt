@@ -29,6 +29,7 @@ set( HEADER_FILES
 	inc/UploadBuffer.h
 	inc/FrameResources.h
 	inc/RenderItem.h
+	inc/Material.h
 )
 
 set( SHADER_FILES

@@ -10,6 +10,8 @@ public:
 	uint32_t m_NumDirtyFramse = m_NumBackBuffers;
 
 	MeshGeometry* m_MeshGeo = nullptr;
+	Material* m_Material = nullptr;
+
 	uint32_t m_IndexCount = 0;
 	uint32_t m_StartIndexLocation = 0;
 	uint32_t m_BaseVertexLocation = 0;

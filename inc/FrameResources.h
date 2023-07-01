@@ -7,7 +7,12 @@
 
 class SimpleGeoApp::FrameResources {
 public:
-	FrameResources(ComPtr<ID3D12Device> device, UINT numPassConstants, UINT numObjectConstants);
+	FrameResources(
+		ComPtr<ID3D12Device> device, 
+		UINT numPassConstants, 
+		UINT numObjectConstants,
+		UINT numMaterialConstants
+	);
 
 	FrameResources(const FrameResources& other) = delete;
 	FrameResources& operator=(const FrameResources& other) = delete;
@@ -16,4 +21,5 @@ public:
 
 	std::unique_ptr<UploadBuffer<PassConstants>> m_PassConstantsBuffer;
 	std::unique_ptr<UploadBuffer<ObjectConstants>> m_ObjectsConstantsBuffer;
+	std::unique_ptr<UploadBuffer<MaterialConstants>> m_MaterialsConstantsBuffer;
 };

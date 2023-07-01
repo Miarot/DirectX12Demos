@@ -6,6 +6,7 @@
 #include <SimpleGeoApp.h>
 #include <FrameResources.h>
 #include <RenderItem.h>
+#include <Material.h>
 
 SimpleGeoApp::SimpleGeoApp(HINSTANCE hInstance) : BaseApp(hInstance) {}
 
@@ -21,16 +22,19 @@ bool SimpleGeoApp::Initialize() {
 	InitAppState();
 
 	BuildGeometry(commandList);
+
+	BuildMaterials();
+
 	BuildRenderItems();
 
 	BuildFrameResources();
 
 	m_CBDescHeap = CreateDescriptorHeap(
-		(m_RenderItems.size() + 1) * m_NumBackBuffers,
+		(m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
-	BuildObjectsAndPassConstantsBufferViews();
+	BuildCBViews();
 
 	BuildRootSignature();
 	BuildPipelineStateObject();
@@ -50,7 +54,6 @@ bool SimpleGeoApp::Initialize() {
 	for (auto& it : m_Geometries) {
 		it.second->DisposeUploaders();
 	}
-	
 
 	return true;
 }
@@ -77,12 +80,30 @@ void SimpleGeoApp::OnUpdate() {
 	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(
 		0,
 		{
-			float(m_Timer.GetTotalTime()),
 			View,
 			Proj,
-			ViewProj
+			ViewProj,
+			float(m_Timer.GetTotalTime())
 		}
 	);
+
+	// update materials
+	for (auto& it : m_Materials) {
+		auto mat = it.second.get();
+
+		if (mat->NumDirtyFrames > 0) {
+			m_CurrentFrameResources->m_MaterialsConstantsBuffer->CopyData(
+				mat->MaterialCBIndex,
+				{
+					mat->DiffuseAlbedo,
+					mat->FresnelR0,
+					mat->Roughness
+				}
+			);
+
+			--mat->NumDirtyFrames;
+		}
+	}
 
 	// rotate box
 	auto boxRenderItem = m_RenderItems[2].get();
@@ -214,7 +235,14 @@ void SimpleGeoApp::OnRender() {
 				m_CBDescSize
 			);
 
+			CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
+				m_CBDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_NumBackBuffers * (m_RenderItems.size() + 1) + m_CurrentBackBufferIndex * m_Materials.size() + renderItem->m_Material->MaterialCBIndex,
+				m_CBDescSize
+			);
+
 			commandList->SetGraphicsRootDescriptorTable(0, geoCBDescHandle);
+			commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
 
 			commandList->DrawIndexedInstanced(
 				renderItem->m_IndexCount,
@@ -373,23 +401,26 @@ void SimpleGeoApp::InitAppState() {
 }
 
 void SimpleGeoApp::BuildRootSignature() {
-	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[3];
+
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange0;
+	descriptorRange0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange1;
-	descriptorRange1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+	descriptorRange1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
 
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange2;
-	descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+	descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
 
-	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange1);
-	rootParameters[1].InitAsDescriptorTable(1, &descriptorRange2);
+	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange0);
+	rootParameters[1].InitAsDescriptorTable(1, &descriptorRange1);
+	rootParameters[2].InitAsDescriptorTable(1, &descriptorRange2);
 
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
 	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 0, NULL, rootSignatureFlags);
@@ -497,6 +528,34 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 	m_Geometries[boxAndPiramidGeo->name] = std::move(boxAndPiramidGeo);
 }
 
+void SimpleGeoApp::BuildMaterials() {
+	// grass material
+	{
+		auto grass = std::make_unique<Material>();
+
+		grass->Name = "grass";
+		grass->MaterialCBIndex = 0;
+		grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.6f, 1.0f);
+		grass->FresnelR0 = XMFLOAT3(0.01f, 1.01f, 0.01f);
+		grass->Roughness = 0.125f;
+
+		m_Materials[grass->Name] = std::move(grass);
+	}
+
+	// water material
+	{
+		auto water = std::make_unique<Material>();
+
+		water->Name = "water";
+		water->MaterialCBIndex = 1;
+		water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
+		water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 1.1f);
+		water->Roughness = 0.0f;
+
+		m_Materials[water->Name] = std::move(water);
+	}
+}
+
 void SimpleGeoApp::BuildRenderItems() {
 	auto curGeo = m_Geometries["BoxAndPiramid"].get();
 
@@ -506,6 +565,7 @@ void SimpleGeoApp::BuildRenderItems() {
 
 		piramid->m_ModelMatrix = XMMatrixTranslation(2, 0, 2);
 		piramid->m_MeshGeo = curGeo;
+		piramid->m_Material = m_Materials["grass"].get();
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
 		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
@@ -519,6 +579,7 @@ void SimpleGeoApp::BuildRenderItems() {
 		auto piramid = std::make_unique<RenderItem>();
 
 		piramid->m_ModelMatrix = XMMatrixTranslation(4, 0, 4);
+		piramid->m_Material = m_Materials["water"].get();
 		piramid->m_MeshGeo = curGeo;
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
@@ -534,6 +595,7 @@ void SimpleGeoApp::BuildRenderItems() {
 
 		box->m_ModelMatrix = XMMatrixTranslation(0, 0, 0);
 		box->m_MeshGeo = curGeo;
+		box->m_Material = m_Materials["water"].get();
 		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
 		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
 		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
@@ -548,6 +610,7 @@ void SimpleGeoApp::BuildRenderItems() {
 
 		box->m_ModelMatrix = XMMatrixTranslation(7, 0, 7);
 		box->m_MeshGeo = curGeo;
+		box->m_Material = m_Materials["grass"].get();
 		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
 		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
 		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
@@ -561,11 +624,16 @@ void SimpleGeoApp::BuildFrameResources() {
 	m_FramesResources.reserve(m_NumBackBuffers);
 
 	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
-		m_FramesResources.push_back(std::make_unique<FrameResources>(m_Device, 1, m_RenderItems.size()));
+		m_FramesResources.push_back(std::make_unique<FrameResources>(
+			m_Device,
+			1, 
+			m_RenderItems.size(),
+			m_Materials.size()
+		));
 	}
 }
 
-void SimpleGeoApp::BuildObjectsAndPassConstantsBufferViews() {
+void SimpleGeoApp::BuildCBViews() {
 	m_CBDescSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_CBDescHeap->GetCPUDescriptorHandleForHeapStart());
 
@@ -593,7 +661,7 @@ void SimpleGeoApp::BuildObjectsAndPassConstantsBufferViews() {
 		}
 	}
 
-	// last m_NumBackBuffers for pass constants
+	// next m_NumBackBuffers for pass constants
 	// m_NumBackBuffers * m_RenderItems.size() + i for i frame resource
 	uint32_t passConstansElementByteSize = m_FramesResources[0]->m_PassConstantsBuffer->GetElementByteSize();
 
@@ -611,6 +679,30 @@ void SimpleGeoApp::BuildObjectsAndPassConstantsBufferViews() {
 		);
 
 		descHandle.Offset(m_CBDescSize);
+	}
+
+
+	// last m_Materials.size() * m_NumBackBuffers for materials constants
+	uint32_t materialConstantsElementByteSize = m_FramesResources[0]->m_MaterialsConstantsBuffer->GetElementByteSize();
+
+	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
+		auto materialConstantsBuffer = m_FramesResources[i]->m_MaterialsConstantsBuffer->Get();
+		D3D12_GPU_VIRTUAL_ADDRESS materialConstantsBufferGPUAdress = materialConstantsBuffer->GetGPUVirtualAddress();
+
+		for (uint32_t j = 0; j < m_Materials.size(); ++j) {
+			D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
+
+			CBViewDesc.BufferLocation = materialConstantsBufferGPUAdress;
+			CBViewDesc.SizeInBytes = materialConstantsElementByteSize;
+
+			m_Device->CreateConstantBufferView(
+				&CBViewDesc,
+				descHandle
+			);
+
+			descHandle.Offset(m_CBDescSize);
+			materialConstantsBufferGPUAdress += materialConstantsElementByteSize;
+		}
 	}
 }
 

@@ -35,9 +35,10 @@ private:
 	void InitAppState();
 	void BuildRootSignature();
 	void BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
+	void BuildMaterials();
 	void BuildRenderItems();
 	void BuildFrameResources();
-	void BuildObjectsAndPassConstantsBufferViews();
+	void BuildCBViews();
 	void BuildPipelineStateObject();
 
 	// for Sobel filter
@@ -51,22 +52,31 @@ private:
 		XMFLOAT3 Color;
 	};
 
-	// Vertex Shader parameter data structure
+	// Shaders parameters structures
 	struct ObjectConstants {
 		XMMATRIX ModelMatrix = XMMatrixIdentity();
 	};
 
 	struct PassConstants {
-		float TotalTime = 0.0;
-
 		XMMATRIX View = XMMatrixIdentity();
 		XMMATRIX Proj = XMMatrixIdentity();
 		XMMATRIX ViewProj = XMMatrixIdentity();
+
+		float TotalTime = 0.0;
 	};
 
+	struct MaterialConstants {
+		XMFLOAT4 DiffuseAlbedo;
+		XMFLOAT3 FresnelR0;
+		float Roughness;
+	};
+
+	// Usefull classes
 	class FrameResources;
 
 	class RenderItem;
+
+	class Material;
 
 	XMMATRIX GetProjectionMatrix();
 
@@ -92,6 +102,7 @@ private:
 	FLOAT m_BackGroundColor[4] = {0.4f, 0.6f, 0.9f, 1.0f};
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;
+	std::unordered_map <std::string, std::unique_ptr<Material>> m_Materials;
 	std::vector<std::unique_ptr<RenderItem>> m_RenderItems;
 
 	bool m_IsInverseDepth = false;
