@@ -452,44 +452,141 @@ void SimpleGeoApp::BuildRootSignature() {
 void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	auto boxAndPiramidGeo = std::make_unique<MeshGeometry>();
 
-	std::array<VertexPosColor, 13> vertexes = {
+	const uint32_t numBoxVertexes = 24;
+	const uint32_t numPiramidVertexes = 16;
+
+	std::array<VertexPosNorm, numBoxVertexes + numPiramidVertexes> vertexes = {
 		// box
-		VertexPosColor({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0
-		VertexPosColor({ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }), // 1
-		VertexPosColor({ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }), // 2
-		VertexPosColor({ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 3
-		VertexPosColor({ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 4
-		VertexPosColor({ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }), // 5
-		VertexPosColor({ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }), // 6
-		VertexPosColor({ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 7
+		// front face
+		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f, -1.0f) }), // 0, 0
+		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f, -1.0f) }), // 1, 1
+		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f, -1.0f) }), // 2, 2
+		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f, -1.0f) }), // 3, 3
+
+		// left face
+		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f, -1.0f) }), // 0, 4
+		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f,  1.0f) }), // 4, 5
+		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f,  1.0f) }), // 5, 6
+		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f, -1.0f) }), // 1, 7
+
+		// right face
+		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f, -1.0f) }), // 3, 8
+		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f, -1.0f) }), // 2, 9
+		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f,  1.0f) }), // 6, 10
+		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f,  1.0f) }), // 7, 11
+
+		// top face
+		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f, -1.0f) }), // 1, 12
+		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f,  1.0f) }), // 5, 13
+		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f,  1.0f) }), // 6, 14
+		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f, -1.0f) }), // 2, 15
+
+		// bottom face
+		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f, -1.0f) }), // 0, 16
+		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f,  1.0f) }), // 4, 17
+		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f,  1.0f) }), // 7, 18
+		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f, -1.0f) }), // 3, 19
+
+		// back face
+		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f,  1.0f) }), // 7, 20
+		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f,  1.0f) }), // 6, 21
+		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f,  1.0f) }), // 5, 22
+		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f,  1.0f) }), // 4, 23
+
 		// piramid
-		VertexPosColor({ XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0
-		VertexPosColor({ XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }), // 1
-		VertexPosColor({ XMFLOAT3(1.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }), // 2
-		VertexPosColor({ XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 3
-		VertexPosColor({ XMFLOAT3(0.5f, 1.0f, 0.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 4
+		// bottom face
+		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 0
+		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 1
+		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 2
+		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 3
+
+		// front face
+		VertexPosNorm({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 4
+		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 5
+		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 6
+
+		// back face
+		VertexPosNorm({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 7
+		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 8
+		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 9
+
+		// left face
+		VertexPosNorm({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 10
+		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 11
+		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 12
+
+		// right face
+		VertexPosNorm({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 13
+		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 14
+		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 15
 	};
 
+	const uint32_t numBoxIndexes = 36;
+	const uint32_t numPiramidIndexes = 18;
 
-	std::array<uint16_t, 54> indexes =
+	std::array<uint16_t, numBoxIndexes + numPiramidIndexes> indexes =
 	{
 		// box
-		0, 1, 2, 0, 2, 3,
-		4, 6, 5, 4, 7, 6,
-		4, 5, 1, 4, 1, 0,
-		3, 2, 6, 3, 6, 7,
-		1, 5, 6, 1, 6, 2,
-		4, 0, 3, 4, 3, 7,
+		0, 1, 2, 0, 2, 3, // front face
+		4, 5, 6, 4, 6, 7, // left face
+		8, 9, 10, 8, 10, 11, // right face
+		12, 13, 14, 12, 14, 15, // top face
+		19, 18, 17, 19, 17, 16, // bottom face
+		20, 21, 22, 20, 22, 23, // back face
 		// piramid
-		0, 1, 3,
-		1, 2, 3,
-		0, 4, 1,
-		1, 4, 2,
-		2, 4, 3,
-		0, 3, 4
+		0, 1, 3, 1, 2, 3, // bottom face
+		4, 5, 6, // front face
+		7, 8, 9, // back face
+		10, 11, 12, // left face
+		13, 14, 15 // right face
 	};
 
-	UINT vbByteSize = vertexes.size() * sizeof(VertexPosColor);
+	// computer norms for each vertex
+	std::array<XMVECTOR, vertexes.size()> vertexesNorm;
+
+	for (uint32_t i = 0; i < vertexes.size(); ++i) {
+		vertexesNorm[i] = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	}
+	
+	// for box
+	for (uint32_t i = 0; i < numBoxIndexes; i += 3) {
+		uint16_t i0 = indexes[i];
+		uint16_t i1 = indexes[i + 1];
+		uint16_t i2 = indexes[i + 2];
+
+		XMVECTOR p0 = XMLoadFloat3(&vertexes[i0].Position);
+		XMVECTOR p1 = XMLoadFloat3(&vertexes[i1].Position);
+		XMVECTOR p2 = XMLoadFloat3(&vertexes[i2].Position);
+
+		XMVECTOR triangleNorm = XMVector3Cross(p1 - p0, p2 - p0);
+
+		vertexesNorm[i0] += triangleNorm;
+		vertexesNorm[i1] += triangleNorm;
+		vertexesNorm[i2] += triangleNorm;
+	}
+
+	// for piramid
+	for (uint32_t i = numBoxIndexes; i < indexes.size(); i += 3) {
+		uint16_t i0 = indexes[i] + numBoxVertexes;
+		uint16_t i1 = indexes[i + 1] + numBoxVertexes;
+		uint16_t i2 = indexes[i + 2] + numBoxVertexes;
+
+		XMVECTOR p0 = XMLoadFloat3(&vertexes[i0].Position);
+		XMVECTOR p1 = XMLoadFloat3(&vertexes[i1].Position);
+		XMVECTOR p2 = XMLoadFloat3(&vertexes[i2].Position);
+
+		XMVECTOR triangleNorm = XMVector3Cross(p1 - p0, p2 - p0);
+
+		vertexesNorm[i0] += triangleNorm;
+		vertexesNorm[i1] += triangleNorm;
+		vertexesNorm[i2] += triangleNorm;
+	}
+
+	for (uint32_t i = 0; i < vertexes.size(); ++i) {
+		XMStoreFloat3(&vertexes[i].Norm, XMVector3Normalize(vertexesNorm[i]));
+	}
+
+	UINT vbByteSize = vertexes.size() * sizeof(VertexPosNorm);
 	UINT ibByteSize = indexes.size() * sizeof(uint16_t);
 
 	boxAndPiramidGeo->VertexBufferGPU = CreateGPUResourceAndLoadData(
@@ -508,19 +605,19 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 
 	boxAndPiramidGeo->name = "BoxAndPiramid";
 	boxAndPiramidGeo->VertexBufferByteSize = vbByteSize;
-	boxAndPiramidGeo->VertexByteStride = sizeof(VertexPosColor);
+	boxAndPiramidGeo->VertexByteStride = sizeof(VertexPosNorm);
 	boxAndPiramidGeo->IndexBufferByteSize = ibByteSize;
 	boxAndPiramidGeo->IndexBufferFormat = DXGI_FORMAT_R16_UINT;
 
 	SubmeshGeometry boxSubmesh;
-	boxSubmesh.IndexCount = 36;
+	boxSubmesh.IndexCount = numBoxIndexes;
 	boxSubmesh.BaseVertexLocation = 0;
 	boxSubmesh.StartIndexLocation = 0;
 
 	SubmeshGeometry piramidSubmesh;
-	piramidSubmesh.IndexCount = 18;
-	piramidSubmesh.BaseVertexLocation = 8;
-	piramidSubmesh.StartIndexLocation = 36;
+	piramidSubmesh.IndexCount = numPiramidIndexes;
+	piramidSubmesh.BaseVertexLocation = numBoxVertexes;
+	piramidSubmesh.StartIndexLocation = numBoxIndexes;
 
 	boxAndPiramidGeo->DrawArgs["Box"] = boxSubmesh;
 	boxAndPiramidGeo->DrawArgs["Piramid"] = piramidSubmesh;
@@ -718,7 +815,7 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 	// Create input layout
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[]{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		{"NORM", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
 	D3D12_INPUT_LAYOUT_DESC inpuitLayout{ inputElementDescs, _countof(inputElementDescs) };

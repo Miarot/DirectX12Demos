@@ -1,6 +1,6 @@
 struct PixelIn
 {
-    float4 color : COLOR;
+    float3 norm : NORM;
 };
 
 struct MaterialConstants {
@@ -13,5 +13,5 @@ ConstantBuffer<MaterialConstants> MaterilaConstantsCB : register(b2);
 
 float4 main(PixelIn pin) : SV_Target
 {
-    return float4(MaterilaConstantsCB.fresnelR0, 1.0f);
+    return float4((pin.norm + 1) / 2, 1.0f);
 }

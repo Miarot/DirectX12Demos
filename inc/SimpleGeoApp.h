@@ -47,9 +47,9 @@ private:
 	void BuildSobelPipelineStateObject();
 
 	// Vertex Shader input data structure
-	struct VertexPosColor {
+	struct VertexPosNorm {
 		XMFLOAT3 Position;
-		XMFLOAT3 Color;
+		XMFLOAT3 Norm;
 	};
 
 	// Shaders parameters structures
