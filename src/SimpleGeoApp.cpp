@@ -83,7 +83,8 @@ void SimpleGeoApp::OnUpdate() {
 			View,
 			Proj,
 			ViewProj,
-			float(m_Timer.GetTotalTime())
+			float(m_Timer.GetTotalTime()),
+			m_IsDrawNorm
 		}
 	);
 
@@ -340,6 +341,9 @@ void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {
 		break;
 	case '3':
 		m_IsSobelFilter = !m_IsSobelFilter;
+		break;
+	case '4':
+		m_IsDrawNorm = !m_IsDrawNorm;
 		break;
 	case 'W':
 	case 'S':

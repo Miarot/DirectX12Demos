@@ -22,7 +22,9 @@ struct PassConstants
     matrix View;
     matrix Proj;
     matrix ViewProj;
+    
     float TotalTime;
+    uint isDrawNorm;
 };
 
 ConstantBuffer<PassConstants> PassConstantsCB :register(b1);

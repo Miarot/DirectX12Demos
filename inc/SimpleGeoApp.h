@@ -63,6 +63,7 @@ private:
 		XMMATRIX ViewProj = XMMatrixIdentity();
 
 		float TotalTime = 0.0;
+		uint32_t isDrawNorm = 0;
 	};
 
 	struct MaterialConstants {
@@ -106,6 +107,7 @@ private:
 	std::vector<std::unique_ptr<RenderItem>> m_RenderItems;
 
 	bool m_IsInverseDepth = false;
+	bool m_IsDrawNorm = false;
 
 	POINT m_LastMousePos;
 	Camera m_Camera;
