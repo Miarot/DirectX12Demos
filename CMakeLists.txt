@@ -1,21 +1,6 @@
-cmake_minimum_required( VERSION 3.25.1 ) # Latest version of CMake when this file was created.
+cmake_minimum_required( VERSION 3.25.1 )
 
-# Use solution folders to organize projects
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-# Make sure DLL and EXE targets go to the same directory.
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib) # Output directory for static lib (.LIB)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) # Output directory for shared lib (.DLL)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) # Output directory for executables (.EXE)
-
-project( DirectXAppFromScratch LANGUAGES CXX )
-
-# Set the startup project.
-set_directory_properties( PROPERTIES
-	VS_STARTUP_PROJECT DirectXAppFromScratch
-)
-
-set( TARGET_NAME DirectXAppFromScratch )
+project( DirectXDemos LANGUAGES CXX )
 
 set( HEADER_FILES 
 	inc/helpers.h
@@ -30,35 +15,7 @@ set( HEADER_FILES
 	inc/FrameResources.h
 	inc/RenderItem.h
 	inc/Material.h
-)
-
-set( SHADER_FILES
-	shaders/VertexShader.hlsl
-	shaders/PixelShader.hlsl
-	shaders/SobelVertexShader.hlsl
-	shaders/SobelPixelShader.hlsl
-)
-
-source_group( "Resources\\Shaders" FILES ${SHADER_FILES} )
-
-set_source_files_properties( shaders/VertexShader.hlsl PROPERTIES 
-    VS_SHADER_TYPE Vertex
-    VS_SHADER_MODEL 5.1
-)
-
-set_source_files_properties( shaders/SobelVertexShader.hlsl PROPERTIES 
-    VS_SHADER_TYPE Vertex
-    VS_SHADER_MODEL 5.1
-)
-
-set_source_files_properties( shaders/PixelShader.hlsl PROPERTIES 
-    VS_SHADER_TYPE Pixel
-    VS_SHADER_MODEL 5.1
-)
-
-set_source_files_properties( shaders/SobelPixelShader.hlsl PROPERTIES 
-    VS_SHADER_TYPE Pixel
-    VS_SHADER_MODEL 5.1
+	inc/Light.h
 )
 
 set( SRC_FILES
@@ -71,17 +28,23 @@ set( SRC_FILES
 	src/FrameResources.cpp
 )
 
-add_executable( ${TARGET_NAME} WIN32
-	${HEADER_FILES}
-	${SRC_FILES}
-	${SHADER_FILES}
+set( SHADER_FILES
+	shaders/VertexShader.hlsl
+	shaders/PixelShader.hlsl
+	shaders/SobelVertexShader.hlsl
+	shaders/SobelPixelShader.hlsl
 )
 
-target_include_directories( ${TARGET_NAME} PUBLIC
+add_executable( ${PROJECT_NAME} WIN32
+	${HEADER_FILES}
+	${SRC_FILES}
+)
+
+target_include_directories( ${PROJECT_NAME} PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
 
-target_link_libraries( ${TARGET_NAME}
+target_link_libraries( ${PROJECT_NAME}
 	PUBLIC d3d12.lib
 	PUBLIC dxgi.lib
 	PUBLIC dxguid.lib

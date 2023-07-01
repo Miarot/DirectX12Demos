@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Daniil\work\DirectXDemos\vs_2022\CMakeFiles\c85775169d2b49bddc6d5bcd1947af34\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{843BF1BC-72ED-3A64-9A76-A4973B3E2096}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
