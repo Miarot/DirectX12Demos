@@ -8,6 +8,7 @@ using namespace DirectX;
 class Camera {
 public:
 	Camera();
+	Camera(float fov, float theta, float phi, float radius, XMVECTOR focusPos, XMVECTOR upDir);
 
 	void UpdatePosAndDirection();
 

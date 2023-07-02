@@ -386,7 +386,14 @@ void SimpleGeoApp::OnMouseMove(WPARAM wParam, int x, int y) {
 }
 
 void SimpleGeoApp::InitAppState() {
-	m_Camera = Camera();
+	m_Camera = Camera(
+		45.0f,
+		XM_PIDIV2 + 0.4,
+		XM_PIDIV4,
+		15.0f,
+		XMVectorSet(4.0f, 0.0f, 4.0f, 0.0f),
+		XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
+	);
 
 	m_Timer = Timer();
 	m_Timer.StartMeasurement();

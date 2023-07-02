@@ -13,6 +13,17 @@ Camera::Camera() :
 	UpdatePosAndDirection();
 }
 
+Camera::Camera(float fov, float theta, float phi, float radius, XMVECTOR focusPos, XMVECTOR upDir) :
+	m_FoV(fov),
+	m_Theta(theta),
+	m_Phi(phi),
+	m_Radius(radius),
+	m_FocusPos(focusPos),
+	m_CameraUpDirection(upDir)
+{
+	UpdatePosAndDirection();
+}
+
 void Camera::UpdatePosAndDirection() {
 	// spherical coordinates to cartesian
 	float x = m_Radius * sinf(m_Phi) * cosf(m_Theta);
