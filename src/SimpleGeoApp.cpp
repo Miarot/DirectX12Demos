@@ -18,6 +18,8 @@ bool SimpleGeoApp::Initialize() {
 
 	InitAppState();
 
+	BuildLights();
+
 	BuildGeometry(commandList);
 
 	BuildMaterials();
@@ -78,11 +80,6 @@ void SimpleGeoApp::OnUpdate() {
 
 	m_PassConstants.TotalTime = float(m_Timer.GetTotalTime());
 	m_PassConstants.IsDrawNorm = m_IsDrawNorm;
-
-	m_PassConstants.AmbientLight = XMVectorSet(0.1f, 0.1f, 0.1f, 1.0f);
-	m_PassConstants.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
-	XMVECTOR direction = XMVector3Normalize(-XMVectorSet(1.0f, 2.0f, 3.0f, 0.0f));
-	XMStoreFloat3(&m_PassConstants.Lights[0].Direction, direction);
 
 	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(0, m_PassConstants);
 
@@ -451,6 +448,22 @@ void SimpleGeoApp::BuildRootSignature() {
 	));
 }
 
+void SimpleGeoApp::BuildLights() {
+	m_PassConstants.AmbientLight = XMVectorSet(0.1f, 0.1f, 0.1f, 1.0f);
+
+	// directional light 1
+	m_PassConstants.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
+	XMVECTOR direction = XMVector3Normalize(-XMVectorSet(1.0f, 2.0f, 3.0f, 0.0f));
+	XMStoreFloat3(&m_PassConstants.Lights[0].Direction, direction);
+
+	// point light 1
+	m_PassConstants.Lights[1].Strength = { 0.6f, 0.0f, 0.0f };
+	m_PassConstants.Lights[1].Position = { 7.0f, 2.0f, 5.0f };
+	m_PassConstants.Lights[1].FalloffStart = 1.0f;
+	m_PassConstants.Lights[1].FalloffEnd = 8.0f;
+
+}
+
 void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	auto boxAndPiramidGeo = std::make_unique<MeshGeometry>();
 
@@ -633,7 +646,7 @@ void SimpleGeoApp::BuildMaterials() {
 		auto grass = std::make_unique<Material>();
 
 		grass->Name = "grass";
-		grass->MaterialCBIndex = 0;
+		grass->MaterialCBIndex = m_Materials.size();
 		grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.3f, 1.0f);
 		grass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 		grass->Roughness = 0.125f;
@@ -646,12 +659,45 @@ void SimpleGeoApp::BuildMaterials() {
 		auto water = std::make_unique<Material>();
 
 		water->Name = "water";
-		water->MaterialCBIndex = 1;
+		water->MaterialCBIndex = m_Materials.size();
 		water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
 		water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 		water->Roughness = 0.0f;
 
 		m_Materials[water->Name] = std::move(water);
+	}
+
+	// white material
+	{
+		auto white = std::make_unique<Material>();
+
+		white->Name = "white";
+		white->MaterialCBIndex = m_Materials.size();
+		white->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		white->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+		white->Roughness = 0.0f;
+
+		m_Materials[white->Name] = std::move(white);
+	}
+
+	// light material 1
+	{
+		auto light = std::make_unique<Material>();
+
+		light->Name = "light";
+		light->MaterialCBIndex = m_Materials.size();
+
+		light->DiffuseAlbedo = XMFLOAT4(
+			1000.0f * m_PassConstants.Lights[1].Strength.x, 
+			1000.0f * m_PassConstants.Lights[1].Strength.y,
+			1000.0f * m_PassConstants.Lights[1].Strength.z,
+			1.0f
+		);
+
+		light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		light->Roughness = 0.0f;
+
+		m_Materials[light->Name] = std::move(light);
 	}
 }
 
@@ -678,7 +724,7 @@ void SimpleGeoApp::BuildRenderItems() {
 		auto piramid = std::make_unique<RenderItem>();
 
 		piramid->m_ModelMatrix = XMMatrixTranslation(4, 0, 4);
-		piramid->m_Material = m_Materials["water"].get();
+		piramid->m_Material = m_Materials["white"].get();
 		piramid->m_MeshGeo = curGeo;
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
@@ -703,13 +749,13 @@ void SimpleGeoApp::BuildRenderItems() {
 		m_RenderItems.push_back(std::move(box));
 	}
 
-	// still
+	// still box
 	{
 		auto box = std::make_unique<RenderItem>();
 
 		box->m_ModelMatrix = XMMatrixTranslation(7, 0, 7);
 		box->m_MeshGeo = curGeo;
-		box->m_Material = m_Materials["grass"].get();
+		box->m_Material = m_Materials["white"].get();
 		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
 		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
 		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
@@ -717,6 +763,28 @@ void SimpleGeoApp::BuildRenderItems() {
 
 		m_RenderItems.push_back(std::move(box));
 	}
+
+	// point light piramid 1
+	{
+		auto piramid = std::make_unique<RenderItem>();
+
+		piramid->m_ModelMatrix = XMMatrixTranslation(
+			m_PassConstants.Lights[1].Position.x,
+			m_PassConstants.Lights[1].Position.y,
+			m_PassConstants.Lights[1].Position.z
+		);
+
+		piramid->m_ModelMatrix = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), piramid->m_ModelMatrix);
+		piramid->m_Material = m_Materials["light"].get();
+		piramid->m_MeshGeo = curGeo;
+		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
+		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
+		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
+		piramid->m_CBIndex = m_RenderItems.size();
+
+		m_RenderItems.push_back(std::move(piramid));
+	}
+
 }
 
 void SimpleGeoApp::BuildFrameResources() {

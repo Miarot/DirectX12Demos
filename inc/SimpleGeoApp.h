@@ -38,6 +38,7 @@ private:
 
 	void InitAppState();
 	void BuildRootSignature();
+	void BuildLights();
 	void BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
 	void BuildMaterials();
 	void BuildRenderItems();
