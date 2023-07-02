@@ -26,28 +26,36 @@ struct ObjectConstants {
 	XMMATRIX ModelMatrix = XMMatrixIdentity();
 };
 
-struct PassConstants {
-	XMMATRIX View = XMMatrixIdentity();
-	XMMATRIX Proj = XMMatrixIdentity();
-	XMMATRIX ViewProj = XMMatrixIdentity();
-
-	float TotalTime = 0.0;
-	uint32_t isDrawNorm = 0;
-};
-
-struct MaterialConstants {
-	XMFLOAT4 DiffuseAlbedo;
-	XMFLOAT3 FresnelR0;
-	float Roughness;
-};
-
 struct Light {
-	XMFLOAT3 Srength;
+	XMFLOAT3 Strength;
 	float FalloffStart;
 	XMFLOAT3 Direction;
 	float FalloffEnd;
 	XMFLOAT3 Position;
 	float SpotPower;
+};
+
+struct PassConstants {
+	XMMATRIX View = XMMatrixIdentity();
+	XMMATRIX Proj = XMMatrixIdentity();
+	XMMATRIX ViewProj = XMMatrixIdentity();
+
+	XMFLOAT3 EyePos;
+	float TotalTime = 0.0f;
+	float SomeConst1;
+	float SomeConst2;
+	float SomeConst3;
+	uint32_t IsDrawNorm = 0;
+
+	XMVECTOR AmbientLight;
+	Light Lights[16];
+};
+
+
+struct MaterialConstants {
+	XMFLOAT4 DiffuseAlbedo;
+	XMFLOAT3 FresnelR0;
+	float Roughness;
 };
 
 struct Material {

@@ -13,6 +13,7 @@ public:
 
 	XMMATRIX GetViewMatrix();
 	float GetFoV() const;
+	XMVECTOR GetCameraPos() const;
 
 	void MoveCamera(WPARAM direction);
 	void RotateCamera(int dx, int dy);

@@ -39,6 +39,10 @@ float Camera::GetFoV() const {
 	return m_FoV;
 }
 
+XMVECTOR Camera::GetCameraPos() const {
+	return m_CameraPos;
+}
+
 void Camera::MoveCamera(WPARAM direction) {
 	m_CameraPos -= m_FocusPos;
 

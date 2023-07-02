@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.25.1 )
 
-project( DirectXDemos LANGUAGES CXX )
+project( DirectX12Demos LANGUAGES CXX )
 
 set( HEADER_FILES
 	inc/AppStructures.h
@@ -28,9 +28,9 @@ set( SRC_FILES
 )
 
 set( SHADER_FILES
-	shaders/GeoConstantsStructures.hlsl
 	shaders/GeoPixelShader.hlsl
 	shaders/GeoVertexShader.hlsl
+	shaders/GeoUtils.hlsl
 	shaders/LightUtils.hlsl
 	shaders/SobelPixelShader.hlsl
 	shaders/SobelVertexShader.hlsl

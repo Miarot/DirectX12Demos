@@ -68,22 +68,23 @@ void SimpleGeoApp::OnUpdate() {
 
 		m_Timer.StartMeasurement();
 	}
-
+	
 	// update pass constants
-	XMMATRIX View = m_Camera.GetViewMatrix();
-	XMMATRIX Proj = GetProjectionMatrix();
-	XMMATRIX ViewProj = XMMatrixMultiply(View, Proj);
+	m_PassConstants.View = m_Camera.GetViewMatrix();
+	m_PassConstants.Proj = GetProjectionMatrix();
+	m_PassConstants.ViewProj = XMMatrixMultiply(m_PassConstants.View, m_PassConstants.Proj);
 
-	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(
-		0,
-		{
-			View,
-			Proj,
-			ViewProj,
-			float(m_Timer.GetTotalTime()),
-			m_IsDrawNorm
-		}
-	);
+	XMStoreFloat3(&m_PassConstants.EyePos, m_Camera.GetCameraPos());
+
+	m_PassConstants.TotalTime = float(m_Timer.GetTotalTime());
+	m_PassConstants.IsDrawNorm = m_IsDrawNorm;
+
+	m_PassConstants.AmbientLight = XMVectorSet(0.1f, 0.1f, 0.1f, 1.0f);
+	m_PassConstants.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
+	XMVECTOR direction = XMVector3Normalize(-XMVectorSet(1.0f, 2.0f, 3.0f, 0.0f));
+	XMStoreFloat3(&m_PassConstants.Lights[0].Direction, direction);
+
+	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(0, m_PassConstants);
 
 	// update materials
 	for (auto& it : m_Materials) {
@@ -633,8 +634,8 @@ void SimpleGeoApp::BuildMaterials() {
 
 		grass->Name = "grass";
 		grass->MaterialCBIndex = 0;
-		grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.6f, 1.0f);
-		grass->FresnelR0 = XMFLOAT3(0.01f, 1.01f, 0.01f);
+		grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.3f, 1.0f);
+		grass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 		grass->Roughness = 0.125f;
 
 		m_Materials[grass->Name] = std::move(grass);
@@ -647,7 +648,7 @@ void SimpleGeoApp::BuildMaterials() {
 		water->Name = "water";
 		water->MaterialCBIndex = 1;
 		water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
-		water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 1.1f);
+		water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 		water->Roughness = 0.0f;
 
 		m_Materials[water->Name] = std::move(water);

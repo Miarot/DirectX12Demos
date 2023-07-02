@@ -13,6 +13,8 @@ using namespace DirectX;
 #include <Timer.h>
 #include <UploadBuffer.h>
 
+constexpr uint32_t m_NumLights = 16;
+
 class SimpleGeoApp : public BaseApp {
 public:
 	explicit SimpleGeoApp(HINSTANCE hInstance);
@@ -78,6 +80,7 @@ private:
 	bool m_IsInverseDepth = false;
 	bool m_IsDrawNorm = false;
 
+	PassConstants m_PassConstants;
 	POINT m_LastMousePos;
 	Camera m_Camera;
 	Timer m_Timer;
