@@ -68,6 +68,11 @@ void SimpleGeoApp::OnUpdate() {
 		::sprintf_s(buffer, 500, "FPS: %f\n", fps);
 		::OutputDebugString(buffer);
 
+		XMFLOAT3 cameraPos;
+		XMStoreFloat3(&cameraPos, m_Camera.GetCameraPos());
+		::sprintf_s(buffer, 500, "CameraPos: %f, %f, %f\n", cameraPos.x, cameraPos.y, cameraPos.z);
+		::OutputDebugString(buffer);
+
 		m_Timer.StartMeasurement();
 	}
 	
@@ -451,17 +456,31 @@ void SimpleGeoApp::BuildRootSignature() {
 void SimpleGeoApp::BuildLights() {
 	m_PassConstants.AmbientLight = XMVectorSet(0.1f, 0.1f, 0.1f, 1.0f);
 
-	// directional light 1
-	m_PassConstants.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
-	XMVECTOR direction = XMVector3Normalize(-XMVectorSet(1.0f, 2.0f, 3.0f, 0.0f));
-	XMStoreFloat3(&m_PassConstants.Lights[0].Direction, direction);
+	// directional light 1 
+	{
+		m_PassConstants.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
+		XMVECTOR direction = XMVector3Normalize(-XMVectorSet(1.0f, 2.0f, 3.0f, 0.0f));
+		XMStoreFloat3(&m_PassConstants.Lights[0].Direction, direction);
+	}
+
 
 	// point light 1
-	m_PassConstants.Lights[1].Strength = { 0.6f, 0.0f, 0.0f };
-	m_PassConstants.Lights[1].Position = { 7.0f, 2.0f, 5.0f };
-	m_PassConstants.Lights[1].FalloffStart = 1.0f;
-	m_PassConstants.Lights[1].FalloffEnd = 8.0f;
+	{
+		m_PassConstants.Lights[1].Strength = { 0.6f, 0.0f, 0.0f };
+		m_PassConstants.Lights[1].Position = { 7.0f, 2.0f, 5.0f };
+		m_PassConstants.Lights[1].FalloffStart = 1.0f;
+		m_PassConstants.Lights[1].FalloffEnd = 8.0f;
+	}
 
+	// spot light 2
+	{
+		m_PassConstants.Lights[2].Strength = { 0.0f, 0.6f, 0.0f };
+		m_PassConstants.Lights[2].Position = { 5.0f, 0.0f, 7.0f };
+		m_PassConstants.Lights[2].FalloffStart = 1.0f;
+		m_PassConstants.Lights[2].FalloffEnd = 8.0f;
+		m_PassConstants.Lights[2].Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
+		m_PassConstants.Lights[2].SpotPower = 12.0f;
+	}
 }
 
 void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
@@ -684,13 +703,33 @@ void SimpleGeoApp::BuildMaterials() {
 	{
 		auto light = std::make_unique<Material>();
 
-		light->Name = "light";
+		light->Name = "light1";
 		light->MaterialCBIndex = m_Materials.size();
 
 		light->DiffuseAlbedo = XMFLOAT4(
 			1000.0f * m_PassConstants.Lights[1].Strength.x, 
 			1000.0f * m_PassConstants.Lights[1].Strength.y,
 			1000.0f * m_PassConstants.Lights[1].Strength.z,
+			1.0f
+		);
+
+		light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		light->Roughness = 0.0f;
+
+		m_Materials[light->Name] = std::move(light);
+	}
+
+	// light material 2
+	{
+		auto light = std::make_unique<Material>();
+
+		light->Name = "light2";
+		light->MaterialCBIndex = m_Materials.size();
+
+		light->DiffuseAlbedo = XMFLOAT4(
+			1000.0f * m_PassConstants.Lights[2].Strength.x,
+			1000.0f * m_PassConstants.Lights[2].Strength.y,
+			1000.0f * m_PassConstants.Lights[2].Strength.z,
 			1.0f
 		);
 
@@ -775,7 +814,28 @@ void SimpleGeoApp::BuildRenderItems() {
 		);
 
 		piramid->m_ModelMatrix = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), piramid->m_ModelMatrix);
-		piramid->m_Material = m_Materials["light"].get();
+		piramid->m_Material = m_Materials["light1"].get();
+		piramid->m_MeshGeo = curGeo;
+		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
+		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
+		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
+		piramid->m_CBIndex = m_RenderItems.size();
+
+		m_RenderItems.push_back(std::move(piramid));
+	}
+
+	// spot light piramid 1
+	{
+		auto piramid = std::make_unique<RenderItem>();
+
+		piramid->m_ModelMatrix = XMMatrixTranslation(
+			m_PassConstants.Lights[2].Position.x,
+			m_PassConstants.Lights[2].Position.y,
+			m_PassConstants.Lights[2].Position.z
+		);
+
+		piramid->m_ModelMatrix = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), piramid->m_ModelMatrix);
+		piramid->m_Material = m_Materials["light2"].get();
 		piramid->m_MeshGeo = curGeo;
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;

@@ -82,7 +82,7 @@ float3 ComputeSpotLight(Light L, Material mat, float3 norm, float3 toEye, float3
     
     lightVec /= d;
     
-    float3 lightStrength = L.Strength * pow(max(dot(norm, -lightVec), 0), L.SpotPower);
+    float3 lightStrength = L.Strength * pow(max(dot(L.Direction, -lightVec), 0), L.SpotPower);
     lightStrength *= CalcAttenuation(L.FalloffStart, L.FalloffEnd, d);
     lightStrength *= max(dot(norm, lightVec), 0);
     
@@ -106,7 +106,7 @@ float4 ComputeLighting(Light lights[MaxLights], Material mat, float3 norm, float
     #endif
     
     #if (NUM_SPOT_LIGHTS > 0)
-    for (i = NUM_POINT_LIGHTS; i < NUM_SPOT_LIGHTS +  NUM_DIR_LIGHTS + NUM_POINT_LIGHTS; ++i)
+    for (i = NUM_POINT_LIGHTS + NUM_DIR_LIGHTS; i < NUM_SPOT_LIGHTS + NUM_DIR_LIGHTS + NUM_POINT_LIGHTS; ++i)
     {
             res += ComputeSpotLight(lights[i], mat, norm, toEye, pos);
         }
