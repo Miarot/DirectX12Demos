@@ -14,6 +14,7 @@ Demo to learn and explore DirectX 12 and different rendering technics.
 - 1 to toggle camera "shake" effect
 - 2 to toggle reverce-Z
 - 3 to toggle Sobel filter
+- 4 to toggle normals view
 
 ## Sources
 - https://github.com/jpvanoosten/LearningDirectX12
