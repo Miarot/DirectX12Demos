@@ -46,6 +46,7 @@ private:
 	void BuildMaterials();
 	void BuildRenderItems();
 	void BuildFrameResources();
+	void BuildSRViews();
 	void BuildCBViews();
 	void BuildPipelineStateObject();
 
@@ -64,10 +65,13 @@ private:
 	ComPtr<ID3DBlob> m_NormPixelShaderBlob;
 	std::vector<std::unique_ptr<FrameResources>> m_FramesResources;
 	FrameResources* m_CurrentFrameResources;
-	ComPtr<ID3D12DescriptorHeap> m_CBDescHeap;
+	ComPtr<ID3D12DescriptorHeap> m_CBV_SRVDescHeap;
+	uint32_t m_TexturesViewsStartIndex;
+	uint32_t m_ObjectConstantsViewsStartIndex;
+	uint32_t m_PassConstantsViewsStartIndex;
+	uint32_t m_MaterialConstantsViewsStartIndex;
 	ComPtr<ID3D12RootSignature> m_RootSignature;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
-	ComPtr<ID3D12DescriptorHeap> m_ObjectsTexturesDescHeap;
 
 	// for Sobel filter
 	bool m_IsSobelFilter = false;

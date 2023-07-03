@@ -114,7 +114,7 @@ protected:
 	uint32_t m_CurrentBackBufferIndex;
 	ComPtr<ID3D12DescriptorHeap> m_BackBuffersDescHeap;
 	uint32_t m_RTVDescSize;
-	uint32_t m_CBDescSize;
+	uint32_t m_CBV_SRV_UAVDescSize;
 	ComPtr<ID3D12DescriptorHeap> m_DSVDescHeap;
 	ComPtr<ID3D12Resource> m_DSBuffer;
 

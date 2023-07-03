@@ -30,11 +30,13 @@ bool SimpleGeoApp::Initialize() {
 
 	BuildFrameResources();
 
-	m_CBDescHeap = CreateDescriptorHeap(
-		(m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
+	m_CBV_SRVDescHeap = CreateDescriptorHeap(
+		m_Textures.size() + (m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
+
+	BuildSRViews();
 	BuildCBViews();
 
 	BuildRootSignature();
@@ -193,16 +195,16 @@ void SimpleGeoApp::OnRender() {
 		commandList->SetGraphicsRootSignature(m_RootSignature.Get());
 
 		// set descripotr heaps
-		ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBDescHeap.Get() };
+		ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBV_SRVDescHeap.Get() };
 		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 		// set pass constants
 		commandList->SetGraphicsRootDescriptorTable(
 			1, 
 			CD3DX12_GPU_DESCRIPTOR_HANDLE(
-				m_CBDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_RenderItems.size() * m_NumBackBuffers + m_CurrentBackBufferIndex,
-				m_CBDescSize
+				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_PassConstantsViewsStartIndex + m_CurrentBackBufferIndex,
+				m_CBV_SRV_UAVDescSize
 			)
 		);
 
@@ -236,9 +238,8 @@ void SimpleGeoApp::OnRender() {
 		
 		// draw render items
 		for (uint32_t i = 0; i < m_RenderItems.size(); ++i) {
-			commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
 			auto renderItem = m_RenderItems[i].get();
+			auto mat = renderItem->m_Material;
 
 			// set Input-Assembler state
 			commandList->IASetVertexBuffers(0, 1, &renderItem->m_MeshGeo->VertexBufferView());
@@ -246,30 +247,26 @@ void SimpleGeoApp::OnRender() {
 			commandList->IASetPrimitiveTopology(renderItem->m_PrivitiveType);
 
 			CD3DX12_GPU_DESCRIPTOR_HANDLE geoCBDescHandle(
-				m_CBDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_CurrentBackBufferIndex * m_RenderItems.size() + renderItem->m_CBIndex,
-				m_CBDescSize
+				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_ObjectConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_RenderItems.size() + renderItem->m_CBIndex,
+				m_CBV_SRV_UAVDescSize
 			);
 
 			CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
-				m_CBDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_NumBackBuffers * (m_RenderItems.size() + 1) + m_CurrentBackBufferIndex * m_Materials.size() + renderItem->m_Material->MaterialCBIndex,
-				m_CBDescSize
+				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_MaterialConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_Materials.size() + mat->MaterialCBIndex,
+				m_CBV_SRV_UAVDescSize
+			);
+
+			CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
+				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
+				m_CBV_SRV_UAVDescSize
 			);
 
 			commandList->SetGraphicsRootDescriptorTable(0, geoCBDescHandle);
 			commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
-
-			ID3D12DescriptorHeap* descriptorHeaps1[] = { m_ObjectsTexturesDescHeap.Get() };
-			commandList->SetDescriptorHeaps(_countof(descriptorHeaps1), descriptorHeaps1);
-
-			CD3DX12_GPU_DESCRIPTOR_HANDLE textureViewDescHandle(
-				m_ObjectsTexturesDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_Textures[renderItem->m_Material->TextureName]->SRVHeapIndex,
-				m_CBDescSize
-			);
-
-			commandList->SetGraphicsRootDescriptorTable(3, textureViewDescHandle);
+			commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
 
 			commandList->DrawIndexedInstanced(
 				renderItem->m_IndexCount,
@@ -502,36 +499,6 @@ void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) 
 		CreateDDSTextureFromFile(commandList, brickTex.get());
 
 		m_Textures[brickTex->Name] = std::move(brickTex);
-	}
-
-	m_ObjectsTexturesDescHeap = CreateDescriptorHeap(
-		m_Textures.size(), 
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
-	);
-	m_CBDescSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
-	
-	viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	viewDesc.Texture2D.MostDetailedMip = 0;
-	viewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_ObjectsTexturesDescHeap->GetCPUDescriptorHandleForHeapStart());
-	
-	size_t i = 0;
-	for (auto& it: m_Textures) {
-		it.second->SRVHeapIndex = i;
-		ID3D12Resource* curTexBuffer = it.second->Resource.Get();
-
-		viewDesc.Format = curTexBuffer->GetDesc().Format;
-		viewDesc.Texture2D.MipLevels =curTexBuffer->GetDesc().MipLevels;
-
-		m_Device->CreateShaderResourceView(curTexBuffer, &viewDesc, descHandle);
-
-		descHandle.Offset(m_CBDescSize);
-		++i;
 	}
 }
 
@@ -927,12 +894,42 @@ void SimpleGeoApp::BuildFrameResources() {
 	}
 }
 
-void SimpleGeoApp::BuildCBViews() {
-	m_CBDescSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_CBDescHeap->GetCPUDescriptorHandleForHeapStart());
+void SimpleGeoApp::BuildSRViews() {
+	m_TexturesViewsStartIndex = 0;
 
-	// first m_NumBackBuffers * m_RenderItems.size() descriptors for object constants
-	// i * m_RenderItems.size() + j for i frame resource and for j object
+	D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
+
+	viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	viewDesc.Texture2D.MostDetailedMip = 0;
+	viewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart());
+
+	size_t i = m_TexturesViewsStartIndex;
+	for (auto& it : m_Textures) {
+		it.second->SRVHeapIndex = i;
+		ID3D12Resource* curTexBuffer = it.second->Resource.Get();
+
+		viewDesc.Format = curTexBuffer->GetDesc().Format;
+		viewDesc.Texture2D.MipLevels = curTexBuffer->GetDesc().MipLevels;
+
+		m_Device->CreateShaderResourceView(curTexBuffer, &viewDesc, descHandle);
+
+		descHandle.Offset(m_CBV_SRV_UAVDescSize);
+		++i;
+	}
+}
+
+void SimpleGeoApp::BuildCBViews() {
+	m_ObjectConstantsViewsStartIndex = m_TexturesViewsStartIndex +  m_Textures.size();
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(
+		m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_ObjectConstantsViewsStartIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
 	uint32_t objectConstansElementByteSize = m_FramesResources[0]->m_ObjectsConstantsBuffer->GetElementByteSize();
 
 	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
@@ -950,13 +947,12 @@ void SimpleGeoApp::BuildCBViews() {
 				descHandle
 			);
 
-			descHandle.Offset(m_CBDescSize);
+			descHandle.Offset(m_CBV_SRV_UAVDescSize);
 			objectConstantsBufferGPUAdress += objectConstansElementByteSize;
 		}
 	}
 
-	// next m_NumBackBuffers for pass constants
-	// m_NumBackBuffers * m_RenderItems.size() + i for i frame resource
+	m_PassConstantsViewsStartIndex = m_ObjectConstantsViewsStartIndex + m_NumBackBuffers * m_RenderItems.size();
 	uint32_t passConstansElementByteSize = m_FramesResources[0]->m_PassConstantsBuffer->GetElementByteSize();
 
 	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
@@ -972,11 +968,11 @@ void SimpleGeoApp::BuildCBViews() {
 			descHandle
 		);
 
-		descHandle.Offset(m_CBDescSize);
+		descHandle.Offset(m_CBV_SRV_UAVDescSize);
 	}
 
 
-	// last m_Materials.size() * m_NumBackBuffers for materials constants
+	m_MaterialConstantsViewsStartIndex = m_PassConstantsViewsStartIndex + m_NumBackBuffers;
 	uint32_t materialConstantsElementByteSize = m_FramesResources[0]->m_MaterialsConstantsBuffer->GetElementByteSize();
 
 	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
@@ -994,7 +990,7 @@ void SimpleGeoApp::BuildCBViews() {
 				descHandle
 			);
 
-			descHandle.Offset(m_CBDescSize);
+			descHandle.Offset(m_CBV_SRV_UAVDescSize);
 			materialConstantsBufferGPUAdress += materialConstantsElementByteSize;
 		}
 	}
