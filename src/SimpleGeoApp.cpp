@@ -18,6 +18,11 @@ bool SimpleGeoApp::Initialize() {
 
 	InitAppState();
 
+	m_Texture = std::make_unique<Texture>();
+	m_Texture->Name = "crate";
+	m_Texture->FileName = L"../../textures/WoodCrate01.dds";
+	CreateDDSTextureFromFile(commandList, m_Texture.get());
+
 	BuildLights();
 
 	BuildGeometry(commandList);
@@ -53,6 +58,8 @@ bool SimpleGeoApp::Initialize() {
 	for (auto& it : m_Geometries) {
 		it.second->DisposeUploaders();
 	}
+
+	m_Texture->UploadResource = nullptr;
 
 	return true;
 }
@@ -1165,4 +1172,49 @@ void SimpleGeoApp::BuildSobelPipelineStateObject() {
 	psoDesc.SampleDesc = { 1, 0 };
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_SobelPSO)));
+}
+
+void SimpleGeoApp::CreateDDSTextureFromFile(ComPtr<ID3D12GraphicsCommandList> commandList, Texture* tex) {
+	std::unique_ptr<uint8_t[]> ddsData;
+	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+
+	ThrowIfFailed(LoadDDSTextureFromFile(
+		m_Device.Get(), 
+		tex->FileName.c_str(), 
+		&tex->Resource, 
+		ddsData, subresources
+	));
+
+	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(
+		tex->Resource.Get(), 
+		0,
+		static_cast<UINT>(subresources.size())
+	);
+
+	ThrowIfFailed(m_Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&tex->UploadResource)
+	));
+
+	UpdateSubresources(
+		commandList.Get(),
+		tex->Resource.Get(), 
+		tex->UploadResource.Get(), 
+		0, 
+		0, 
+		static_cast<UINT>(subresources.size()), 
+		subresources.data()
+	);
+
+	CD3DX12_RESOURCE_BARRIER barier = CD3DX12_RESOURCE_BARRIER::Transition(
+		tex->Resource.Get(),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+	);
+
+	commandList->ResourceBarrier(1, &barier);
 }

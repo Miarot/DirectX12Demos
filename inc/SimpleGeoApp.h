@@ -1,6 +1,8 @@
 #pragma once
 
 #include <DirectXMath.h>
+#include <DDSTextureLoader12.h>
+
 using namespace DirectX;
 
 #include <map>
@@ -53,6 +55,8 @@ private:
 
 	XMMATRIX GetProjectionMatrix();
 
+	void CreateDDSTextureFromFile(ComPtr<ID3D12GraphicsCommandList> commandList, Texture* tex);
+
 private:
 	ComPtr<ID3DBlob> m_GeoVertexShaderBlob;
 	ComPtr<ID3DBlob> m_GeoPixelShaderBlob;
@@ -78,6 +82,7 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;
 	std::unordered_map <std::string, std::unique_ptr<Material>> m_Materials;
 	std::vector<std::unique_ptr<RenderItem>> m_RenderItems;
+	std::unique_ptr<Texture> m_Texture;
 
 	bool m_IsInverseDepth = false;
 	bool m_IsDrawNorm = false;

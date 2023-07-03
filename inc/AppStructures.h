@@ -82,3 +82,11 @@ struct RenderItem {
 
 	uint32_t m_CBIndex = -1;
 };
+
+struct Texture {
+	std::string Name;
+	std::wstring FileName;
+
+	ComPtr<ID3D12Resource> Resource;
+	ComPtr<ID3D12Resource> UploadResource;
+};

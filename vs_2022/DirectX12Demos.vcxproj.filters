@@ -25,6 +25,9 @@
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\src\Timer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex\DDSTextureLoader\DDSTextureLoader12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\inc\AppStructures.h">
@@ -58,6 +61,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\inc\UploadBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex\DDSTextureLoader\DDSTextureLoader12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
