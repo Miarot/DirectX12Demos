@@ -470,7 +470,7 @@ void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) 
 		auto crateTex = std::make_unique<Texture>();
 
 		crateTex->Name = "default";
-		crateTex->FileName = L"../../textures/default.dds";
+		crateTex->FileName = L"../../SimpleGeometry/textures/default.dds";
 
 		CreateDDSTextureFromFile(commandList, crateTex.get());
 
@@ -482,7 +482,7 @@ void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) 
 		auto crateTex = std::make_unique<Texture>();
 
 		crateTex->Name = "crate";
-		crateTex->FileName = L"../../textures/WoodCrate01.dds";
+		crateTex->FileName = L"../../SimpleGeometry/textures/WoodCrate01.dds";
 
 		CreateDDSTextureFromFile(commandList, crateTex.get());
 
@@ -494,7 +494,7 @@ void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) 
 		auto brickTex = std::make_unique<Texture>();
 
 		brickTex->Name = "bricks";
-		brickTex->FileName = L"../../textures/bricks.dds";
+		brickTex->FileName = L"../../SimpleGeometry/textures/bricks.dds";
 
 		CreateDDSTextureFromFile(commandList, brickTex.get());
 
@@ -1059,9 +1059,9 @@ void SimpleGeoApp::BuildRootSignature() {
 
 void SimpleGeoApp::BuildPipelineStateObject() {
 	// Compile shaders	
-	m_GeoVertexShaderBlob = CompileShader(L"..\\..\\shaders\\GeoVertexShader.hlsl", "main", "vs_5_1");
-	m_GeoPixelShaderBlob = CompileShader(L"..\\..\\shaders\\GeoPixelShader.hlsl", "main", "ps_5_1");
-	m_NormPixelShaderBlob = CompileShader(L"..\\..\\shaders\\NormPixelShader.hlsl", "main", "ps_5_1");
+	m_GeoVertexShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/GeoVertexShader.hlsl", "main", "vs_5_1");
+	m_GeoPixelShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/GeoPixelShader.hlsl", "main", "ps_5_1");
+	m_NormPixelShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/NormPixelShader.hlsl", "main", "ps_5_1");
 
 	// Create rasterizer state description
 	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
@@ -1241,8 +1241,8 @@ void SimpleGeoApp::BuildSobelRootSignature() {
 
 void SimpleGeoApp::BuildSobelPipelineStateObject() {
 	// Compile shaders	
-	m_SobelVertexShaderBlob = CompileShader(L"..\\..\\shaders\\SobelVertexShader.hlsl", "main", "vs_5_1");
-	m_SobelPixelShaderBlob = CompileShader(L"..\\..\\shaders\\SobelPixelShader.hlsl", "main", "ps_5_1");
+	m_SobelVertexShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/SobelVertexShader.hlsl", "main", "vs_5_1");
+	m_SobelPixelShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/SobelPixelShader.hlsl", "main", "ps_5_1");
 
 	// Create pipeline state object description
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;

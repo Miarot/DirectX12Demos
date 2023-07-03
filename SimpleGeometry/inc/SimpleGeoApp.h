@@ -1,7 +1,7 @@
 #pragma once
 
 #include <DirectXMath.h>
-#include <DDSTextureLoader12.h>
+#include <DirectXTex/DDSTextureLoader/DDSTextureLoader12.h>
 
 using namespace DirectX;
 
