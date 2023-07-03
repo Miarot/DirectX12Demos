@@ -17,9 +17,10 @@ using Microsoft::WRL::ComPtr;
 #include <BaseApp.h>
 #include <MeshGeometry.h>
 
-struct VertexPosNorm {
+struct Vertex {
 	XMFLOAT3 Position;
 	XMFLOAT3 Norm;
+	XMFLOAT2 TexC;
 };
 
 struct ObjectConstants {

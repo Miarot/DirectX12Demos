@@ -463,8 +463,16 @@ void SimpleGeoApp::BuildRootSignature() {
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
+	CD3DX12_STATIC_SAMPLER_DESC samplerDesc(
+		0,
+		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP
+	);
+
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 0, NULL, rootSignatureFlags);
+	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 1, &samplerDesc, rootSignatureFlags);
 
 	D3D12_FEATURE_DATA_ROOT_SIGNATURE rsVersion;
 	rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
@@ -521,6 +529,7 @@ void SimpleGeoApp::BuildLights() {
 }
 
 void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
+	// load crate texture
 	{
 		auto crateTex = std::make_unique<Texture>();
 
@@ -530,6 +539,18 @@ void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) 
 		CreateDDSTextureFromFile(commandList, crateTex.get());
 
 		m_Textures[crateTex->Name] = std::move(crateTex);
+	}
+
+	// load briks texture
+	{
+		auto brickTex = std::make_unique<Texture>();
+
+		brickTex->Name = "bricks";
+		brickTex->FileName = L"../../textures/bricks.dds";
+
+		CreateDDSTextureFromFile(commandList, brickTex.get());
+
+		m_Textures[brickTex->Name] = std::move(brickTex);
 	}
 
 	m_ObjectsTexturesDescHeap = CreateDescriptorHeap(
@@ -569,70 +590,70 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 	const uint32_t numBoxVertexes = 24;
 	const uint32_t numPiramidVertexes = 16;
 
-	std::array<VertexPosNorm, numBoxVertexes + numPiramidVertexes> vertexes = {
+	std::array<Vertex, numBoxVertexes + numPiramidVertexes> vertexes = {
 		// box
 		// front face
-		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f, -1.0f) }), // 0, 0
-		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f, -1.0f) }), // 1, 1
-		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f, -1.0f) }), // 2, 2
-		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f, -1.0f) }), // 3, 3
+		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 0, 0
+		Vertex({ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 1, 1
+		Vertex({ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 2, 2
+		Vertex({ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 3, 3
 
 		// left face
-		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f, -1.0f) }), // 0, 4
-		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f,  1.0f) }), // 4, 5
-		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f,  1.0f) }), // 5, 6
-		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f, -1.0f) }), // 1, 7
+		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 0, 4
+		Vertex({ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 4, 5
+		Vertex({ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 5, 6
+		Vertex({ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 1, 7
 
 		// right face
-		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f, -1.0f) }), // 3, 8
-		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f, -1.0f) }), // 2, 9
-		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f,  1.0f) }), // 6, 10
-		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f,  1.0f) }), // 7, 11
+		Vertex({ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 3, 8
+		Vertex({ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 2, 9
+		Vertex({ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 6, 10
+		Vertex({ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 7, 11
 
 		// top face
-		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f, -1.0f) }), // 1, 12
-		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f,  1.0f) }), // 5, 13
-		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f,  1.0f) }), // 6, 14
-		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f, -1.0f) }), // 2, 15
+		Vertex({ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 1, 12
+		Vertex({ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 5, 13
+		Vertex({ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 6, 14
+		Vertex({ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 2, 15
 
 		// bottom face
-		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f, -1.0f) }), // 0, 16
-		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f,  1.0f) }), // 4, 17
-		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f,  1.0f) }), // 7, 18
-		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f, -1.0f) }), // 3, 19
+		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 0, 16
+		Vertex({ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 4, 17
+		Vertex({ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 7, 18
+		Vertex({ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 3, 19
 
 		// back face
-		VertexPosNorm({ XMFLOAT3(1.0f, -1.0f,  1.0f) }), // 7, 20
-		VertexPosNorm({ XMFLOAT3(1.0f,  1.0f,  1.0f) }), // 6, 21
-		VertexPosNorm({ XMFLOAT3(-1.0f,  1.0f,  1.0f) }), // 5, 22
-		VertexPosNorm({ XMFLOAT3(-1.0f, -1.0f,  1.0f) }), // 4, 23
+		Vertex({ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 7, 20
+		Vertex({ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 6, 21
+		Vertex({ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 5, 22
+		Vertex({ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 4, 23
 
 		// piramid
 		// bottom face
-		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 0
-		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 1
-		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 2
-		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 3
+		Vertex({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 0
+		Vertex({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 1
+		Vertex({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 2
+		Vertex({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 3
 
 		// front face
-		VertexPosNorm({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 4
-		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 5
-		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 6
+		Vertex({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 4
+		Vertex({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 5
+		Vertex({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 6
 
 		// back face
-		VertexPosNorm({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 7
-		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 8
-		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 9
+		Vertex({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 7
+		Vertex({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 8
+		Vertex({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 9
 
 		// left face
-		VertexPosNorm({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 10
-		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 11
-		VertexPosNorm({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 12
+		Vertex({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 10
+		Vertex({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 11
+		Vertex({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 12
 
 		// right face
-		VertexPosNorm({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 13
-		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 14
-		VertexPosNorm({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 15
+		Vertex({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 13
+		Vertex({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 14
+		Vertex({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 15
 	};
 
 	const uint32_t numBoxIndexes = 36;
@@ -700,7 +721,7 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 		XMStoreFloat3(&vertexes[i].Norm, XMVector3Normalize(vertexesNorm[i]));
 	}
 
-	UINT vbByteSize = vertexes.size() * sizeof(VertexPosNorm);
+	UINT vbByteSize = vertexes.size() * sizeof(Vertex);
 	UINT ibByteSize = indexes.size() * sizeof(uint16_t);
 
 	boxAndPiramidGeo->VertexBufferGPU = CreateGPUResourceAndLoadData(
@@ -719,7 +740,7 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 
 	boxAndPiramidGeo->name = "BoxAndPiramid";
 	boxAndPiramidGeo->VertexBufferByteSize = vbByteSize;
-	boxAndPiramidGeo->VertexByteStride = sizeof(VertexPosNorm);
+	boxAndPiramidGeo->VertexByteStride = sizeof(Vertex);
 	boxAndPiramidGeo->IndexBufferByteSize = ibByteSize;
 	boxAndPiramidGeo->IndexBufferFormat = DXGI_FORMAT_R16_UINT;
 
@@ -768,18 +789,32 @@ void SimpleGeoApp::BuildMaterials() {
 		m_Materials[water->Name] = std::move(water);
 	}
 
-	// white material
+	// bricks material
 	{
-		auto white = std::make_unique<Material>();
+		auto bricks = std::make_unique<Material>();
 
-		white->Name = "white";
-		white->MaterialCBIndex = m_Materials.size();
-		white->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		white->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-		white->Roughness = 0.0f;
-		white->TextureName = "crate";
+		bricks->Name = "bricks";
+		bricks->MaterialCBIndex = m_Materials.size();
+		bricks->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		bricks->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+		bricks->Roughness = 0.0f;
+		bricks->TextureName = "bricks";
 
-		m_Materials[white->Name] = std::move(white);
+		m_Materials[bricks->Name] = std::move(bricks);
+	}
+
+	// crate material
+	{
+		auto crate = std::make_unique<Material>();
+
+		crate->Name = "crate";
+		crate->MaterialCBIndex = m_Materials.size();
+		crate->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		crate->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+		crate->Roughness = 0.5f;
+		crate->TextureName = "crate";
+
+		m_Materials[crate->Name] = std::move(crate);
 	}
 
 	// light material 1
@@ -848,7 +883,7 @@ void SimpleGeoApp::BuildRenderItems() {
 		auto piramid = std::make_unique<RenderItem>();
 
 		piramid->m_ModelMatrix = XMMatrixTranslation(4, 0, 4);
-		piramid->m_Material = m_Materials["white"].get();
+		piramid->m_Material = m_Materials["bricks"].get();
 		piramid->m_MeshGeo = curGeo;
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
@@ -858,13 +893,13 @@ void SimpleGeoApp::BuildRenderItems() {
 		m_RenderItems.push_back(std::move(piramid));
 	}
 
-	// rotating box
+	// rotating crate box
 	{
 		auto box = std::make_unique<RenderItem>();
 
 		box->m_ModelMatrix = XMMatrixTranslation(0, 0, 0);
 		box->m_MeshGeo = curGeo;
-		box->m_Material = m_Materials["water"].get();
+		box->m_Material = m_Materials["crate"].get();
 		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
 		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
 		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
@@ -873,13 +908,13 @@ void SimpleGeoApp::BuildRenderItems() {
 		m_RenderItems.push_back(std::move(box));
 	}
 
-	// still box
+	// still bricks box
 	{
 		auto box = std::make_unique<RenderItem>();
 
 		box->m_ModelMatrix = XMMatrixTranslation(7, 0, 7);
 		box->m_MeshGeo = curGeo;
-		box->m_Material = m_Materials["white"].get();
+		box->m_Material = m_Materials["bricks"].get();
 		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
 		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
 		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
@@ -1031,7 +1066,8 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 	// Create input layout
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[]{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"NORM", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		{"NORM", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
 	D3D12_INPUT_LAYOUT_DESC inpuitLayout{ inputElementDescs, _countof(inputElementDescs) };
