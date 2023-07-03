@@ -415,7 +415,7 @@ void SimpleGeoApp::InitAppState() {
 	m_Camera = Camera(
 		45.0f,
 		XM_PIDIV2 + 0.4,
-		XM_PIDIV4,
+		XM_PIDIV4 + 0.4,
 		15.0f,
 		XMVectorSet(4.0f, 0.0f, 4.0f, 0.0f),
 		XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
@@ -435,67 +435,6 @@ void SimpleGeoApp::InitAppState() {
 	};
 	m_ShakeDirectionIndex = 0;
 	//
-}
-
-void SimpleGeoApp::BuildRootSignature() {
-	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
-
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange0;
-	descriptorRange0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange1;
-	descriptorRange1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
-
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange2;
-	descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
-
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange3;
-	descriptorRange3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange0);
-	rootParameters[1].InitAsDescriptorTable(1, &descriptorRange1);
-	rootParameters[2].InitAsDescriptorTable(1, &descriptorRange2);
-	rootParameters[3].InitAsDescriptorTable(1, &descriptorRange3, D3D12_SHADER_VISIBILITY_PIXEL);
-
-	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-
-	CD3DX12_STATIC_SAMPLER_DESC samplerDesc(
-		0,
-		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP
-	);
-
-	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 1, &samplerDesc, rootSignatureFlags);
-
-	D3D12_FEATURE_DATA_ROOT_SIGNATURE rsVersion;
-	rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-
-	if (FAILED(m_Device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &rsVersion, sizeof(rsVersion)))) {
-		rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-	}
-
-	ComPtr<ID3DBlob> rootSignatureBlob;
-	ComPtr<ID3DBlob> errorBlob;
-	ThrowIfFailed(D3DX12SerializeVersionedRootSignature(
-		&rootSignatureDesc,
-		rsVersion.HighestVersion,
-		&rootSignatureBlob,
-		&errorBlob
-	));
-
-	ThrowIfFailed(m_Device->CreateRootSignature(
-		0,
-		rootSignatureBlob->GetBufferPointer(),
-		rootSignatureBlob->GetBufferSize(),
-		IID_PPV_ARGS(&m_RootSignature)
-	));
 }
 
 void SimpleGeoApp::BuildLights() {
@@ -519,7 +458,7 @@ void SimpleGeoApp::BuildLights() {
 
 	// spot light 2
 	{
-		m_PassConstants.Lights[2].Strength = { 0.0f, 0.6f, 0.0f };
+		m_PassConstants.Lights[2].Strength = { 0.0f, 0.8f, 0.0f };
 		m_PassConstants.Lights[2].Position = { 5.0f, 0.0f, 7.0f };
 		m_PassConstants.Lights[2].FalloffStart = 1.0f;
 		m_PassConstants.Lights[2].FalloffEnd = 8.0f;
@@ -529,6 +468,18 @@ void SimpleGeoApp::BuildLights() {
 }
 
 void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
+	// load default texture
+	{
+		auto crateTex = std::make_unique<Texture>();
+
+		crateTex->Name = "default";
+		crateTex->FileName = L"../../textures/default.dds";
+
+		CreateDDSTextureFromFile(commandList, crateTex.get());
+
+		m_Textures[crateTex->Name] = std::move(crateTex);
+	}
+
 	// load crate texture
 	{
 		auto crateTex = std::make_unique<Texture>();
@@ -770,7 +721,6 @@ void SimpleGeoApp::BuildMaterials() {
 		grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.3f, 1.0f);
 		grass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 		grass->Roughness = 0.125f;
-		grass->TextureName = "crate";
 
 		m_Materials[grass->Name] = std::move(grass);
 	}
@@ -784,7 +734,6 @@ void SimpleGeoApp::BuildMaterials() {
 		water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
 		water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 		water->Roughness = 0.0f;
-		water->TextureName = "crate";
 
 		m_Materials[water->Name] = std::move(water);
 	}
@@ -833,7 +782,6 @@ void SimpleGeoApp::BuildMaterials() {
 
 		light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		light->Roughness = 0.0f;
-		light->TextureName = "crate";
 
 		m_Materials[light->Name] = std::move(light);
 	}
@@ -854,7 +802,6 @@ void SimpleGeoApp::BuildMaterials() {
 
 		light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		light->Roughness = 0.0f;
-		light->TextureName = "crate";
 
 		m_Materials[light->Name] = std::move(light);
 	}
@@ -863,7 +810,7 @@ void SimpleGeoApp::BuildMaterials() {
 void SimpleGeoApp::BuildRenderItems() {
 	auto curGeo = m_Geometries["BoxAndPiramid"].get();
 
-	// first piramid
+	// grass piramid
 	{
 		auto piramid = std::make_unique<RenderItem>();
 
@@ -878,12 +825,12 @@ void SimpleGeoApp::BuildRenderItems() {
 		m_RenderItems.push_back(std::move(piramid));
 	}
 
-	// second piramid
+	// whater piramid
 	{
 		auto piramid = std::make_unique<RenderItem>();
 
 		piramid->m_ModelMatrix = XMMatrixTranslation(4, 0, 4);
-		piramid->m_Material = m_Materials["bricks"].get();
+		piramid->m_Material = m_Materials["water"].get();
 		piramid->m_MeshGeo = curGeo;
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
@@ -1051,6 +998,67 @@ void SimpleGeoApp::BuildCBViews() {
 			materialConstantsBufferGPUAdress += materialConstantsElementByteSize;
 		}
 	}
+}
+
+void SimpleGeoApp::BuildRootSignature() {
+	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
+
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange0;
+	descriptorRange0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange1;
+	descriptorRange1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange2;
+	descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
+
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange3;
+	descriptorRange3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange0);
+	rootParameters[1].InitAsDescriptorTable(1, &descriptorRange1);
+	rootParameters[2].InitAsDescriptorTable(1, &descriptorRange2);
+	rootParameters[3].InitAsDescriptorTable(1, &descriptorRange3, D3D12_SHADER_VISIBILITY_PIXEL);
+
+	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+
+	CD3DX12_STATIC_SAMPLER_DESC samplerDesc(
+		0,
+		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP
+	);
+
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 1, &samplerDesc, rootSignatureFlags);
+
+	D3D12_FEATURE_DATA_ROOT_SIGNATURE rsVersion;
+	rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+
+	if (FAILED(m_Device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &rsVersion, sizeof(rsVersion)))) {
+		rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+	}
+
+	ComPtr<ID3DBlob> rootSignatureBlob;
+	ComPtr<ID3DBlob> errorBlob;
+	ThrowIfFailed(D3DX12SerializeVersionedRootSignature(
+		&rootSignatureDesc,
+		rsVersion.HighestVersion,
+		&rootSignatureBlob,
+		&errorBlob
+	));
+
+	ThrowIfFailed(m_Device->CreateRootSignature(
+		0,
+		rootSignatureBlob->GetBufferPointer(),
+		rootSignatureBlob->GetBufferSize(),
+		IID_PPV_ARGS(&m_RootSignature)
+	));
 }
 
 void SimpleGeoApp::BuildPipelineStateObject() {
