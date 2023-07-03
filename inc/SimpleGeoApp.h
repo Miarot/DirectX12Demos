@@ -41,6 +41,7 @@ private:
 	void InitAppState();
 	void BuildRootSignature();
 	void BuildLights();
+	void BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList);
 	void BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
 	void BuildMaterials();
 	void BuildRenderItems();
@@ -66,6 +67,7 @@ private:
 	ComPtr<ID3D12DescriptorHeap> m_CBDescHeap;
 	ComPtr<ID3D12RootSignature> m_RootSignature;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
+	ComPtr<ID3D12DescriptorHeap> m_ObjectsTexturesDescHeap;
 
 	// for Sobel filter
 	bool m_IsSobelFilter = false;
@@ -79,10 +81,10 @@ private:
 
 	FLOAT m_BackGroundColor[4] = {0.4f, 0.6f, 0.9f, 1.0f};
 
+	std::unordered_map<std::string, std::unique_ptr<Texture>> m_Textures;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;
 	std::unordered_map <std::string, std::unique_ptr<Material>> m_Materials;
 	std::vector<std::unique_ptr<RenderItem>> m_RenderItems;
-	std::unique_ptr<Texture> m_Texture;
 
 	bool m_IsInverseDepth = false;
 	bool m_IsDrawNorm = false;

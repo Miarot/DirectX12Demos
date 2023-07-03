@@ -18,10 +18,7 @@ bool SimpleGeoApp::Initialize() {
 
 	InitAppState();
 
-	m_Texture = std::make_unique<Texture>();
-	m_Texture->Name = "crate";
-	m_Texture->FileName = L"../../textures/WoodCrate01.dds";
-	CreateDDSTextureFromFile(commandList, m_Texture.get());
+	BuildTextures(commandList);
 
 	BuildLights();
 
@@ -59,7 +56,9 @@ bool SimpleGeoApp::Initialize() {
 		it.second->DisposeUploaders();
 	}
 
-	m_Texture->UploadResource = nullptr;
+	for (auto& it : m_Textures) {
+		it.second->UploadResource = nullptr;
+	}
 
 	return true;
 }
@@ -237,6 +236,8 @@ void SimpleGeoApp::OnRender() {
 		
 		// draw render items
 		for (uint32_t i = 0; i < m_RenderItems.size(); ++i) {
+			commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
 			auto renderItem = m_RenderItems[i].get();
 
 			// set Input-Assembler state
@@ -258,6 +259,17 @@ void SimpleGeoApp::OnRender() {
 
 			commandList->SetGraphicsRootDescriptorTable(0, geoCBDescHandle);
 			commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
+
+			ID3D12DescriptorHeap* descriptorHeaps1[] = { m_ObjectsTexturesDescHeap.Get() };
+			commandList->SetDescriptorHeaps(_countof(descriptorHeaps1), descriptorHeaps1);
+
+			CD3DX12_GPU_DESCRIPTOR_HANDLE textureViewDescHandle(
+				m_ObjectsTexturesDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_Textures[renderItem->m_Material->TextureName]->SRVHeapIndex,
+				m_CBDescSize
+			);
+
+			commandList->SetGraphicsRootDescriptorTable(3, textureViewDescHandle);
 
 			commandList->DrawIndexedInstanced(
 				renderItem->m_IndexCount,
@@ -426,7 +438,7 @@ void SimpleGeoApp::InitAppState() {
 }
 
 void SimpleGeoApp::BuildRootSignature() {
-	CD3DX12_ROOT_PARAMETER1 rootParameters[3];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
 
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange0;
 	descriptorRange0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
@@ -437,9 +449,13 @@ void SimpleGeoApp::BuildRootSignature() {
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange2;
 	descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
 
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange3;
+	descriptorRange3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
 	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange0);
 	rootParameters[1].InitAsDescriptorTable(1, &descriptorRange1);
 	rootParameters[2].InitAsDescriptorTable(1, &descriptorRange2);
+	rootParameters[3].InitAsDescriptorTable(1, &descriptorRange3, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
@@ -501,6 +517,49 @@ void SimpleGeoApp::BuildLights() {
 		m_PassConstants.Lights[2].FalloffEnd = 8.0f;
 		m_PassConstants.Lights[2].Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
 		m_PassConstants.Lights[2].SpotPower = 12.0f;
+	}
+}
+
+void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
+	{
+		auto crateTex = std::make_unique<Texture>();
+
+		crateTex->Name = "crate";
+		crateTex->FileName = L"../../textures/WoodCrate01.dds";
+
+		CreateDDSTextureFromFile(commandList, crateTex.get());
+
+		m_Textures[crateTex->Name] = std::move(crateTex);
+	}
+
+	m_ObjectsTexturesDescHeap = CreateDescriptorHeap(
+		m_Textures.size(), 
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+	);
+	m_CBDescSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
+	
+	viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	viewDesc.Texture2D.MostDetailedMip = 0;
+	viewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_ObjectsTexturesDescHeap->GetCPUDescriptorHandleForHeapStart());
+	
+	size_t i = 0;
+	for (auto& it: m_Textures) {
+		it.second->SRVHeapIndex = i;
+		ID3D12Resource* curTexBuffer = it.second->Resource.Get();
+
+		viewDesc.Format = curTexBuffer->GetDesc().Format;
+		viewDesc.Texture2D.MipLevels =curTexBuffer->GetDesc().MipLevels;
+
+		m_Device->CreateShaderResourceView(curTexBuffer, &viewDesc, descHandle);
+
+		descHandle.Offset(m_CBDescSize);
+		++i;
 	}
 }
 
@@ -690,6 +749,7 @@ void SimpleGeoApp::BuildMaterials() {
 		grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.3f, 1.0f);
 		grass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 		grass->Roughness = 0.125f;
+		grass->TextureName = "crate";
 
 		m_Materials[grass->Name] = std::move(grass);
 	}
@@ -703,6 +763,7 @@ void SimpleGeoApp::BuildMaterials() {
 		water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
 		water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 		water->Roughness = 0.0f;
+		water->TextureName = "crate";
 
 		m_Materials[water->Name] = std::move(water);
 	}
@@ -716,6 +777,7 @@ void SimpleGeoApp::BuildMaterials() {
 		white->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		white->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 		white->Roughness = 0.0f;
+		white->TextureName = "crate";
 
 		m_Materials[white->Name] = std::move(white);
 	}
@@ -736,6 +798,7 @@ void SimpleGeoApp::BuildMaterials() {
 
 		light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		light->Roughness = 0.0f;
+		light->TextureName = "crate";
 
 		m_Materials[light->Name] = std::move(light);
 	}
@@ -756,6 +819,7 @@ void SimpleGeoApp::BuildMaterials() {
 
 		light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		light->Roughness = 0.0f;
+		light->TextureName = "crate";
 
 		m_Materials[light->Name] = std::move(light);
 	}

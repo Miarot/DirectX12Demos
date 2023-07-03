@@ -63,6 +63,8 @@ struct Material {
 	XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 	XMFLOAT3 FresnelR0 = { 0.1f, 0.1f, 0.1f };
 	float Roughness = 0.25f;
+
+	std::string TextureName = "defaulte";
 };
 
 struct RenderItem {
@@ -89,4 +91,5 @@ struct Texture {
 
 	ComPtr<ID3D12Resource> Resource;
 	ComPtr<ID3D12Resource> UploadResource;
+	uint32_t SRVHeapIndex;
 };
