@@ -54,8 +54,9 @@ private:
 	XMMATRIX GetProjectionMatrix();
 
 private:
-	ComPtr<ID3DBlob> m_PixelShaderBlob;
-	ComPtr<ID3DBlob> m_VertexShaderBlob;
+	ComPtr<ID3DBlob> m_GeoVertexShaderBlob;
+	ComPtr<ID3DBlob> m_GeoPixelShaderBlob;
+	ComPtr<ID3DBlob> m_NormPixelShaderBlob;
 	std::vector<std::unique_ptr<FrameResources>> m_FramesResources;
 	FrameResources* m_CurrentFrameResources;
 	ComPtr<ID3D12DescriptorHeap> m_CBDescHeap;

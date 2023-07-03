@@ -26,10 +26,6 @@ struct PassConstants
     
     float3 EyePos;
     float TotalTime;
-    float SomeConst1;
-    float SomeConst2;
-    float SomeConst3;
-    uint IsDrawNorm;
     
     float4 AmbientLight;
     // first NUM_DIR_LIGHTS --- directional lights

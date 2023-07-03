@@ -84,7 +84,6 @@ void SimpleGeoApp::OnUpdate() {
 	XMStoreFloat3(&m_PassConstants.EyePos, m_Camera.GetCameraPos());
 
 	m_PassConstants.TotalTime = float(m_Timer.GetTotalTime());
-	m_PassConstants.IsDrawNorm = m_IsDrawNorm;
 
 	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(0, m_PassConstants);
 
@@ -202,14 +201,22 @@ void SimpleGeoApp::OnRender() {
 		);
 
 		// set PSO
-		// chose pso depending on z-buffer type
+		// chose pso depending on z-buffer type and drawing type
 		ComPtr<ID3D12PipelineState> pso;
 
 		if (m_IsInverseDepth) {
-			pso = m_PSOs["inverseDepth"];
-		}
-		else {
-			pso = m_PSOs["straightDepth"];
+			if (m_IsDrawNorm) {
+				pso = m_PSOs["normInverseDepth"];
+			} else {
+				pso = m_PSOs["inverseDepth"];
+			}
+		} else {
+			if (m_IsDrawNorm) {
+				pso = m_PSOs["normStraightDepth"];
+			}
+			else {
+				pso = m_PSOs["straightDepth"];
+			}
 		}
 
 		commandList->SetPipelineState(pso.Get());
@@ -942,8 +949,9 @@ void SimpleGeoApp::BuildCBViews() {
 
 void SimpleGeoApp::BuildPipelineStateObject() {
 	// Compile shaders	
-	m_VertexShaderBlob = CompileShader(L"..\\..\\shaders\\GeoVertexShader.hlsl", "main", "vs_5_1");
-	m_PixelShaderBlob = CompileShader(L"..\\..\\shaders\\GeoPixelShader.hlsl", "main", "ps_5_1");
+	m_GeoVertexShaderBlob = CompileShader(L"..\\..\\shaders\\GeoVertexShader.hlsl", "main", "vs_5_1");
+	m_GeoPixelShaderBlob = CompileShader(L"..\\..\\shaders\\GeoPixelShader.hlsl", "main", "ps_5_1");
+	m_NormPixelShaderBlob = CompileShader(L"..\\..\\shaders\\NormPixelShader.hlsl", "main", "ps_5_1");
 
 	// Create rasterizer state description
 	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
@@ -965,13 +973,13 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 	psoDesc.pRootSignature = m_RootSignature.Get();
 
 	psoDesc.VS = {
-		reinterpret_cast<BYTE*>(m_VertexShaderBlob->GetBufferPointer()),
-		m_VertexShaderBlob->GetBufferSize()
+		reinterpret_cast<BYTE*>(m_GeoVertexShaderBlob->GetBufferPointer()),
+		m_GeoVertexShaderBlob->GetBufferSize()
 	};
 
 	psoDesc.PS = {
-		reinterpret_cast<BYTE*>(m_PixelShaderBlob->GetBufferPointer()),
-		m_PixelShaderBlob->GetBufferSize()
+		reinterpret_cast<BYTE*>(m_GeoPixelShaderBlob->GetBufferPointer()),
+		m_GeoPixelShaderBlob->GetBufferSize()
 	};
 
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
@@ -987,6 +995,8 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 
 	ComPtr<ID3D12PipelineState> straightDepthPSO;
 	ComPtr<ID3D12PipelineState> inverseDepthPSO;
+	ComPtr<ID3D12PipelineState> normStraightDepthPSO;
+	ComPtr<ID3D12PipelineState> normInverseDepthPSO;
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
 
@@ -994,8 +1004,21 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
 
+	psoDesc.PS = {
+		reinterpret_cast<BYTE*>(m_NormPixelShaderBlob->GetBufferPointer()),
+		m_NormPixelShaderBlob->GetBufferSize()
+	};
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normInverseDepthPSO)));
+	
+	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
+
 	m_PSOs["straightDepth"] = straightDepthPSO;
-	m_PSOs["inverseDepth"] = inverseDepthPSO;
+	m_PSOs["inverseDepth"] = inverseDepthPSO;	
+	m_PSOs["normStraightDepth"] = normStraightDepthPSO;
+	m_PSOs["normInverseDepth"] = normInverseDepthPSO;
 }
 
 XMMATRIX SimpleGeoApp::GetProjectionMatrix() {

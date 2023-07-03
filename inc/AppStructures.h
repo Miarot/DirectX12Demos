@@ -42,10 +42,6 @@ struct PassConstants {
 
 	XMFLOAT3 EyePos;
 	float TotalTime = 0.0f;
-	float SomeConst1;
-	float SomeConst2;
-	float SomeConst3;
-	uint32_t IsDrawNorm = 0;
 
 	XMVECTOR AmbientLight;
 	Light Lights[16];
