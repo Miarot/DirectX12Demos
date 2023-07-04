@@ -34,21 +34,10 @@ public:
 
 	void Run();
 
-	virtual bool Initialize();
 	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 protected:
-	void RegisterWindowClass(const wchar_t* className);
-	HWND CreateWindow(const wchar_t* className, const wchar_t* windowName);
-
-	void UpdateBackBuffersView();
-	void UpdateDSView();
-
-	void ResizeBackBuffers();
-	void ResizeDSBuffer();
-
-	void FullScreen(bool fullScreen);
-
+	virtual bool Initialize();
 	virtual void OnUpdate();
 	virtual void OnRender();
 	virtual void OnResize();
@@ -58,8 +47,19 @@ protected:
 	virtual void OnMouseUp(WPARAM wParam, int x, int y);
 	virtual void OnMouseMove(WPARAM wParam, int x, int y);
 
+	void RegisterWindowClass(const wchar_t* className);
+	HWND CreateWindow(const wchar_t* className, const wchar_t* windowName);
+	void FullScreen(bool fullScreen);
+
+	void UpdateBackBuffersView();
+	void UpdateDSView();
+
+	void ResizeBackBuffers();
+	void ResizeDSBuffer();
+
 protected:
 	static BaseApp * m_App;
+
 	HINSTANCE m_hInstance = NULL;
 	HWND m_WindowHandle = NULL;
 
@@ -75,6 +75,7 @@ protected:
 
 	ComPtr<IDXGIAdapter4> m_Adapter;
 	ComPtr<ID3D12Device2> m_Device;
+	std::shared_ptr<CommandQueue> m_DirectCommandQueue;
 	ComPtr<IDXGISwapChain4> m_SwapChain;
 	ComPtr<ID3D12Resource> m_BackBuffers[m_NumBackBuffers];
 	uint32_t m_BackBuffersFenceValues[m_NumBackBuffers];
@@ -90,6 +91,4 @@ protected:
 	D3D12_VIEWPORT m_ViewPort = CD3DX12_VIEWPORT(
 		0.0f, 0.0f, static_cast<float>(m_ClientWidth), static_cast<float>(m_ClientHeight)
 	);
-
-	std::shared_ptr<CommandQueue> m_DirectCommandQueue;
 };

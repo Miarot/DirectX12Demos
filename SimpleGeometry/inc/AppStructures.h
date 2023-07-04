@@ -3,19 +3,8 @@
 #include <MyD3D12Lib/BaseApp.h>
 #include <MyD3D12Lib/MeshGeometry.h>
 
-#include <d3d12.h>
-
 #include <DirectXMath.h>
 using namespace DirectX;
-
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
-#include <wrl.h>
-using Microsoft::WRL::ComPtr;
-
-#include <string>
-#include <unordered_map>
 
 struct Vertex {
 	XMFLOAT3 Position;

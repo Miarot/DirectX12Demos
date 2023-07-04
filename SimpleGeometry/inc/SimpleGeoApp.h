@@ -25,9 +25,8 @@ public:
 
 	~SimpleGeoApp();
 
-	virtual bool Initialize() override;
-
 private:
+	virtual bool Initialize() override;
 	virtual void OnUpdate() override;
 	virtual void OnRender() override;
 	virtual void OnResize() override;
@@ -37,7 +36,7 @@ private:
 	virtual void OnMouseUp(WPARAM wParam, int x, int y) override;
 	virtual void OnMouseMove(WPARAM wParam, int x, int y) override;
 
-	void InitAppState();
+	void InitSceneState();
 	void BuildLights();
 	void BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList);
 	void BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);

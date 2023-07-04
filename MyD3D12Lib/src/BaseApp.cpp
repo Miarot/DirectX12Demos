@@ -47,6 +47,69 @@ void BaseApp::Run() {
 	m_DirectCommandQueue->CloseHandle();
 }
 
+LRESULT BaseApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	switch (msg)
+	{
+	case WM_PAINT:
+		OnUpdate();
+		OnRender();
+		break;
+	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+	{
+		bool alt = (::GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
+
+		switch (wParam)
+		{
+		case 'V':
+			m_Vsync = !m_Vsync;
+			break;
+		case VK_ESCAPE:
+			::PostQuitMessage(0);
+			break;
+		case VK_RETURN:
+			if (alt)
+			{
+		case VK_F11:
+			FullScreen(!m_FullScreen);
+			}
+			break;
+		default:
+			OnKeyPressed(wParam);
+		}
+		break;
+	}
+	case WM_SYSCHAR:
+		break;
+	case WM_SIZE:
+	{
+		OnResize();
+		break;
+	}
+	case WM_DESTROY:
+		::PostQuitMessage(0);
+		break;
+	case WM_MOUSEWHEEL:
+		OnMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam));
+		break;
+	case WM_LBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+		OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		break;
+	case WM_LBUTTONUP:
+	case WM_MBUTTONUP:
+	case WM_RBUTTONUP:
+		OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		break;
+	case WM_MOUSEMOVE:
+		OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		break;
+	default:
+		return ::DefWindowProcW(hwnd, msg, wParam, lParam);
+	}
+}
+
 bool BaseApp::Initialize() {
 	// allow DPI awareness
 	::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -117,69 +180,6 @@ bool BaseApp::Initialize() {
 	UpdateDSView();
 
 	return true;
-}
-
-LRESULT BaseApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	switch (msg)
-	{
-	case WM_PAINT:
-		OnUpdate();
-		OnRender();
-		break;
-	case WM_KEYDOWN:
-	case WM_SYSKEYDOWN:
-	{
-		bool alt = (::GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
-
-		switch (wParam)
-		{
-		case 'V':
-			m_Vsync = !m_Vsync;
-			break;
-		case VK_ESCAPE:
-			::PostQuitMessage(0);
-			break;
-		case VK_RETURN:
-			if (alt)
-			{
-		case VK_F11:
-			FullScreen(!m_FullScreen);
-			}
-			break;
-		default:
-			OnKeyPressed(wParam);
-		}
-		break;
-	}
-	case WM_SYSCHAR:
-		break;
-	case WM_SIZE:
-	{
-		OnResize();
-		break;
-	}
-	case WM_DESTROY:
-		::PostQuitMessage(0);
-		break;
-	case WM_MOUSEWHEEL:
-		OnMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam));
-		break;
-	case WM_LBUTTONDOWN:
-	case WM_MBUTTONDOWN:
-	case WM_RBUTTONDOWN:
-		OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-		break;
-	case WM_LBUTTONUP:
-	case WM_MBUTTONUP:
-	case WM_RBUTTONUP:
-		OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-		break;
-	case WM_MOUSEMOVE:
-		OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-		break;
-	default:
-		return ::DefWindowProcW(hwnd, msg, wParam, lParam);
-	}
 }
 
 void BaseApp::OnUpdate() {}

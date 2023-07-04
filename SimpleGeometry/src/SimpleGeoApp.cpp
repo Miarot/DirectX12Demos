@@ -14,7 +14,7 @@ SimpleGeoApp::~SimpleGeoApp() {};
 bool SimpleGeoApp::Initialize() {
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
 
-	InitAppState();
+	InitSceneState();
 
 	BuildTextures(commandList);
 	BuildLights();
@@ -59,7 +59,7 @@ bool SimpleGeoApp::Initialize() {
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
 	m_DirectCommandQueue->WaitForFenceValue(fenceValue);
 
-	// release upload heaps after vertex, inedx and textures loading
+	// release upload heaps after vertex, index and textures loading
 	for (auto& it : m_Geometries) {
 		it.second->DisposeUploaders();
 	}
@@ -195,7 +195,8 @@ void SimpleGeoApp::OnRender() {
 			m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 			D3D12_CLEAR_FLAG_DEPTH,
 			m_DepthClearValue, 
-			0, 0, NULL
+			m_SteniclClearValue,
+			0, NULL
 		);
 	}
 
@@ -256,7 +257,8 @@ void SimpleGeoApp::OnRender() {
 			commandList->IASetIndexBuffer(&renderItem->m_MeshGeo->IndexBufferView());
 			commandList->IASetPrimitiveTopology(renderItem->m_PrivitiveType);
 
-			CD3DX12_GPU_DESCRIPTOR_HANDLE geoCBDescHandle(
+			// set object and material constants and texture
+			CD3DX12_GPU_DESCRIPTOR_HANDLE objCBDescHandle(
 				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
 				m_ObjectConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_RenderItems.size() + renderItem->m_CBIndex,
 				m_CBV_SRV_UAVDescSize
@@ -274,10 +276,11 @@ void SimpleGeoApp::OnRender() {
 				m_CBV_SRV_UAVDescSize
 			);
 
-			commandList->SetGraphicsRootDescriptorTable(0, geoCBDescHandle);
+			commandList->SetGraphicsRootDescriptorTable(0, objCBDescHandle);
 			commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
 			commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
 
+			// draw
 			commandList->DrawIndexedInstanced(
 				renderItem->m_IndexCount,
 				1,
@@ -322,6 +325,7 @@ void SimpleGeoApp::OnRender() {
 		// set root parameter
 		commandList->SetGraphicsRootDescriptorTable(0, m_FrameTextureSRVDescHeap->GetGPUDescriptorHandleForHeapStart());
 
+		// draw
 		commandList->DrawInstanced(3, 1, 0, 0);
 	}
 
@@ -355,7 +359,7 @@ void SimpleGeoApp::OnKeyPressed(WPARAM wParam) {
 	switch (wParam)
 	{
 	case '0':
-		InitAppState();
+		InitSceneState();
 		break;
 	case '1':
 		m_IsShakeEffect = !m_IsShakeEffect;
@@ -418,7 +422,7 @@ void SimpleGeoApp::OnMouseMove(WPARAM wParam, int x, int y) {
 	m_LastMousePos.y = y;
 }
 
-void SimpleGeoApp::InitAppState() {
+void SimpleGeoApp::InitSceneState() {
 	m_Camera = Camera(
 		45.0f,
 		XM_PIDIV2 + 0.4,
@@ -453,7 +457,7 @@ void SimpleGeoApp::BuildLights() {
 		m_PassConstants.Lights[1].FalloffEnd = 8.0f;
 	}
 
-	// spot light 2
+	// spot light 1
 	{
 		m_PassConstants.Lights[2].Strength = { 0.0f, 0.8f, 0.0f };
 		m_PassConstants.Lights[2].Position = { 5.0f, 0.0f, 7.0f };
@@ -1122,7 +1126,7 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+	psoDesc.DSVFormat = m_DepthSencilFormat;
 	psoDesc.SampleDesc = { 1, 0 };
 
 	ComPtr<ID3D12PipelineState> straightDepthPSO;
