@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex\DDSTextureLoader\DDSTextureLoader12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex\DDSTextureLoader\DDSTextureLoader12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{BD376FD8-715C-387F-9240-5CFE836A3C3B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{13D489A8-65F4-3BB7-A7C0-6EFCA3D5562D}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
