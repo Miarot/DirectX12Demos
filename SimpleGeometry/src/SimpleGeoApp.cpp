@@ -79,19 +79,15 @@ bool SimpleGeoApp::Initialize() {
 }
 
 void SimpleGeoApp::OnUpdate() {
-	m_Timer.Tick();
 	m_CurrentFrameResources = m_FramesResources[m_CurrentBackBufferIndex].get();
+
+	m_Timer.Tick();
 
 	// log fps
 	if (m_Timer.GetMeasuredTime() >= 1.0) {
 		char buffer[500];
 		auto fps = m_Timer.GetMeasuredTicks() / m_Timer.GetMeasuredTime();
 		::sprintf_s(buffer, 500, "FPS: %f\n", fps);
-		::OutputDebugString(buffer);
-
-		XMFLOAT3 cameraPos;
-		XMStoreFloat3(&cameraPos, m_Camera.GetCameraPos());
-		::sprintf_s(buffer, 500, "CameraPos: %f, %f, %f\n", cameraPos.x, cameraPos.y, cameraPos.z);
 		::OutputDebugString(buffer);
 
 		m_Timer.StartMeasurement();
@@ -116,7 +112,7 @@ void SimpleGeoApp::OnUpdate() {
 
 	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(0, m_PassConstants);
 
-	// update materials
+	// update materials if necessary
 	for (auto& it : m_Materials) {
 		auto mat = it.second.get();
 
@@ -187,7 +183,7 @@ void SimpleGeoApp::OnRender() {
 		if (m_IsSobelFilter) {
 			CD3DX12_RESOURCE_BARRIER frameTextureBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
 				frameTextureBuffer.Get(),
-				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 				D3D12_RESOURCE_STATE_RENDER_TARGET
 			);
 
@@ -304,7 +300,7 @@ void SimpleGeoApp::OnRender() {
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 			frameTextureBuffer.Get(),
 			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
 		);
 
 		commandList->ResourceBarrier(1, &barrier);
@@ -1174,7 +1170,7 @@ void SimpleGeoApp::UpdateFramesTextures() {
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
 		&resourceDesc,
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		&clearValue,
 		IID_PPV_ARGS(&m_FrameTexturesBuffers)
 	));
@@ -1198,7 +1194,7 @@ void SimpleGeoApp::BuildSobelRootSignature() {
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange;
 	descriptorRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
-	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange);
+	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |
