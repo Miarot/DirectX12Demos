@@ -173,6 +173,14 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </ProjectReference>
+    <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\AppModels\AppModels.vcxproj">
+      <Project>{E61FDA15-A6E1-3942-A8E2-2FD110849AA7}</Project>
+      <Name>AppModels</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\AppSimpleGeometry\AppSimpleGeometry.vcxproj">
+      <Project>{4CB7EBB6-A1C8-3734-9AA5-B88CA479E4A6}</Project>
+      <Name>AppSimpleGeometry</Name>
+    </ProjectReference>
     <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTex\DirectXTex.vcxproj">
       <Project>{B247C7F2-FE87-3D9F-848E-2C376A7561F4}</Project>
       <Name>DirectXTex</Name>
@@ -180,10 +188,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\MyD3D12Lib\MyD3D12Lib.vcxproj">
       <Project>{0E37476F-6CA4-3DB0-AB82-C34C2F7F4D9D}</Project>
       <Name>MyD3D12Lib</Name>
-    </ProjectReference>
-    <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\SimpleGeometry\SimpleGeometry.vcxproj">
-      <Project>{E5B10A7D-190D-38F7-B05D-2EDB3F08F3EE}</Project>
-      <Name>SimpleGeometry</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

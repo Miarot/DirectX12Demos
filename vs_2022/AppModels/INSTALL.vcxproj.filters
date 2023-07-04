@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\CMakeFiles\519daf2ba80296d90936447bcff04cdb\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{6126861F-CC05-37F3-BC9C-CDD406233ABF}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
