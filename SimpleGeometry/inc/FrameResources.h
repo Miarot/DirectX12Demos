@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
-
 #include <AppStructures.h>
 #include <MyD3D12Lib/UploadBuffer.h>
+
+#include <memory>
 
 class FrameResources {
 public:

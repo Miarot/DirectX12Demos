@@ -1,5 +1,7 @@
 #pragma once
 
+#include <MyD3D12Lib/CommandQueue.h>
+
 #include <d3d12.h>
 #include <d3dx12.h>
 #include <dxgi1_6.h>
@@ -9,8 +11,6 @@ using Microsoft::WRL::ComPtr;
 
 #include <memory>
 #include <cstdint>
-
-#include <MyD3D12Lib/CommandQueue.h>
 
 #if defined(CreateWindow)
 #undef CreateWindow

@@ -1,11 +1,11 @@
-#include <windowsx.h>
+#include <MyD3D12Lib/BaseApp.h>
 
 #include <d3dx12.h>
 #include <d3dcompiler.h>
 
-#include <cassert>
+#include <windowsx.h>
 
-#include <MyD3D12Lib/BaseApp.h>
+#include <cassert>
 
 #if defined(max)
 #undef max

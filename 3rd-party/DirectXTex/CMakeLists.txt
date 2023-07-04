@@ -7,6 +7,7 @@ add_library( ${TARGET_NAME} STATIC
 	DDSTextureLoader/DDSTextureLoader12.cpp
 )
 
-target_include_directories( ${TARGET_NAME} PUBLIC
-	${PROJECT_SOURCE_DIR}/3rd-party
+target_include_directories( ${TARGET_NAME} 
+	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+	PRIVATE ${PROJECT_SOURCE_DIR}/3rd-party
 )

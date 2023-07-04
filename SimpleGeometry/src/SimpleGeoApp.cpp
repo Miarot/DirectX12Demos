@@ -1,9 +1,8 @@
+#include <SimpleGeoApp.h>
+
 #include <d3dx12.h>
 
-#include <chrono>
 #include <array>
-
-#include <SimpleGeoApp.h>
 
 SimpleGeoApp::SimpleGeoApp(HINSTANCE hInstance) : BaseApp(hInstance) {}
 

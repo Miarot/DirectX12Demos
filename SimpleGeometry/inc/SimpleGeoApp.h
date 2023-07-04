@@ -1,12 +1,5 @@
 #pragma once
 
-#include <DirectXMath.h>
-#include <DirectXTex/DDSTextureLoader/DDSTextureLoader12.h>
-
-using namespace DirectX;
-
-#include <map>
-
 #include <AppStructures.h>
 #include <FrameResources.h>
 #include <MyD3D12Lib/BaseApp.h>
@@ -14,6 +7,13 @@ using namespace DirectX;
 #include <MyD3D12Lib/MeshGeometry.h>
 #include <MyD3D12Lib/Timer.h>
 #include <MyD3D12Lib/UploadBuffer.h>
+
+#include <DirectXTex/DDSTextureLoader/DDSTextureLoader12.h>
+
+#include <DirectXMath.h>
+using namespace DirectX;
+
+#include <map>
 
 constexpr uint32_t m_NumLights = 16;
 

@@ -61,16 +61,16 @@ add_executable( ${TARGET_NAME} WIN32
 	${SHADER_FILES}
 )
 
-target_include_directories( ${TARGET_NAME} PRIVATE
-	${CMAKE_CURRENT_SOURCE_DIR}/inc
-	${PROJECT_SOURCE_DIR}/3rd-party
+target_include_directories( ${TARGET_NAME} 
+	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/inc
+	PRIVATE ${PROJECT_SOURCE_DIR}/3rd-party
 )
 
 target_link_libraries( ${TARGET_NAME}
-	PUBLIC d3d12.lib
-	PUBLIC dxgi.lib
-	PUBLIC dxguid.lib
-	PUBLIC d3dcompiler.lib
-	PUBLIC DirectXTex
-	PUBLIC MyD3D12Lib
+	PRIVATE d3d12.lib
+	PRIVATE dxgi.lib
+	PRIVATE dxguid.lib
+	PRIVATE d3dcompiler.lib
+	PRIVATE DirectXTex
+	PRIVATE MyD3D12Lib
 )

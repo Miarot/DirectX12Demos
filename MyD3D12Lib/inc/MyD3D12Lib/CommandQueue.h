@@ -1,13 +1,13 @@
 #pragma once
 
+#include <MyD3D12Lib/Helpers.h>
+
 #include <d3d12.h>
 
 #include <wrl.h>
 using Microsoft::WRL::ComPtr;
 
 #include <queue>
-
-#include <MyD3D12Lib/Helpers.h>
 
 class CommandQueue {
 public:
