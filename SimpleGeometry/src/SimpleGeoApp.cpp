@@ -219,7 +219,7 @@ void SimpleGeoApp::OnRender() {
 	// draw geometry
 	{
 		// set root signature
-		commandList->SetGraphicsRootSignature(m_RootSignature.Get());
+		commandList->SetGraphicsRootSignature(m_RootSignatures["Geometry"].Get());
 
 		// set descripotr heaps
 		ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBV_SRVDescHeap.Get() };
@@ -319,12 +319,12 @@ void SimpleGeoApp::OnRender() {
 		commandList->ClearState(NULL);
 
 		// set root signature and descripotr heaps
-		commandList->SetGraphicsRootSignature(m_SobelRootSignature.Get());
+		commandList->SetGraphicsRootSignature(m_RootSignatures["Sobel"].Get());
 		ID3D12DescriptorHeap* descriptorHeaps[] = { m_FrameTextureSRVDescHeap.Get() };
 		commandList->SetDescriptorHeaps(1, descriptorHeaps);
 
 		// set pso
-		commandList->SetPipelineState(m_SobelPSO.Get());
+		commandList->SetPipelineState(m_PSOs["Sobel"].Get());
 
 		// set Rasterizer Stage
 		commandList->RSSetScissorRects(1, &m_ScissorRect);
@@ -1093,19 +1093,23 @@ void SimpleGeoApp::BuildRootSignature() {
 		&errorBlob
 	));
 
+	ComPtr<ID3D12RootSignature> rootSignature;
+
 	ThrowIfFailed(m_Device->CreateRootSignature(
 		0,
 		rootSignatureBlob->GetBufferPointer(),
 		rootSignatureBlob->GetBufferSize(),
-		IID_PPV_ARGS(&m_RootSignature)
+		IID_PPV_ARGS(&rootSignature)
 	));
+
+	m_RootSignatures["Geometry"] = rootSignature;
 }
 
 void SimpleGeoApp::BuildPipelineStateObject() {
 	// Compile shaders	
-	m_GeoVertexShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/GeoVertexShader.hlsl", "main", "vs_5_1");
-	m_GeoPixelShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/GeoPixelShader.hlsl", "main", "ps_5_1");
-	m_NormPixelShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/NormPixelShader.hlsl", "main", "ps_5_1");
+	ComPtr<ID3DBlob> geoVertexShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/GeoVertexShader.hlsl", "main", "vs_5_1");
+	ComPtr<ID3DBlob> geoPixelShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/GeoPixelShader.hlsl", "main", "ps_5_1");
+	ComPtr<ID3DBlob> normPixelShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/NormPixelShader.hlsl", "main", "ps_5_1");
 
 	// Create rasterizer state description
 	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
@@ -1125,16 +1129,16 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
-	psoDesc.pRootSignature = m_RootSignature.Get();
+	psoDesc.pRootSignature = m_RootSignatures["Geometry"].Get();
 
 	psoDesc.VS = {
-		reinterpret_cast<BYTE*>(m_GeoVertexShaderBlob->GetBufferPointer()),
-		m_GeoVertexShaderBlob->GetBufferSize()
+		reinterpret_cast<BYTE*>(geoVertexShaderBlob->GetBufferPointer()),
+		geoVertexShaderBlob->GetBufferSize()
 	};
 
 	psoDesc.PS = {
-		reinterpret_cast<BYTE*>(m_GeoPixelShaderBlob->GetBufferPointer()),
-		m_GeoPixelShaderBlob->GetBufferSize()
+		reinterpret_cast<BYTE*>(geoPixelShaderBlob->GetBufferPointer()),
+		geoPixelShaderBlob->GetBufferSize()
 	};
 
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
@@ -1160,8 +1164,8 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
 
 	psoDesc.PS = {
-		reinterpret_cast<BYTE*>(m_NormPixelShaderBlob->GetBufferPointer()),
-		m_NormPixelShaderBlob->GetBufferSize()
+		reinterpret_cast<BYTE*>(normPixelShaderBlob->GetBufferPointer()),
+		normPixelShaderBlob->GetBufferSize()
 	};
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normInverseDepthPSO)));
@@ -1230,34 +1234,38 @@ void SimpleGeoApp::BuildSobelRootSignature() {
 		&errorBlob
 	));
 
+	ComPtr<ID3D12RootSignature> sobelRootSignature;
+
 	ThrowIfFailed(m_Device->CreateRootSignature(
 		0,
 		rootSignatureBlob->GetBufferPointer(),
 		rootSignatureBlob->GetBufferSize(),
-		IID_PPV_ARGS(&m_SobelRootSignature)
+		IID_PPV_ARGS(&sobelRootSignature)
 	));
+
+	m_RootSignatures["Sobel"] = sobelRootSignature;
 }
 
 void SimpleGeoApp::BuildSobelPipelineStateObject() {
 	// Compile shaders	
-	m_SobelVertexShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/SobelVertexShader.hlsl", "main", "vs_5_1");
-	m_SobelPixelShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/SobelPixelShader.hlsl", "main", "ps_5_1");
+	ComPtr<ID3DBlob> sobelVertexShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/SobelVertexShader.hlsl", "main", "vs_5_1");
+	ComPtr<ID3DBlob> sobelPixelShaderBlob = CompileShader(L"../../SimpleGeometry/shaders/SobelPixelShader.hlsl", "main", "ps_5_1");
 
 	// Create pipeline state object description
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
 
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
-	psoDesc.pRootSignature = m_SobelRootSignature.Get();
+	psoDesc.pRootSignature = m_RootSignatures["Sobel"].Get();
 
 	psoDesc.VS = {
-		reinterpret_cast<BYTE*>(m_SobelVertexShaderBlob->GetBufferPointer()),
-		m_SobelVertexShaderBlob->GetBufferSize()
+		reinterpret_cast<BYTE*>(sobelVertexShaderBlob->GetBufferPointer()),
+		sobelVertexShaderBlob->GetBufferSize()
 	};
 
 	psoDesc.PS = {
-		reinterpret_cast<BYTE*>(m_SobelPixelShaderBlob->GetBufferPointer()),
-		m_SobelPixelShaderBlob->GetBufferSize()
+		reinterpret_cast<BYTE*>(sobelPixelShaderBlob->GetBufferPointer()),
+		sobelPixelShaderBlob->GetBufferSize()
 	};
 
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
@@ -1274,5 +1282,9 @@ void SimpleGeoApp::BuildSobelPipelineStateObject() {
 	psoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
 	psoDesc.SampleDesc = { 1, 0 };
 
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_SobelPSO)));
+	ComPtr<ID3D12PipelineState> sobelPSO;
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&sobelPSO)));
+
+	m_PSOs["Sobel"] = sobelPSO;
 }
