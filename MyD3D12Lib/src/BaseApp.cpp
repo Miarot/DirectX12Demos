@@ -20,6 +20,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 BaseApp::BaseApp(HINSTANCE hInstance) : m_hInstance(hInstance) {
 	assert(m_App == nullptr);
 	m_App = this;
+
+	Initialize();
 }
 
 BaseApp::~BaseApp() {}

@@ -5,29 +5,22 @@
 
 #include <array>
 
-SimpleGeoApp::SimpleGeoApp(HINSTANCE hInstance) : BaseApp(hInstance) {}
+SimpleGeoApp::SimpleGeoApp(HINSTANCE hInstance) : BaseApp(hInstance) {
+	Initialize();
+}
 
 SimpleGeoApp::~SimpleGeoApp() {};
 
 bool SimpleGeoApp::Initialize() {
-	if (!BaseApp::Initialize()) {
-		return false;
-	}
-
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
 
 	InitAppState();
 
 	BuildTextures(commandList);
-
 	BuildLights();
-
 	BuildGeometry(commandList);
-
 	BuildMaterials();
-
 	BuildRenderItems();
-
 	BuildFrameResources();
 
 	m_CBV_SRVDescHeap = CreateDescriptorHeap(
@@ -66,7 +59,7 @@ bool SimpleGeoApp::Initialize() {
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
 	m_DirectCommandQueue->WaitForFenceValue(fenceValue);
 
-	// release upload heaps after vertex and inedx loading
+	// release upload heaps after vertex, inedx and textures loading
 	for (auto& it : m_Geometries) {
 		it.second->DisposeUploaders();
 	}
