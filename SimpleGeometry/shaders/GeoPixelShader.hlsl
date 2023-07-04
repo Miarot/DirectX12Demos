@@ -10,7 +10,7 @@
     #define NUM_SPOT_LIGHTS 1
 #endif
 
-#include <GeoUtils.hlsl>
+#include "GeoUtils.hlsli"
 
 ConstantBuffer<PassConstants> PassConstantsCB : register(b1);
 ConstantBuffer<MaterialConstants> MaterilaConstantsCB : register(b2);

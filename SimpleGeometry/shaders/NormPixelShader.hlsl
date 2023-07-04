@@ -1,4 +1,4 @@
-#include <GeoUtils.hlsl>
+#include "GeoUtils.hlsli"
 
 float4 main(VertexOut pin) : SV_Target 
 {

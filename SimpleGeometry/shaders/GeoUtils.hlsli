@@ -1,4 +1,4 @@
-#include <LightUtils.hlsl>
+#include "LightUtils.hlsli"
 
 struct VertexIn
 {

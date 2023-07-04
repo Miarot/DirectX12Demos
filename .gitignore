@@ -1,9 +1,4 @@
-.vs
 vs_2022/*
 !vs_2022/*.vcxproj
 !vs_2022/*.sln
 !vs_2022/*.filters
-!vs_2022/SimpleGeometry/*.vcxproj
-!vs_2022/SimpleGeometry/*.filters
-!vs_2022/3rd-party/DirectXTex/*.vcxproj
-!vs_2022/3rd-party/DirectXTex/*.filters

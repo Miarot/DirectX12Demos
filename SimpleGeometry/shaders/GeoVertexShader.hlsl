@@ -1,4 +1,4 @@
-#include <GeoUtils.hlsl>
+#include "GeoUtils.hlsli"
 
 ConstantBuffer<ObjectConstants> ObjectConstantsCB : register(b0);
 ConstantBuffer<PassConstants> PassConstantsCB :register(b1);
