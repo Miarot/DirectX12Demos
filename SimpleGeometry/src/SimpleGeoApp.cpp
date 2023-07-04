@@ -1,4 +1,5 @@
 #include <SimpleGeoApp.h>
+#include <MyD3D12Lib/D3D12Utils.h>
 
 #include <d3dx12.h>
 
@@ -30,6 +31,7 @@ bool SimpleGeoApp::Initialize() {
 	BuildFrameResources();
 
 	m_CBV_SRVDescHeap = CreateDescriptorHeap(
+		m_Device,
 		m_Textures.size() + (m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
@@ -42,8 +44,20 @@ bool SimpleGeoApp::Initialize() {
 	BuildPipelineStateObject();
 
 	// for Sobel filter
-	m_FrameTextureRTVDescHeap = CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
-	m_FrameTextureSRVDescHeap = CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	m_FrameTextureRTVDescHeap = CreateDescriptorHeap(
+		m_Device,
+		1,
+		D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+		D3D12_DESCRIPTOR_HEAP_FLAG_NONE
+	);
+
+	m_FrameTextureSRVDescHeap = CreateDescriptorHeap(
+		m_Device,
+		1,
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+	);
+
 	UpdateFramesTextures();
 	BuildSobelRootSignature();
 	BuildSobelPipelineStateObject();
@@ -642,6 +656,7 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 	UINT ibByteSize = indexes.size() * sizeof(uint16_t);
 
 	boxAndPiramidGeo->VertexBufferGPU = CreateGPUResourceAndLoadData(
+		m_Device,
 		commandList,
 		boxAndPiramidGeo->VertexBufferUploader,
 		vertexes.data(),
@@ -649,6 +664,7 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 	);
 
 	boxAndPiramidGeo->IndexBufferGPU = CreateGPUResourceAndLoadData(
+		m_Device,
 		commandList,
 		boxAndPiramidGeo->IndexBufferUploader,
 		indexes.data(),

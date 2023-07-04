@@ -6,6 +6,7 @@ set( HEADER_FILES
 	inc/MyD3D12Lib/BaseApp.h
 	inc/MyD3D12Lib/Camera.h
 	inc/MyD3D12Lib/CommandQueue.h
+	inc/MyD3D12Lib/D3D12Utils.h
 	inc/MyD3D12Lib/Helpers.h
 	inc/MyD3D12Lib/MeshGeometry.h
 	inc/MyD3D12Lib/Timer.h
@@ -16,6 +17,7 @@ set( SRC_FILES
 	src/BaseApp.cpp
 	src/Camera.cpp
 	src/CommandQueue.cpp
+	src/D3D12Utils.cpp
 	src/MeshGeometry.cpp
 	src/Timer.cpp
 )

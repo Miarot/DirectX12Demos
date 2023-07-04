@@ -1,11 +1,10 @@
 #pragma once
 
 #include <DirectXMath.h>
+using namespace DirectX;
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-
-using namespace DirectX;
 
 class Camera {
 public:

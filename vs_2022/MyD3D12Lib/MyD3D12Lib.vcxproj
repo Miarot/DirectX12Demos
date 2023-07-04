@@ -260,6 +260,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\BaseApp.h" />
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\Camera.h" />
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\CommandQueue.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\D3D12Utils.h" />
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\Helpers.h" />
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\MeshGeometry.h" />
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\Timer.h" />
@@ -267,6 +268,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\BaseApp.cpp" />
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\Camera.cpp" />
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\CommandQueue.cpp" />
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\D3D12Utils.cpp" />
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\MeshGeometry.cpp" />
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\Timer.cpp" />
   </ItemGroup>

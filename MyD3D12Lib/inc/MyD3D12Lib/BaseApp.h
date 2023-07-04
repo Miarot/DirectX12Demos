@@ -41,42 +41,8 @@ protected:
 	void RegisterWindowClass(const wchar_t* className);
 	HWND CreateWindow(const wchar_t* className, const wchar_t* windowName);
 
-	void EnableDebugLayer();
-	bool CheckTearingSupport();
-
-	ComPtr<IDXGIAdapter4> CreateAdapter();
-	ComPtr<ID3D12Device2> CreateDevice();
-	ComPtr<IDXGISwapChain4> CreateSwapChain();
-	ComPtr<ID3D12Resource> CreateDepthStencilBuffer();
-
-	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(
-		UINT numDescriptors,
-		D3D12_DESCRIPTOR_HEAP_TYPE type,
-		D3D12_DESCRIPTOR_HEAP_FLAGS flags
-	);
-
-	ComPtr<ID3D12Resource> CreateGPUResourceAndLoadData(
-		ComPtr<ID3D12GraphicsCommandList> commandList,
-		ComPtr<ID3D12Resource>& intermediateResource,
-		const void* pData,
-		size_t dataSize
-	);
-
-	ComPtr<ID3DBlob> CompileShader(
-		const std::wstring& filename,
-		const std::string& entrypoint,
-		const std::string& target
-	);
-
 	void UpdateBackBuffersView();
 	void UpdateDSView();
-
-	void UpdateCBViews(
-		ComPtr<ID3D12Resource> constantBuffer, 
-		uint32_t subBufferSize,
-		uint32_t numSubBuffers,
-		ComPtr<ID3D12DescriptorHeap> constantBufferDescHeap
-	);
 
 	void ResizeBackBuffers();
 	void ResizeDSBuffer();
@@ -97,14 +63,15 @@ protected:
 	HINSTANCE m_hInstance = NULL;
 	HWND m_WindowHandle = NULL;
 
-	static const uint32_t m_NumBackBuffers = 3;
 	bool m_AllowTearing = false;
 	bool m_UseWarp = false;
 	bool m_Vsync = true;
 	bool m_FullScreen = false;
 	uint32_t m_ClientWidth = 1280;
 	uint32_t m_ClientHeight = 720;
+	DXGI_FORMAT m_DepthSencilFormat = DXGI_FORMAT_D32_FLOAT;
 	float m_DepthClearValue = 1.0f;
+	uint8_t m_SteniclClearValue = 0;
 
 	ComPtr<IDXGIAdapter4> m_Adapter;
 	ComPtr<ID3D12Device2> m_Device;
@@ -115,8 +82,8 @@ protected:
 	ComPtr<ID3D12DescriptorHeap> m_BackBuffersDescHeap;
 	uint32_t m_RTVDescSize;
 	uint32_t m_CBV_SRV_UAVDescSize;
-	ComPtr<ID3D12DescriptorHeap> m_DSVDescHeap;
 	ComPtr<ID3D12Resource> m_DSBuffer;
+	ComPtr<ID3D12DescriptorHeap> m_DSVDescHeap;
 
 	RECT m_WindowRect;
 	D3D12_RECT m_ScissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);

@@ -10,6 +10,9 @@
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\CommandQueue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\D3D12Utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\MeshGeometry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -25,6 +28,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\CommandQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\D3D12Utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\Helpers.h">
