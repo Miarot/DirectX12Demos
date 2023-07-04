@@ -14,8 +14,8 @@ using Microsoft::WRL::ComPtr;
 #include <string>
 #include <unordered_map>
 
-#include <BaseApp.h>
-#include <MeshGeometry.h>
+#include <MyD3D12Lib/BaseApp.h>
+#include <MyD3D12Lib/MeshGeometry.h>
 
 struct Vertex {
 	XMFLOAT3 Position;

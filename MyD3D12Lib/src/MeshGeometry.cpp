@@ -1,4 +1,4 @@
-#include <MeshGeometry.h>
+#include <MyD3D12Lib/MeshGeometry.h>
 
 D3D12_INDEX_BUFFER_VIEW MeshGeometry::IndexBufferView() const {
 	D3D12_INDEX_BUFFER_VIEW ibv;

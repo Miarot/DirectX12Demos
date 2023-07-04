@@ -4,26 +4,14 @@ set( TARGET_NAME SimpleGeometry)
 
 set( HEADER_FILES
 	inc/AppStructures.h
-	inc/BaseApp.h
-	inc/Camera.h
-	inc/CommandQueue.h
 	inc/FrameResources.h
-	inc/Helpers.h
-	inc/MeshGeometry.h
 	inc/SimpleGeoApp.h
-	inc/Timer.h
-	inc/UploadBuffer.h
 )
 
 set( SRC_FILES
-	src/BaseApp.cpp
-	src/Camera.cpp
-	src/CommandQueue.cpp
-	src/FrameResources.cpp
 	src/main.cpp
-	src/MeshGeometry.cpp
+	src/FrameResources.cpp
 	src/SimpleGeoApp.cpp
-	src/Timer.cpp
 )
 
 set( VERTEX_SHADER_FILES
@@ -73,7 +61,7 @@ add_executable( ${TARGET_NAME} WIN32
 	${SHADER_FILES}
 )
 
-target_include_directories( ${TARGET_NAME} PUBLIC
+target_include_directories( ${TARGET_NAME} PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/inc
 	${PROJECT_SOURCE_DIR}/3rd-party
 )
@@ -84,4 +72,5 @@ target_link_libraries( ${TARGET_NAME}
 	PUBLIC dxguid.lib
 	PUBLIC d3dcompiler.lib
 	PUBLIC DirectXTex
+	PUBLIC MyD3D12Lib
 )

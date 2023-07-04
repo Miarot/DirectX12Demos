@@ -10,7 +10,7 @@ using Microsoft::WRL::ComPtr;
 #include <memory>
 #include <cstdint>
 
-#include <CommandQueue.h>
+#include <MyD3D12Lib/CommandQueue.h>
 
 #if defined(CreateWindow)
 #undef CreateWindow

@@ -1,6 +1,5 @@
-#include <Camera.h>
-
-#include <helpers.h>
+#include <MyD3D12Lib/Camera.h>
+#include <MyD3D12Lib/Helpers.h>
 
 Camera::Camera() :
 	m_FoV(45.0f),

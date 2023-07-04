@@ -8,12 +8,12 @@ using namespace DirectX;
 #include <map>
 
 #include <AppStructures.h>
-#include <BaseApp.h>
-#include <Camera.h>
 #include <FrameResources.h>
-#include <MeshGeometry.h>
-#include <Timer.h>
-#include <UploadBuffer.h>
+#include <MyD3D12Lib/BaseApp.h>
+#include <MyD3D12Lib/Camera.h>
+#include <MyD3D12Lib/MeshGeometry.h>
+#include <MyD3D12Lib/Timer.h>
+#include <MyD3D12Lib/UploadBuffer.h>
 
 constexpr uint32_t m_NumLights = 16;
 

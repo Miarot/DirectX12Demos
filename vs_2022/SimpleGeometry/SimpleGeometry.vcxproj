@@ -86,7 +86,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -101,10 +101,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -112,7 +112,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\Debug\DirectXTex.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\Debug\DirectXTex.lib;..\MyD3D12Lib\Debug\MyD3D12Lib.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\Debug\DirectXTex.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -127,7 +127,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ExceptionHandling>Sync</ExceptionHandling>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -142,10 +142,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -153,7 +153,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\Release\DirectXTex.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\Release\DirectXTex.lib;..\MyD3D12Lib\Release\MyD3D12Lib.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\Release\DirectXTex.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -168,7 +168,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ExceptionHandling>Sync</ExceptionHandling>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
@@ -183,10 +183,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -194,7 +194,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\MinSizeRel\DirectXTex.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\MinSizeRel\DirectXTex.lib;..\MyD3D12Lib\MinSizeRel\MyD3D12Lib.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\MinSizeRel\DirectXTex.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -209,7 +209,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -223,10 +223,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -234,7 +234,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\RelWithDebInfo\DirectXTex.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\RelWithDebInfo\DirectXTex.lib;..\MyD3D12Lib\RelWithDebInfo\MyD3D12Lib.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\3rd-party\DirectXTex\RelWithDebInfo\DirectXTex.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -306,23 +306,11 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\AppStructures.h" />
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\BaseApp.h" />
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\Camera.h" />
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\CommandQueue.h" />
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\FrameResources.h" />
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\Helpers.h" />
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\MeshGeometry.h" />
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\SimpleGeoApp.h" />
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\Timer.h" />
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\UploadBuffer.h" />
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\BaseApp.cpp" />
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\Camera.cpp" />
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\CommandQueue.cpp" />
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\FrameResources.cpp" />
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\main.cpp" />
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\MeshGeometry.cpp" />
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\FrameResources.cpp" />
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\SimpleGeoApp.cpp" />
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\Timer.cpp" />
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\shaders\GeoVertexShader.hlsl">
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableDebuggingInformation>
       <ShaderType>Vertex</ShaderType>
@@ -383,6 +371,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTex\DirectXTex.vcxproj">
       <Project>{B247C7F2-FE87-3D9F-848E-2C376A7561F4}</Project>
       <Name>DirectXTex</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\MyD3D12Lib\MyD3D12Lib.vcxproj">
+      <Project>{0E37476F-6CA4-3DB0-AB82-C34C2F7F4D9D}</Project>
+      <Name>MyD3D12Lib</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

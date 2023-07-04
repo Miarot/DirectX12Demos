@@ -4,6 +4,8 @@ project( DirectX12Demos LANGUAGES CXX )
 
 add_subdirectory( 3rd-party/DirectXTex )
 
+add_subdirectory( MyD3D12Lib )
+
 add_subdirectory( SimpleGeometry )
 
 set_directory_properties( PROPERTIES 

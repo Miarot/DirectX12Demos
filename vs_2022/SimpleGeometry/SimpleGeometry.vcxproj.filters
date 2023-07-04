@@ -1,28 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\BaseApp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\Camera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\CommandQueue.cpp">
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\FrameResources.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\MeshGeometry.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\SimpleGeoApp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\src\Timer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -30,31 +15,10 @@
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\AppStructures.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\BaseApp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\Camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\CommandQueue.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\FrameResources.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\Helpers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\MeshGeometry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\SimpleGeoApp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\Timer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\SimpleGeometry\inc\UploadBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -4,3 +4,4 @@ vs_2022/*
 !vs_2022/*.sln
 !vs_2022/3rd-party
 !vs_2022/SimpleGeometry
+!vs_2022/MyD3D12Lib
