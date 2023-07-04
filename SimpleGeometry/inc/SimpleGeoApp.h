@@ -15,8 +15,6 @@ using namespace DirectX;
 
 #include <map>
 
-constexpr uint32_t m_NumLights = 16;
-
 class SimpleGeoApp : public BaseApp {
 public:
 	explicit SimpleGeoApp(HINSTANCE hInstance);
@@ -54,10 +52,6 @@ private:
 	void UpdateFramesTextures();
 	void BuildSobelRootSignature();
 	void BuildSobelPipelineStateObject();
-
-	XMMATRIX GetProjectionMatrix();
-
-	void CreateDDSTextureFromFile(ComPtr<ID3D12GraphicsCommandList> commandList, Texture* tex);
 
 private:
 	ComPtr<ID3DBlob> m_GeoVertexShaderBlob;

@@ -1,6 +1,13 @@
 #include <MyD3D12Lib/D3D12Utils.h>
 #include <MyD3D12Lib/Helpers.h>
 
+#include <DirectXTex/DDSTextureLoader/DDSTextureLoader12.h>
+
+#include <d3dcompiler.h>
+#include <d3dx12.h>
+
+using namespace DirectX;
+
 // compile shader from file
 ComPtr<ID3DBlob> CompileShader(
 	const std::wstring& filename,
@@ -37,6 +44,93 @@ ComPtr<ID3DBlob> CompileShader(
 	return shaderBlob;
 }
 
+// texture loading
+void CreateDDSTextureFromFile(
+	ComPtr<ID3D12Device2> device,
+	ComPtr<ID3D12GraphicsCommandList> commandList,
+	std::wstring fileName,
+	ComPtr<ID3D12Resource> & resource,
+	ComPtr<ID3D12Resource> & uploadResource) 
+{
+	std::unique_ptr<uint8_t[]> ddsData;
+	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+
+	ThrowIfFailed(LoadDDSTextureFromFile(
+		device.Get(),
+		fileName.c_str(),
+		&resource,
+		ddsData, subresources
+	));
+
+	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(
+		resource.Get(),
+		0,
+		static_cast<UINT>(subresources.size())
+	);
+
+	ThrowIfFailed(device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&uploadResource)
+	));
+
+	UpdateSubresources(
+		commandList.Get(),
+		resource.Get(),
+		uploadResource.Get(),
+		0,
+		0,
+		static_cast<UINT>(subresources.size()),
+		subresources.data()
+	);
+
+	CD3DX12_RESOURCE_BARRIER barier = CD3DX12_RESOURCE_BARRIER::Transition(
+		resource.Get(),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+	);
+
+	commandList->ResourceBarrier(1, &barier);
+}
+
+// compute projection matrix
+XMMATRIX GetProjectionMatrix(
+	bool isInverseDepht, 
+	float fov, float aspectRatio, 
+	float nearPlain, 
+	float farPlain) 
+{
+	float focalLengh = 1 / tan(XMConvertToRadians(fov) / 2);
+
+	float n = nearPlain;
+	float f = farPlain;
+
+	float l = -n / focalLengh;
+	float r = n / focalLengh;
+	float b = -aspectRatio * n / focalLengh;
+	float t = aspectRatio * n / focalLengh;
+
+	float alpha = 0.0f;
+	float beta = 1.0f;
+
+	if (isInverseDepht) {
+		alpha = 1.0f;
+		beta = 0.0f;
+	}
+
+	XMVECTOR xProj = { 2 * n / (r - l), 0.0f, (r + l) / (r - l), 0.0f };
+	XMVECTOR yProj = { 0.0f, 2 * n / (t - b), (t + b) / (t - b), 0.0f };
+	XMVECTOR zProj = { 0.0f, 0.0f, -(alpha * n - beta * f) / (f - n), (alpha - beta) * n * f / (f - n) };
+	XMVECTOR wProj = { 0.0f, 0.0f, 1.0f, 0.0f };
+	XMMATRIX projectionMatrix = { xProj, yProj, zProj, wProj };
+	projectionMatrix = XMMatrixTranspose(projectionMatrix);
+
+	return projectionMatrix;
+}
+
 // DirectX 12 initialization functions
 void EnableDebugLayer() {
 #ifdef _DEBUG
@@ -69,6 +163,17 @@ bool CheckTearingSupport() {
 #endif // _DEBUG
 
 	return allowTearing == TRUE;
+}
+
+D3D_ROOT_SIGNATURE_VERSION GetRootSignatureVersion(ComPtr<ID3D12Device2> device) {
+	D3D12_FEATURE_DATA_ROOT_SIGNATURE rsVersion;
+	rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+
+	if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &rsVersion, sizeof(rsVersion)))) {
+		rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+	}
+
+	return rsVersion.HighestVersion;
 }
 
 ComPtr<IDXGIAdapter4> CreateAdapter(bool useWarp) {

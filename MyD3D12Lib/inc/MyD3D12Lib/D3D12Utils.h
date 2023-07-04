@@ -1,9 +1,8 @@
 #pragma once
 
 #include <d3d12.h>
-#include <d3dcompiler.h>
 #include <dxgi1_6.h>
-#include <d3dx12.h>
+#include <DirectXMath.h>
 
 #include <wrl.h>
 using Microsoft::WRL::ComPtr;
@@ -17,9 +16,28 @@ ComPtr<ID3DBlob> CompileShader(
 	const std::string& target
 );
 
+// texture loading
+void CreateDDSTextureFromFile(
+	ComPtr<ID3D12Device2> device,
+	ComPtr<ID3D12GraphicsCommandList> commandList,
+	std::wstring fileName,
+	ComPtr<ID3D12Resource> & resource,
+	ComPtr<ID3D12Resource> & uploadResource
+);
+
+// compute projection matrix
+DirectX::XMMATRIX GetProjectionMatrix(
+	bool isInverseDepht,
+	float fov, float aspectRatio,
+	float nearPlain = 0.1f,
+	float farPlain = 100.0f
+);
+
 // DirectX 12 initialization functions
 void EnableDebugLayer();
 bool CheckTearingSupport();
+D3D_ROOT_SIGNATURE_VERSION GetRootSignatureVersion(ComPtr<ID3D12Device2> device);
+
 ComPtr<IDXGIAdapter4> CreateAdapter(bool useWarp = false);
 ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter);
 

@@ -99,7 +99,21 @@ void SimpleGeoApp::OnUpdate() {
 	
 	// update pass constants
 	m_PassConstants.View = m_Camera.GetViewMatrix();
-	m_PassConstants.Proj = GetProjectionMatrix();
+
+	m_PassConstants.Proj = GetProjectionMatrix(
+		m_IsInverseDepth,
+		m_Camera.GetFoV(),
+		m_ClientHeight / static_cast<float>(m_ClientWidth)
+	);
+
+	if (m_IsShakeEffect) {
+		XMVECTOR pixelNorm = { 2.0f / m_ClientWidth, 2.0f / m_ClientHeight, 0.0f, 0.0f };
+		XMVECTOR displacement = m_ShakeDirections[m_ShakeDirectionIndex] * pixelNorm;
+
+		m_PassConstants.Proj.r[2] += displacement * m_ShakePixelAmplitude;
+		m_ShakeDirectionIndex = (m_ShakeDirectionIndex + 1) % m_ShakeDirections.size();
+	}
+
 	m_PassConstants.ViewProj = XMMatrixMultiply(m_PassConstants.View, m_PassConstants.Proj);
 
 	XMStoreFloat3(&m_PassConstants.EyePos, m_Camera.GetCameraPos());
@@ -480,14 +494,20 @@ void SimpleGeoApp::BuildLights() {
 void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	// load default texture
 	{
-		auto crateTex = std::make_unique<Texture>();
+		auto tex = std::make_unique<Texture>();
 
-		crateTex->Name = "default";
-		crateTex->FileName = L"../../SimpleGeometry/textures/default.dds";
+		tex->Name = "default";
+		tex->FileName = L"../../SimpleGeometry/textures/default.dds";
 
-		CreateDDSTextureFromFile(commandList, crateTex.get());
+		CreateDDSTextureFromFile(
+			m_Device,
+			commandList,
+			tex->FileName,
+			tex->Resource,
+			tex->UploadResource
+		);
 
-		m_Textures[crateTex->Name] = std::move(crateTex);
+		m_Textures[tex->Name] = std::move(tex);
 	}
 
 	// load crate texture
@@ -497,7 +517,13 @@ void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) 
 		crateTex->Name = "crate";
 		crateTex->FileName = L"../../SimpleGeometry/textures/WoodCrate01.dds";
 
-		CreateDDSTextureFromFile(commandList, crateTex.get());
+		CreateDDSTextureFromFile(
+			m_Device,
+			commandList,
+			crateTex->FileName,
+			crateTex->Resource,
+			crateTex->UploadResource
+		);
 
 		m_Textures[crateTex->Name] = std::move(crateTex);
 	}
@@ -509,7 +535,13 @@ void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) 
 		brickTex->Name = "bricks";
 		brickTex->FileName = L"../../SimpleGeometry/textures/bricks.dds";
 
-		CreateDDSTextureFromFile(commandList, brickTex.get());
+		CreateDDSTextureFromFile(
+			m_Device,
+			commandList,
+			brickTex->FileName,
+			brickTex->Resource,
+			brickTex->UploadResource
+		);
 
 		m_Textures[brickTex->Name] = std::move(brickTex);
 	}
@@ -1012,6 +1044,7 @@ void SimpleGeoApp::BuildCBViews() {
 }
 
 void SimpleGeoApp::BuildRootSignature() {
+	// init parameters
 	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
 
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange0;
@@ -1031,12 +1064,14 @@ void SimpleGeoApp::BuildRootSignature() {
 	rootParameters[2].InitAsDescriptorTable(1, &descriptorRange2);
 	rootParameters[3].InitAsDescriptorTable(1, &descriptorRange3, D3D12_SHADER_VISIBILITY_PIXEL);
 
+	// set access flags
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
+	// create sampler
 	CD3DX12_STATIC_SAMPLER_DESC samplerDesc(
 		0,
 		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
@@ -1048,18 +1083,12 @@ void SimpleGeoApp::BuildRootSignature() {
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
 	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 1, &samplerDesc, rootSignatureFlags);
 
-	D3D12_FEATURE_DATA_ROOT_SIGNATURE rsVersion;
-	rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-
-	if (FAILED(m_Device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &rsVersion, sizeof(rsVersion)))) {
-		rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-	}
-
 	ComPtr<ID3DBlob> rootSignatureBlob;
 	ComPtr<ID3DBlob> errorBlob;
+
 	ThrowIfFailed(D3DX12SerializeVersionedRootSignature(
 		&rootSignatureDesc,
-		rsVersion.HighestVersion,
+		GetRootSignatureVersion(m_Device),
 		&rootSignatureBlob,
 		&errorBlob
 	));
@@ -1147,44 +1176,6 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 	m_PSOs["normInverseDepth"] = normInverseDepthPSO;
 }
 
-XMMATRIX SimpleGeoApp::GetProjectionMatrix() {
-	float aspectRatio = m_ClientHeight / static_cast<float>(m_ClientWidth);
-	float focalLengh = 1 / tan(XMConvertToRadians(m_Camera.GetFoV()) / 2);
-
-	float n = 0.1f;
-	float f = 100.0f;
-
-	float l = -n / focalLengh;
-	float r = n / focalLengh;
-	float b = -aspectRatio * n / focalLengh;
-	float t = aspectRatio * n / focalLengh;
-
-	float alpha = 0.0f;
-	float beta = 1.0f;
-
-	if (m_IsInverseDepth) {
-		alpha = 1.0f;
-		beta = 0.0f;
-	}
-
-	XMVECTOR xProj = { 2 * n / (r - l), 0.0f, (r + l) / (r - l), 0.0f };
-	XMVECTOR yProj = { 0.0f, 2 * n / (t - b), (t + b) / (t - b), 0.0f };
-	XMVECTOR zProj = { 0.0f, 0.0f, -(alpha * n - beta * f) / (f - n), (alpha - beta) * n * f / (f - n) };
-	XMVECTOR wProj = { 0.0f, 0.0f, 1.0f, 0.0f };
-	XMMATRIX projectionMatrix = { xProj, yProj, zProj, wProj };
-	projectionMatrix = XMMatrixTranspose(projectionMatrix);
-
-	if (m_IsShakeEffect) {
-		XMVECTOR pixelNorm = { 2.0f / m_ClientWidth, 2.0f / m_ClientHeight, 0.0f, 0.0f };
-		XMVECTOR displacement = m_ShakeDirections[m_ShakeDirectionIndex] * pixelNorm;
-
-		projectionMatrix.r[2] += displacement * m_ShakePixelAmplitude;
-		m_ShakeDirectionIndex = (m_ShakeDirectionIndex + 1) % m_ShakeDirections.size();
-	}
-
-	return projectionMatrix;
-}
-
 void SimpleGeoApp::UpdateFramesTextures() {
 	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, m_ClientWidth, m_ClientHeight);
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
@@ -1230,18 +1221,11 @@ void SimpleGeoApp::BuildSobelRootSignature() {
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
 	rootSignatureDesc.Init_1_1(1, rootParameters, 0, NULL, rootSignatureFlags);
 
-	D3D12_FEATURE_DATA_ROOT_SIGNATURE rsVersion;
-	rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-
-	if (FAILED(m_Device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &rsVersion, sizeof(rsVersion)))) {
-		rsVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-	}
-
 	ComPtr<ID3DBlob> rootSignatureBlob;
 	ComPtr<ID3DBlob> errorBlob;
 	ThrowIfFailed(D3DX12SerializeVersionedRootSignature(
 		&rootSignatureDesc,
-		rsVersion.HighestVersion,
+		GetRootSignatureVersion(m_Device),
 		&rootSignatureBlob,
 		&errorBlob
 	));
@@ -1291,49 +1275,4 @@ void SimpleGeoApp::BuildSobelPipelineStateObject() {
 	psoDesc.SampleDesc = { 1, 0 };
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_SobelPSO)));
-}
-
-void SimpleGeoApp::CreateDDSTextureFromFile(ComPtr<ID3D12GraphicsCommandList> commandList, Texture* tex) {
-	std::unique_ptr<uint8_t[]> ddsData;
-	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-
-	ThrowIfFailed(LoadDDSTextureFromFile(
-		m_Device.Get(), 
-		tex->FileName.c_str(), 
-		&tex->Resource, 
-		ddsData, subresources
-	));
-
-	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(
-		tex->Resource.Get(), 
-		0,
-		static_cast<UINT>(subresources.size())
-	);
-
-	ThrowIfFailed(m_Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&tex->UploadResource)
-	));
-
-	UpdateSubresources(
-		commandList.Get(),
-		tex->Resource.Get(), 
-		tex->UploadResource.Get(), 
-		0, 
-		0, 
-		static_cast<UINT>(subresources.size()), 
-		subresources.data()
-	);
-
-	CD3DX12_RESOURCE_BARRIER barier = CD3DX12_RESOURCE_BARRIER::Transition(
-		tex->Resource.Get(),
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-	);
-
-	commandList->ResourceBarrier(1, &barier);
 }

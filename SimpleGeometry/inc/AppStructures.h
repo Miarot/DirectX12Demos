@@ -48,7 +48,6 @@ struct PassConstants {
 	Light Lights[16];
 };
 
-
 struct MaterialConstants {
 	XMFLOAT4 DiffuseAlbedo;
 	XMFLOAT3 FresnelR0;
