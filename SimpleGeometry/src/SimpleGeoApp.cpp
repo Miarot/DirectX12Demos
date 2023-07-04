@@ -107,17 +107,11 @@ void SimpleGeoApp::OnUpdate() {
 	);
 
 	if (m_IsShakeEffect) {
-		XMVECTOR pixelNorm = { 2.0f / m_ClientWidth, 2.0f / m_ClientHeight, 0.0f, 0.0f };
-		XMVECTOR displacement = m_ShakeDirections[m_ShakeDirectionIndex] * pixelNorm;
-
-		m_PassConstants.Proj.r[2] += displacement * m_ShakePixelAmplitude;
-		m_ShakeDirectionIndex = (m_ShakeDirectionIndex + 1) % m_ShakeDirections.size();
+		m_Shaker.Shake(m_PassConstants.Proj, m_ClientWidth, m_ClientHeight);
 	}
 
 	m_PassConstants.ViewProj = XMMatrixMultiply(m_PassConstants.View, m_PassConstants.Proj);
-
 	XMStoreFloat3(&m_PassConstants.EyePos, m_Camera.GetCameraPos());
-
 	m_PassConstants.TotalTime = float(m_Timer.GetTotalTime());
 
 	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(0, m_PassConstants);
@@ -447,18 +441,8 @@ void SimpleGeoApp::InitAppState() {
 
 	m_Timer = Timer();
 	m_Timer.StartMeasurement();
-
-	// init shake effect state data
-	m_IsShakeEffect = false;
-	m_ShakePixelAmplitude = 5.0f;
-	m_ShakeDirections = {
-		{ 0.0f,     1.0f,  0.0f,    0.0f },
-		{ 0.0f,     -1.0f, 0.0f,    0.0f },
-		{ 1.0f,     0.0f,  0.0f,    0.0f },
-		{ -1.0f,    0.0f,  0.0f,    0.0f }
-	};
-	m_ShakeDirectionIndex = 0;
-	//
+	
+	m_Shaker = Shaker();
 }
 
 void SimpleGeoApp::BuildLights() {

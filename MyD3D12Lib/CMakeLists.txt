@@ -9,6 +9,7 @@ set( HEADER_FILES
 	inc/MyD3D12Lib/D3D12Utils.h
 	inc/MyD3D12Lib/Helpers.h
 	inc/MyD3D12Lib/MeshGeometry.h
+	inc/MyD3D12Lib/Shaker.h
 	inc/MyD3D12Lib/Timer.h
 	inc/MyD3D12Lib/UploadBuffer.h
 )
@@ -19,6 +20,7 @@ set( SRC_FILES
 	src/CommandQueue.cpp
 	src/D3D12Utils.cpp
 	src/MeshGeometry.cpp
+	src/Shaker.cpp
 	src/Timer.cpp
 )
 

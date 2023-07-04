@@ -5,6 +5,7 @@
 #include <MyD3D12Lib/BaseApp.h>
 #include <MyD3D12Lib/Camera.h>
 #include <MyD3D12Lib/MeshGeometry.h>
+#include <MyD3D12Lib/Shaker.h>
 #include <MyD3D12Lib/Timer.h>
 #include <MyD3D12Lib/UploadBuffer.h>
 
@@ -57,16 +58,13 @@ private:
 	FLOAT m_BackGroundColor[4] = { 0.4f, 0.6f, 0.9f, 1.0f };
 
 	bool m_IsInverseDepth = false;
+	bool m_IsShakeEffect = false;
 	bool m_IsDrawNorm = false;
 	PassConstants m_PassConstants;
 	POINT m_LastMousePos;
 	Camera m_Camera;
 	Timer m_Timer;
-	// for shake effect
-	bool m_IsShakeEffect;
-	float m_ShakePixelAmplitude;
-	std::vector<XMVECTOR> m_ShakeDirections;
-	size_t m_ShakeDirectionIndex;
+	Shaker m_Shaker;
 
 	std::unordered_map<std::string, std::unique_ptr<Texture>> m_Textures;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;

@@ -16,6 +16,9 @@
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\MeshGeometry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\Shaker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\src\Timer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -37,6 +40,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\MeshGeometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\Shaker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc\MyD3D12Lib\Timer.h">
