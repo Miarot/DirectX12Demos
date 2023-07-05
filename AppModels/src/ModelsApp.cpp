@@ -44,8 +44,7 @@ bool ModelsApp::Initialize() {
 
 	m_CBV_SRVDescHeap = CreateDescriptorHeap(
 		m_Device,
-		//m_Textures.size() + (m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
-		m_Textures.size() + (m_RenderItems.size() + 1) * m_NumBackBuffers,
+		m_Textures.size() + (m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
@@ -84,9 +83,9 @@ bool ModelsApp::Initialize() {
 		it.second->DisposeUploaders();
 	}
 
-	//for (auto& it : m_Textures) {
-	//	it.second->UploadResource = nullptr;
-	//}
+	for (auto& it : m_Textures) {
+		it.second->UploadResource = nullptr;
+	}
 
 	return true;
 }
@@ -101,6 +100,11 @@ void ModelsApp::OnUpdate() {
 		char buffer[500];
 		auto fps = m_Timer.GetMeasuredTicks() / m_Timer.GetMeasuredTime();
 		::sprintf_s(buffer, 500, "FPS: %f\n", fps);
+		::OutputDebugString(buffer);
+
+		XMFLOAT3 cameraPos;
+		XMStoreFloat3(&cameraPos, m_Camera.GetCameraPos());
+		::sprintf_s(buffer, 500, "camear position: %f %f %f\n", cameraPos.x, cameraPos.y, cameraPos.z);
 		::OutputDebugString(buffer);
 
 		m_Timer.StartMeasurement();
@@ -125,30 +129,21 @@ void ModelsApp::OnUpdate() {
 
 	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(0, m_PassConstants);
 
-	//// update materials if necessary
-	//for (auto& it : m_Materials) {
-	//	auto mat = it.second.get();
+	// update materials if necessary
+	for (auto& it : m_Materials) {
+		if (it->NumDirtyFrames > 0) {
+			m_CurrentFrameResources->m_MaterialsConstantsBuffer->CopyData(
+				it->CBIndex,
+				{
+					it->DiffuseAlbedo,
+					it->FresnelR0,
+					it->Roughness
+				}
+			);
 
-	//	if (mat->NumDirtyFrames > 0) {
-	//		m_CurrentFrameResources->m_MaterialsConstantsBuffer->CopyData(
-	//			mat->MaterialCBIndex,
-	//			{
-	//				mat->DiffuseAlbedo,
-	//				mat->FresnelR0,
-	//				mat->Roughness
-	//			}
-	//		);
-
-	//		--mat->NumDirtyFrames;
-	//	}
-	//}
-
-	//// rotate box
-	//auto boxRenderItem = m_RenderItems[2].get();
-	//float angle = static_cast<float>(m_Timer.GetTotalTime() * 90.0);
-	//const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
-	//boxRenderItem->m_ModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
-	//boxRenderItem->m_NumDirtyFramse = 3;
+			--it->NumDirtyFrames;
+		}
+	}
 
 	// update object constants if necessary
 	for (auto& it: m_RenderItems) {
@@ -273,7 +268,7 @@ void ModelsApp::OnRender() {
 		// draw render items
 		for (uint32_t i = 0; i < m_RenderItems.size(); ++i) {
 			auto renderItem = m_RenderItems[i].get();
-			//auto mat = renderItem->m_Material;
+			auto mat = renderItem->m_Material;
 
 			// set Input-Assembler state
 			commandList->IASetVertexBuffers(0, 1, &renderItem->m_MeshGeo->VertexBufferView());
@@ -287,21 +282,21 @@ void ModelsApp::OnRender() {
 				m_CBV_SRV_UAVDescSize
 			);
 
-			//CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
-			//	m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-			//	m_MaterialConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_Materials.size() + mat->MaterialCBIndex,
-			//	m_CBV_SRV_UAVDescSize
-			//);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
+				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_MaterialConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_Materials.size() + mat->CBIndex,
+				m_CBV_SRV_UAVDescSize
+			);
 
 			CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
 				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_TexturesViewsStartIndex + m_Textures[renderItem->m_TextureName]->SRVHeapIndex,
+				m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
 				m_CBV_SRV_UAVDescSize
 			);
 
 			commandList->SetGraphicsRootDescriptorTable(0, objCBDescHandle);
-			//commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
-			commandList->SetGraphicsRootDescriptorTable(2, textureDescHandle);
+			commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
+			commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
 
 			// draw
 			commandList->DrawIndexedInstanced(
@@ -462,33 +457,57 @@ void ModelsApp::InitSceneState() {
 }
 
 void ModelsApp::BuildLights() {
-	//m_PassConstants.AmbientLight = XMVectorSet(0.1f, 0.1f, 0.1f, 1.0f);
+	m_PassConstants.AmbientLight = XMVectorSet(0.2f, 0.2f, 0.2f, 1.0f);
+	uint32_t curLight = 0;
+	// directional light 1 
+	{
+		m_PassConstants.Lights[curLight].Strength = { 0.0f, 0.0f, 0.0f };
+		m_PassConstants.Lights[curLight].Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
+		++curLight;
+	}
 
-	//// directional light 1 
-	//{
-	//	m_PassConstants.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
-	//	XMVECTOR direction = XMVector3Normalize(-XMVectorSet(1.0f, 2.0f, 3.0f, 0.0f));
-	//	XMStoreFloat3(&m_PassConstants.Lights[0].Direction, direction);
-	//}
 
+	// point light 1
+	{
+		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
+		m_PassConstants.Lights[curLight].Position = XMFLOAT3(0.0f, 10.0f, 0.0f);
+		m_PassConstants.Lights[curLight].FalloffStart = 5.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 30.0f;
+		++curLight;
+	}
 
-	//// point light 1
-	//{
-	//	m_PassConstants.Lights[1].Strength = { 0.6f, 0.0f, 0.0f };
-	//	m_PassConstants.Lights[1].Position = { 7.0f, 2.0f, 5.0f };
-	//	m_PassConstants.Lights[1].FalloffStart = 1.0f;
-	//	m_PassConstants.Lights[1].FalloffEnd = 8.0f;
-	//}
+	// spot light 1
+	{
+		m_PassConstants.Lights[curLight].Strength = { 0.0f, 1.0f, 0.0f };
+		m_PassConstants.Lights[curLight].Position = { 4.0f, 8.0f, 0.0f };
+		m_PassConstants.Lights[curLight].FalloffStart = 4.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
+		m_PassConstants.Lights[curLight].Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
+		m_PassConstants.Lights[curLight].SpotPower = 12.0f;
+		++curLight;
+	}
 
-	//// spot light 1
-	//{
-	//	m_PassConstants.Lights[2].Strength = { 0.0f, 0.8f, 0.0f };
-	//	m_PassConstants.Lights[2].Position = { 5.0f, 0.0f, 7.0f };
-	//	m_PassConstants.Lights[2].FalloffStart = 1.0f;
-	//	m_PassConstants.Lights[2].FalloffEnd = 8.0f;
-	//	m_PassConstants.Lights[2].Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
-	//	m_PassConstants.Lights[2].SpotPower = 12.0f;
-	//}
+	// spot light 2
+	{
+		m_PassConstants.Lights[curLight].Strength = { 1.0f, 0.0f, 0.0f };
+		m_PassConstants.Lights[curLight].Position = { 0.0f, 8.0f, 0.0f };
+		m_PassConstants.Lights[curLight].FalloffStart = 4.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
+		m_PassConstants.Lights[curLight].Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
+		m_PassConstants.Lights[curLight].SpotPower = 12.0f;
+		++curLight;
+	}
+
+	// spot light 3
+	{
+		m_PassConstants.Lights[curLight].Strength = { 0.0f, 0.0f, 1.0f };
+		m_PassConstants.Lights[curLight].Position = { -4.0f, 8.0f, 0.0f };
+		m_PassConstants.Lights[curLight].FalloffStart = 4.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
+		m_PassConstants.Lights[curLight].Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
+		m_PassConstants.Lights[curLight].SpotPower = 12.0f;
+		++curLight;
+	}
 }
 
 void ModelsApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
@@ -594,99 +613,30 @@ void ModelsApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
 }
 
 void ModelsApp::BuildMaterials() {
-	//// grass material
-	//{
-	//	auto grass = std::make_unique<Material>();
+	m_Materials.reserve(m_Scene->mNumMaterials);
 
-	//	grass->Name = "grass";
-	//	grass->MaterialCBIndex = m_Materials.size();
-	//	grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.3f, 1.0f);
-	//	grass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-	//	grass->Roughness = 0.125f;
+	for (uint32_t i = 0; i < m_Scene->mNumMaterials; ++i) {
+		aiMaterial* aimat = m_Scene->mMaterials[i];
+		
+		aiString texturePath;
+		aimat->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
+		aiColor3D diffuseColor(0.0f, 0.0f, 0.0f);
+		aimat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
+		aiColor3D specularColor(0.0f, 0.0f, 0.0f);
+		aimat->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
+		float shininess = 0.0f;
+		aimat->Get(AI_MATKEY_SHININESS, shininess);
 
-	//	m_Materials[grass->Name] = std::move(grass);
-	//}
+		auto mat = std::make_unique<Material>();
+		
+		mat->CBIndex = i;
+		mat->TextureName = texturePath.C_Str();
+		mat->DiffuseAlbedo = XMFLOAT4(diffuseColor.r, diffuseColor.g, diffuseColor.b, 1.0f);
+		mat->FresnelR0 = XMFLOAT3(specularColor.r, specularColor.g, specularColor.b);
+		mat->Roughness = 0.99f - shininess;
 
-	//// water material
-	//{
-	//	auto water = std::make_unique<Material>();
-
-	//	water->Name = "water";
-	//	water->MaterialCBIndex = m_Materials.size();
-	//	water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
-	//	water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	//	water->Roughness = 0.0f;
-
-	//	m_Materials[water->Name] = std::move(water);
-	//}
-
-	//// bricks material
-	//{
-	//	auto bricks = std::make_unique<Material>();
-
-	//	bricks->Name = "bricks";
-	//	bricks->MaterialCBIndex = m_Materials.size();
-	//	bricks->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	//	bricks->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	//	bricks->Roughness = 0.0f;
-	//	bricks->TextureName = "bricks";
-
-	//	m_Materials[bricks->Name] = std::move(bricks);
-	//}
-
-	//// crate material
-	//{
-	//	auto crate = std::make_unique<Material>();
-
-	//	crate->Name = "crate";
-	//	crate->MaterialCBIndex = m_Materials.size();
-	//	crate->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	//	crate->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-	//	crate->Roughness = 0.5f;
-	//	crate->TextureName = "crate";
-
-	//	m_Materials[crate->Name] = std::move(crate);
-	//}
-
-	//// light material 1
-	//{
-	//	auto light = std::make_unique<Material>();
-
-	//	light->Name = "light1";
-	//	light->MaterialCBIndex = m_Materials.size();
-
-	//	light->DiffuseAlbedo = XMFLOAT4(
-	//		1000.0f * m_PassConstants.Lights[1].Strength.x, 
-	//		1000.0f * m_PassConstants.Lights[1].Strength.y,
-	//		1000.0f * m_PassConstants.Lights[1].Strength.z,
-	//		1.0f
-	//	);
-
-	//	light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	//	light->Roughness = 0.0f;
-
-	//	m_Materials[light->Name] = std::move(light);
-	//}
-
-	//// light material 2
-	//{
-	//	auto light = std::make_unique<Material>();
-
-	//	light->Name = "light2";
-	//	light->MaterialCBIndex = m_Materials.size();
-
-	//	light->DiffuseAlbedo = XMFLOAT4(
-	//		1000.0f * m_PassConstants.Lights[2].Strength.x,
-	//		1000.0f * m_PassConstants.Lights[2].Strength.y,
-	//		1000.0f * m_PassConstants.Lights[2].Strength.z,
-	//		1.0f
-	//	);
-
-	//	light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	//	light->Roughness = 0.0f;
-
-	//	m_Materials[light->Name] = std::move(light);
-	//}
+		m_Materials.push_back(std::move(mat));
+	}
 }
 
 void ModelsApp::BuildRenderItems() {
@@ -722,14 +672,11 @@ void ModelsApp::BuildRecursivelyRenderItems(aiNode* node, XMMATRIX modelMatrix) 
 		ri->m_ModelMatrix = modelMatrix;
 		ri->m_ModelMatrixInvTrans = modelMatrixInvTrans;
 		ri->m_MeshGeo = curGeo;
+		ri->m_Material = m_Materials[curMesh->mMaterialIndex].get();
 		ri->m_IndexCount = curGeo->DrawArgs[curMeshName].IndexCount;
 		ri->m_StartIndexLocation = curGeo->DrawArgs[curMeshName].StartIndexLocation;
 		ri->m_BaseVertexLocation = curGeo->DrawArgs[curMeshName].BaseVertexLocation;
 		ri->m_CBIndex = m_RenderItems.size();
-
-		aiString path;
-		m_Scene->mMaterials[curMesh->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &path);
-		ri->m_TextureName = path.C_Str();
 
 		m_RenderItems.push_back(std::move(ri));
 	}
@@ -747,8 +694,7 @@ void ModelsApp::BuildFrameResources() {
 			m_Device,
 			1, 
 			m_RenderItems.size(),
-			0
-			//m_Materials.size()
+			m_Materials.size()
 		));
 	}
 }
@@ -830,34 +776,33 @@ void ModelsApp::BuildCBViews() {
 		descHandle.Offset(m_CBV_SRV_UAVDescSize);
 	}
 
+	m_MaterialConstantsViewsStartIndex = m_PassConstantsViewsStartIndex + m_NumBackBuffers;
+	uint32_t materialConstantsElementByteSize = m_FramesResources[0]->m_MaterialsConstantsBuffer->GetElementByteSize();
 
-	//m_MaterialConstantsViewsStartIndex = m_PassConstantsViewsStartIndex + m_NumBackBuffers;
-	//uint32_t materialConstantsElementByteSize = m_FramesResources[0]->m_MaterialsConstantsBuffer->GetElementByteSize();
+	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
+		auto materialConstantsBuffer = m_FramesResources[i]->m_MaterialsConstantsBuffer->Get();
+		D3D12_GPU_VIRTUAL_ADDRESS materialConstantsBufferGPUAdress = materialConstantsBuffer->GetGPUVirtualAddress();
 
-	//for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
-	//	auto materialConstantsBuffer = m_FramesResources[i]->m_MaterialsConstantsBuffer->Get();
-	//	D3D12_GPU_VIRTUAL_ADDRESS materialConstantsBufferGPUAdress = materialConstantsBuffer->GetGPUVirtualAddress();
+		for (uint32_t j = 0; j < m_Materials.size(); ++j) {
+			D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
 
-	//	for (uint32_t j = 0; j < m_Materials.size(); ++j) {
-	//		D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
+			CBViewDesc.BufferLocation = materialConstantsBufferGPUAdress;
+			CBViewDesc.SizeInBytes = materialConstantsElementByteSize;
 
-	//		CBViewDesc.BufferLocation = materialConstantsBufferGPUAdress;
-	//		CBViewDesc.SizeInBytes = materialConstantsElementByteSize;
+			m_Device->CreateConstantBufferView(
+				&CBViewDesc,
+				descHandle
+			);
 
-	//		m_Device->CreateConstantBufferView(
-	//			&CBViewDesc,
-	//			descHandle
-	//		);
-
-	//		descHandle.Offset(m_CBV_SRV_UAVDescSize);
-	//		materialConstantsBufferGPUAdress += materialConstantsElementByteSize;
-	//	}
-	//}
+			descHandle.Offset(m_CBV_SRV_UAVDescSize);
+			materialConstantsBufferGPUAdress += materialConstantsElementByteSize;
+		}
+	}
 }
 
 void ModelsApp::BuildRootSignature() {
 	// init parameters
-	CD3DX12_ROOT_PARAMETER1 rootParameters[3];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
 
 	// object constants
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange0;
@@ -867,9 +812,9 @@ void ModelsApp::BuildRootSignature() {
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange1;
 	descriptorRange1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
 
-	//// material constants
-	//CD3DX12_DESCRIPTOR_RANGE1 descriptorRange2;
-	//descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
+	// material constants
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange2;
+	descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
 
 	// texture
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange3;
@@ -877,8 +822,8 @@ void ModelsApp::BuildRootSignature() {
 
 	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange0);
 	rootParameters[1].InitAsDescriptorTable(1, &descriptorRange1);
-	//rootParameters[2].InitAsDescriptorTable(1, &descriptorRange2);
-	rootParameters[2].InitAsDescriptorTable(1, &descriptorRange3, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[2].InitAsDescriptorTable(1, &descriptorRange2);
+	rootParameters[3].InitAsDescriptorTable(1, &descriptorRange3, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	// set access flags
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =

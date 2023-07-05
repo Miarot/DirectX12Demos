@@ -30,16 +30,16 @@ struct PassConstants
     float3 EyePos;
     float TotalTime;
     
-    //float4 AmbientLight;
+    float4 AmbientLight;
     // first NUM_DIR_LIGHTS --- directional lights
     // next NUM_POINT_LIGHTS --- point lights
     // last NUM_SPOT_LIGHTS --- spot lights
-    //Light Lights[MaxLights]; 
+    Light Lights[MaxLights]; 
 };
 
-//struct MaterialConstants
-//{
-//    float4 DiffuseAlbedo;
-//    float3 FresnelR0;
-//    float Roughness;
-//};
+struct MaterialConstants
+{
+    float4 DiffuseAlbedo;
+    float3 FresnelR0;
+    float Roughness;
+};

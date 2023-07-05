@@ -71,7 +71,7 @@ private:
 
 	std::unordered_map<std::string, std::unique_ptr<Texture>> m_Textures;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;
-	//std::unordered_map <std::string, std::unique_ptr<Material>> m_Materials;
+	std::vector<std::unique_ptr<Material>> m_Materials;
 	std::vector<std::unique_ptr<RenderItem>> m_RenderItems;
 	std::vector<std::unique_ptr<FrameResources>> m_FramesResources;
 	FrameResources* m_CurrentFrameResources;
@@ -80,7 +80,7 @@ private:
 	uint32_t m_TexturesViewsStartIndex;
 	uint32_t m_ObjectConstantsViewsStartIndex;
 	uint32_t m_PassConstantsViewsStartIndex;
-	//uint32_t m_MaterialConstantsViewsStartIndex;
+	uint32_t m_MaterialConstantsViewsStartIndex;
 
 	std::unordered_map<std::string, ComPtr<ID3D12RootSignature>> m_RootSignatures;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;

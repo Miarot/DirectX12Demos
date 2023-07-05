@@ -8,7 +8,7 @@ FrameResources::FrameResources(
 {
 	m_PassConstantsBuffer = std::make_unique<UploadBuffer<PassConstants>>(device, numPassConstants, true);
 	m_ObjectsConstantsBuffer = std::make_unique<UploadBuffer<ObjectConstants>>(device, numObjectConstants, true);
-	//m_MaterialsConstantsBuffer = std::make_unique <UploadBuffer<MaterialConstants>>(device, numMaterialConstants, true);
+	m_MaterialsConstantsBuffer = std::make_unique <UploadBuffer<MaterialConstants>>(device, numMaterialConstants, true);
 }
 
 FrameResources::~FrameResources() {}
