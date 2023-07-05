@@ -191,7 +191,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\ALL_BUILD.vcxproj">
+    <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\ALL_BUILD.vcxproj">
       <Project>{F392E9E4-D8CA-35AD-B87E-6E6EBD32DD23}</Project>
       <Name>ALL_BUILD</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

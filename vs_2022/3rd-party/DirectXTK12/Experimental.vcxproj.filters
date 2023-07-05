@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\CMakeFiles\960d1751c1c41278b13a0e19690c51a5\Experimental.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\CMakeFiles\Experimental" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{6126861F-CC05-37F3-BC9C-CDD406233ABF}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

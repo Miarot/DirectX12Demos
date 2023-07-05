@@ -74,13 +74,14 @@ struct RenderItem {
 	D3D12_PRIMITIVE_TOPOLOGY m_PrivitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	uint32_t m_CBIndex = -1;
+	std::string m_TextureName;
 };
 
-//struct Texture {
-//	std::string Name;
-//	std::wstring FileName;
-//
-//	ComPtr<ID3D12Resource> Resource;
-//	ComPtr<ID3D12Resource> UploadResource;
-//	uint32_t SRVHeapIndex;
-//};
+struct Texture {
+	std::string Name;
+	std::wstring FileName;
+
+	ComPtr<ID3D12Resource> Resource;
+	ComPtr<ID3D12Resource> UploadResource;
+	uint32_t SRVHeapIndex;
+};

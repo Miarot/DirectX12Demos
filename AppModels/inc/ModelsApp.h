@@ -69,7 +69,7 @@ private:
 	Shaker m_Shaker;
 	const aiScene* m_Scene;
 
-	//std::unordered_map<std::string, std::unique_ptr<Texture>> m_Textures;
+	std::unordered_map<std::string, std::unique_ptr<Texture>> m_Textures;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;
 	//std::unordered_map <std::string, std::unique_ptr<Material>> m_Materials;
 	std::vector<std::unique_ptr<RenderItem>> m_RenderItems;
@@ -77,7 +77,7 @@ private:
 	FrameResources* m_CurrentFrameResources;
 
 	ComPtr<ID3D12DescriptorHeap> m_CBV_SRVDescHeap;
-	//uint32_t m_TexturesViewsStartIndex;
+	uint32_t m_TexturesViewsStartIndex;
 	uint32_t m_ObjectConstantsViewsStartIndex;
 	uint32_t m_PassConstantsViewsStartIndex;
 	//uint32_t m_MaterialConstantsViewsStartIndex;

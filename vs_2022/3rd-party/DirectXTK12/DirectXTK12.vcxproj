@@ -1,0 +1,975 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5B09A5CA-3760-3D42-B47D-D854356716F0}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.22000.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>DirectXTK12</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\bin\CMake\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">DirectXTK12.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">DirectXTK12</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\bin\CMake\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">DirectXTK12.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">DirectXTK12</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\bin\CMake\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">DirectXTK12.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">DirectXTK12</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\bin\CMake\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">DirectXTK12.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">DirectXTK12</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.lib</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /ZH:SHA_256 /Zc:__cplusplus /Zc:lambda /Zc:checkGwOdr /Zc:templateScope</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <ConformanceMode>true</ConformanceMode>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>5104;5105;5262</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/DirectXTK12.dir/Debug/cmake_pch.pch</PrecompiledHeaderOutputFile>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SDLCheck>true</SDLCheck>
+      <SupportJustMyCode>false</SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_UNICODE;UNICODE;_WIN32_WINNT=0x0A00;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;_UNICODE;UNICODE;_WIN32_WINNT=0x0A00;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /ZH:SHA_256 /Zc:__cplusplus /Zc:lambda /Zc:checkGwOdr /Zc:templateScope</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ConformanceMode>true</ConformanceMode>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+      <DisableSpecificWarnings>5104;5105;5262</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <GuardEHContMetadata>true</GuardEHContMetadata>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/DirectXTK12.dir/Release/cmake_pch.pch</PrecompiledHeaderOutputFile>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SDLCheck>true</SDLCheck>
+      <SupportJustMyCode>false</SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;_WIN32_WINNT=0x0A00;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;_WIN32_WINNT=0x0A00;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /ZH:SHA_256 /Zc:__cplusplus /Zc:lambda /Zc:checkGwOdr /Zc:templateScope</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ConformanceMode>true</ConformanceMode>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+      <DisableSpecificWarnings>5104;5105;5262</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <GuardEHContMetadata>true</GuardEHContMetadata>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/DirectXTK12.dir/MinSizeRel/cmake_pch.pch</PrecompiledHeaderOutputFile>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SDLCheck>true</SDLCheck>
+      <SupportJustMyCode>false</SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;_WIN32_WINNT=0x0A00;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;_WIN32_WINNT=0x0A00;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /ZH:SHA_256 /Zc:__cplusplus /Zc:lambda /Zc:checkGwOdr /Zc:templateScope</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ConformanceMode>true</ConformanceMode>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>5104;5105;5262</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <GuardEHContMetadata>true</GuardEHContMetadata>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/DirectXTK12.dir/RelWithDebInfo/cmake_pch.pch</PrecompiledHeaderOutputFile>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SDLCheck>true</SDLCheck>
+      <SupportJustMyCode>false</SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;_WIN32_WINNT=0x0A00;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_UNICODE;UNICODE;_WIN32_WINNT=0x0A00;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\CompileShaders.cmd">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Generating HLSL shaders...</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+cd C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E env CompileShadersOutput="C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/Shaders/Compiled"  CompileShaders.cmd dxil &gt; C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/Shaders/Compiled/compileshaders.log
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\AlphaTestEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\BasicEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\DebugEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\DualTextureEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\EnvironmentMapEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\GenerateMips.hlsl;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\NormalMapEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PBREffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PostProcess.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\RootSig.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\SkinnedEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\SpriteEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\ToneMap.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Common.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Lighting.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PBRCommon.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PixelPacking_Velocity.hlsli;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Skinning.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Structures.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Utilities.fxh;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled\SpriteEffect_SpriteVertexShader.inc</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Generating HLSL shaders...</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+cd C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E env CompileShadersOutput="C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/Shaders/Compiled"  CompileShaders.cmd dxil &gt; C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/Shaders/Compiled/compileshaders.log
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\AlphaTestEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\BasicEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\DebugEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\DualTextureEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\EnvironmentMapEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\GenerateMips.hlsl;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\NormalMapEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PBREffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PostProcess.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\RootSig.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\SkinnedEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\SpriteEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\ToneMap.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Common.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Lighting.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PBRCommon.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PixelPacking_Velocity.hlsli;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Skinning.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Structures.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Utilities.fxh;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled\SpriteEffect_SpriteVertexShader.inc</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Generating HLSL shaders...</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+cd C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E env CompileShadersOutput="C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/Shaders/Compiled"  CompileShaders.cmd dxil &gt; C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/Shaders/Compiled/compileshaders.log
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\AlphaTestEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\BasicEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\DebugEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\DualTextureEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\EnvironmentMapEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\GenerateMips.hlsl;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\NormalMapEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PBREffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PostProcess.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\RootSig.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\SkinnedEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\SpriteEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\ToneMap.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Common.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Lighting.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PBRCommon.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PixelPacking_Velocity.hlsli;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Skinning.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Structures.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Utilities.fxh;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled\SpriteEffect_SpriteVertexShader.inc</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Generating HLSL shaders...</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+cd C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E env CompileShadersOutput="C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/Shaders/Compiled"  CompileShaders.cmd dxil &gt; C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/Shaders/Compiled/compileshaders.log
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\AlphaTestEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\BasicEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\DebugEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\DualTextureEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\EnvironmentMapEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\GenerateMips.hlsl;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\NormalMapEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PBREffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PostProcess.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\RootSig.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\SkinnedEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\SpriteEffect.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\ToneMap.fx;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Common.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Lighting.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PBRCommon.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\PixelPacking_Velocity.hlsli;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Skinning.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Structures.fxh;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Shaders\Utilities.fxh;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled\SpriteEffect_SpriteVertexShader.inc</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/Daniil/work/DirectX12Demos/3rd-party/DirectXTK12/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Daniil/work/DirectX12Demos -BC:/Users/Daniil/work/DirectX12Demos/vs_2022 --check-stamp-file C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-3.26\Modules\BasicConfigVersion-AnyNewerVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.26\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTest.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTestTargets.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTestUseLaunchers.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CheckIncludeFileCXX.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\DartConfiguration.tcl.in;C:\Program Files\CMake\share\cmake-3.26\Modules\GNUInstallDirs.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\WriteBasicConfigVersionFile.cmake;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\build\DirectXTK12-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/Daniil/work/DirectX12Demos/3rd-party/DirectXTK12/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Daniil/work/DirectX12Demos -BC:/Users/Daniil/work/DirectX12Demos/vs_2022 --check-stamp-file C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-3.26\Modules\BasicConfigVersion-AnyNewerVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.26\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTest.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTestTargets.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTestUseLaunchers.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CheckIncludeFileCXX.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\DartConfiguration.tcl.in;C:\Program Files\CMake\share\cmake-3.26\Modules\GNUInstallDirs.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\WriteBasicConfigVersionFile.cmake;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\build\DirectXTK12-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Users/Daniil/work/DirectX12Demos/3rd-party/DirectXTK12/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Daniil/work/DirectX12Demos -BC:/Users/Daniil/work/DirectX12Demos/vs_2022 --check-stamp-file C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-3.26\Modules\BasicConfigVersion-AnyNewerVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.26\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTest.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTestTargets.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTestUseLaunchers.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CheckIncludeFileCXX.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\DartConfiguration.tcl.in;C:\Program Files\CMake\share\cmake-3.26\Modules\GNUInstallDirs.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\WriteBasicConfigVersionFile.cmake;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\build\DirectXTK12-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Users/Daniil/work/DirectX12Demos/3rd-party/DirectXTK12/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Daniil/work/DirectX12Demos -BC:/Users/Daniil/work/DirectX12Demos/vs_2022 --check-stamp-file C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-3.26\Modules\BasicConfigVersion-AnyNewerVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.26\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTest.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTestTargets.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CTestUseLaunchers.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\CheckIncludeFileCXX.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\DartConfiguration.tcl.in;C:\Program Files\CMake\share\cmake-3.26\Modules\GNUInstallDirs.cmake;C:\Program Files\CMake\share\cmake-3.26\Modules\WriteBasicConfigVersionFile.cmake;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\build\DirectXTK12-config.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\CMakeFiles\DirectXTK12.dir\cmake_pch.cxx">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/DirectXTK12.dir/Debug/cmake_pch.pch</PrecompiledHeaderOutputFile>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/DirectXTK12.dir/Release/cmake_pch.pch</PrecompiledHeaderOutputFile>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/DirectXTK12.dir/MinSizeRel/cmake_pch.pch</PrecompiledHeaderOutputFile>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/DirectXTK12.dir/RelWithDebInfo/cmake_pch.pch</PrecompiledHeaderOutputFile>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\AlphaTestEffect.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\BasicEffect.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\BasicPostProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\BufferHelpers.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\CommonStates.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\d3dx12.h" />
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\DDSTextureLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\DebugEffect.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\DescriptorHeap.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\DirectXHelpers.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\DualPostProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\DualTextureEffect.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\EffectCommon.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\EffectCommon.h" />
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\EffectFactory.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\EffectPipelineStateDescription.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\EffectTextureFactory.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\EnvironmentMapEffect.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\GeometricPrimitive.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\GraphicsMemory.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\LinearAllocator.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\LinearAllocator.h" />
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Model.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\ModelLoadCMO.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\ModelLoadSDKMESH.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\ModelLoadVBO.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\NormalMapEffect.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\PBREffect.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\PBREffectFactory.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\pch.h" />
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\PrimitiveBatch.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\ResourceUploadBatch.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\ScreenGrab.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\SkinnedEffect.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\SpriteBatch.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\SpriteFont.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\ToneMapPostProcess.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\VertexTypes.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\WICTextureLoader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\BinaryReader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\GamePad.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Geometry.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Keyboard.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Mouse.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\SimpleMath.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\AlignedNew.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Bezier.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\BinaryReader.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\DDS.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\DemandCreate.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\Geometry.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\LoaderHelpers.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\PlatformHelpers.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\SDKMesh.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\SharedResourcePool.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\vbo.h" />
+    <None Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Src\TeapotData.inc">
+    </None>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\AudioEngine.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\DynamicSoundEffectInstance.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\SoundCommon.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\SoundCommon.h" />
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\SoundEffect.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\SoundEffectInstance.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\SoundStreamInstance.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\WaveBank.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\WaveBankReader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\WaveBankReader.h" />
+    <ClCompile Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\WAVFileReader.cpp">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Debug/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/Release/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/MinSizeRel/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</ScanSourceforModuleDependencies>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:/Users/Daniil/work/DirectX12Demos/vs_2022/3rd-party/DirectXTK12/CMakeFiles/DirectXTK12.dir/RelWithDebInfo/cmake_pch.hxx;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ScanSourceforModuleDependencies Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</ScanSourceforModuleDependencies>
+    </ClCompile>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Audio\WAVFileReader.h" />
+    <None Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\Shaders\Compiled\SpriteEffect_SpriteVertexShader.inc">
+    </None>
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\BufferHelpers.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\CommonStates.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\DDSTextureLoader.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\DescriptorHeap.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\DirectXHelpers.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\Effects.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\EffectPipelineStateDescription.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\GeometricPrimitive.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\GraphicsMemory.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\Model.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\PostProcess.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\PrimitiveBatch.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\RenderTargetState.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\ResourceUploadBatch.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\ScreenGrab.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\SpriteBatch.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\SpriteFont.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\VertexTypes.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\WICTextureLoader.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\GamePad.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\Keyboard.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\Mouse.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\SimpleMath.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\SimpleMath.inl" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\Inc\Audio.h" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\CMakeFiles\DirectXTK12.dir\Debug\cmake_pch.hxx" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\CMakeFiles\DirectXTK12.dir\Release\cmake_pch.hxx" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\CMakeFiles\DirectXTK12.dir\MinSizeRel\cmake_pch.hxx" />
+    <ClInclude Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\CMakeFiles\DirectXTK12.dir\RelWithDebInfo\cmake_pch.hxx" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\ZERO_CHECK.vcxproj">
+      <Project>{C2D45643-6365-3EEE-B108-DBCDB1B86EE6}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

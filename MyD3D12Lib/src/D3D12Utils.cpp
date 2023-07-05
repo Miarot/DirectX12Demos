@@ -2,6 +2,7 @@
 #include <MyD3D12Lib/Helpers.h>
 
 #include <DirectXTex/DDSTextureLoader/DDSTextureLoader12.h>
+#include <WICTextureLoader.h>
 
 #include <d3dcompiler.h>
 #include <d3dx12.h>
@@ -85,6 +86,57 @@ void CreateDDSTextureFromFile(
 		0,
 		static_cast<UINT>(subresources.size()),
 		subresources.data()
+	);
+
+	CD3DX12_RESOURCE_BARRIER barier = CD3DX12_RESOURCE_BARRIER::Transition(
+		resource.Get(),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+	);
+
+	commandList->ResourceBarrier(1, &barier);
+}
+
+void CreateWICTextureFromFile(
+	ComPtr<ID3D12Device2> device,
+	ComPtr<ID3D12GraphicsCommandList> commandList,
+	std::wstring fileName,
+	ComPtr<ID3D12Resource>& resource,
+	ComPtr<ID3D12Resource>& uploadResource)
+{
+	std::unique_ptr<uint8_t[]> ddsData;
+	D3D12_SUBRESOURCE_DATA subresources;
+
+	ThrowIfFailed(LoadWICTextureFromFile(
+		device.Get(),
+		fileName.c_str(),
+		&resource,
+		ddsData, subresources
+	));
+
+	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(
+		resource.Get(),
+		0,
+		1
+	);
+
+	ThrowIfFailed(device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&uploadResource)
+	));
+
+	UpdateSubresources(
+		commandList.Get(),
+		resource.Get(),
+		uploadResource.Get(),
+		0,
+		0,
+		1,
+		&subresources
 	);
 
 	CD3DX12_RESOURCE_BARRIER barier = CD3DX12_RESOURCE_BARRIER::Transition(

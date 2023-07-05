@@ -25,6 +25,14 @@ void CreateDDSTextureFromFile(
 	ComPtr<ID3D12Resource> & uploadResource
 );
 
+void CreateWICTextureFromFile(
+	ComPtr<ID3D12Device2> device,
+	ComPtr<ID3D12GraphicsCommandList> commandList,
+	std::wstring fileName,
+	ComPtr<ID3D12Resource>& resource,
+	ComPtr<ID3D12Resource>& uploadResource
+);
+
 // compute projection matrix
 DirectX::XMMATRIX GetProjectionMatrix(
 	bool isInverseDepht,

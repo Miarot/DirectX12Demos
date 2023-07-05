@@ -13,6 +13,8 @@ set_target_properties(assimp PROPERTIES
 
 add_subdirectory( 3rd-party/DirectXTex )
 
+add_subdirectory( 3rd-party/DirectXTK12 )
+
 add_subdirectory( MyD3D12Lib )
 
 add_subdirectory( AppSimpleGeometry )

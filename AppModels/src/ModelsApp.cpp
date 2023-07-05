@@ -9,6 +9,7 @@
 #include <assimp/mesh.h>
 
 #include <array>
+#include <filesystem>
 
 ModelsApp::ModelsApp(HINSTANCE hInstance) : BaseApp(hInstance) {
 	Initialize();
@@ -17,6 +18,9 @@ ModelsApp::ModelsApp(HINSTANCE hInstance) : BaseApp(hInstance) {
 ModelsApp::~ModelsApp() {};
 
 bool ModelsApp::Initialize() {
+	// initialization for DirectXTK12
+	ThrowIfFailed(::CoInitializeEx(NULL, COINIT_MULTITHREADED));
+
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
 
 	// load scene
@@ -41,7 +45,7 @@ bool ModelsApp::Initialize() {
 	m_CBV_SRVDescHeap = CreateDescriptorHeap(
 		m_Device,
 		//m_Textures.size() + (m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
-		(m_RenderItems.size() + 1) * m_NumBackBuffers,
+		m_Textures.size() + (m_RenderItems.size() + 1) * m_NumBackBuffers,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
@@ -289,15 +293,15 @@ void ModelsApp::OnRender() {
 			//	m_CBV_SRV_UAVDescSize
 			//);
 
-			//CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
-			//	m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-			//	m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
-			//	m_CBV_SRV_UAVDescSize
-			//);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
+				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_TexturesViewsStartIndex + m_Textures[renderItem->m_TextureName]->SRVHeapIndex,
+				m_CBV_SRV_UAVDescSize
+			);
 
 			commandList->SetGraphicsRootDescriptorTable(0, objCBDescHandle);
 			//commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
-			//commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
+			commandList->SetGraphicsRootDescriptorTable(2, textureDescHandle);
 
 			// draw
 			commandList->DrawIndexedInstanced(
@@ -488,59 +492,34 @@ void ModelsApp::BuildLights() {
 }
 
 void ModelsApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
-	//// load default texture
-	//{
-	//	auto tex = std::make_unique<Texture>();
+	std::filesystem::path modelPath = "../../AppModels/models/Sponza/";
 
-	//	tex->Name = "default";
-	//	tex->FileName = L"../../AppModels/textures/default.dds";
+	for (uint32_t i = 0; i < m_Scene->mNumMaterials; ++i) {
+		aiString textureRelPath;
+		m_Scene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &textureRelPath);
 
-	//	CreateDDSTextureFromFile(
-	//		m_Device,
-	//		commandList,
-	//		tex->FileName,
-	//		tex->Resource,
-	//		tex->UploadResource
-	//	);
+		if (textureRelPath.length == 0) {
+			continue;
+		}
 
-	//	m_Textures[tex->Name] = std::move(tex);
-	//}
+		std::filesystem::path textureAbsPath = modelPath;
+		textureAbsPath += textureRelPath.C_Str();
 
-	//// load crate texture
-	//{
-	//	auto crateTex = std::make_unique<Texture>();
+		auto tex = std::make_unique<Texture>();
 
-	//	crateTex->Name = "crate";
-	//	crateTex->FileName = L"../../AppModels/textures/WoodCrate01.dds";
+		tex->Name = textureRelPath.C_Str();
+		tex->FileName = textureAbsPath;
 
-	//	CreateDDSTextureFromFile(
-	//		m_Device,
-	//		commandList,
-	//		crateTex->FileName,
-	//		crateTex->Resource,
-	//		crateTex->UploadResource
-	//	);
+		CreateWICTextureFromFile(
+			m_Device,
+			commandList,
+			tex->FileName,
+			tex->Resource,
+			tex->UploadResource
+		);
 
-	//	m_Textures[crateTex->Name] = std::move(crateTex);
-	//}
-
-	//// load briks texture
-	//{
-	//	auto brickTex = std::make_unique<Texture>();
-
-	//	brickTex->Name = "bricks";
-	//	brickTex->FileName = L"../../AppModels/textures/bricks.dds";
-
-	//	CreateDDSTextureFromFile(
-	//		m_Device,
-	//		commandList,
-	//		brickTex->FileName,
-	//		brickTex->Resource,
-	//		brickTex->UploadResource
-	//	);
-
-	//	m_Textures[brickTex->Name] = std::move(brickTex);
-	//}
+		m_Textures[tex->Name] = std::move(tex);
+	}
 }
 
 void ModelsApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
@@ -735,7 +714,9 @@ void ModelsApp::BuildRecursivelyRenderItems(aiNode* node, XMMATRIX modelMatrix) 
 	for (uint32_t i = 0; i < node->mNumMeshes; ++i) {
 		auto ri = std::make_unique<RenderItem>();
 
-		std::string curMeshName = m_Scene->mMeshes[node->mMeshes[i]]->mName.C_Str();
+		aiMesh* curMesh = m_Scene->mMeshes[node->mMeshes[i]];
+		std::string curMeshName = curMesh->mName.C_Str();
+
 		auto curGeo = m_Geometries[curMeshName].get();
 
 		ri->m_ModelMatrix = modelMatrix;
@@ -745,6 +726,10 @@ void ModelsApp::BuildRecursivelyRenderItems(aiNode* node, XMMATRIX modelMatrix) 
 		ri->m_StartIndexLocation = curGeo->DrawArgs[curMeshName].StartIndexLocation;
 		ri->m_BaseVertexLocation = curGeo->DrawArgs[curMeshName].BaseVertexLocation;
 		ri->m_CBIndex = m_RenderItems.size();
+
+		aiString path;
+		m_Scene->mMaterials[curMesh->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &path);
+		ri->m_TextureName = path.C_Str();
 
 		m_RenderItems.push_back(std::move(ri));
 	}
@@ -769,35 +754,34 @@ void ModelsApp::BuildFrameResources() {
 }
 
 void ModelsApp::BuildSRViews() {
-	//m_TexturesViewsStartIndex = 0;
+	m_TexturesViewsStartIndex = 0;
 
-	//D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
+	D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
 
-	//viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	//viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	//viewDesc.Texture2D.MostDetailedMip = 0;
-	//viewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	viewDesc.Texture2D.MostDetailedMip = 0;
+	viewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-	//CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart());
 
-	//size_t i = m_TexturesViewsStartIndex;
-	//for (auto& it : m_Textures) {
-	//	it.second->SRVHeapIndex = i;
-	//	ID3D12Resource* curTexBuffer = it.second->Resource.Get();
+	size_t i = m_TexturesViewsStartIndex;
+	for (auto& it : m_Textures) {
+		it.second->SRVHeapIndex = i;
+		ID3D12Resource* curTexBuffer = it.second->Resource.Get();
 
-	//	viewDesc.Format = curTexBuffer->GetDesc().Format;
-	//	viewDesc.Texture2D.MipLevels = curTexBuffer->GetDesc().MipLevels;
+		viewDesc.Format = curTexBuffer->GetDesc().Format;
+		viewDesc.Texture2D.MipLevels = curTexBuffer->GetDesc().MipLevels;
 
-	//	m_Device->CreateShaderResourceView(curTexBuffer, &viewDesc, descHandle);
+		m_Device->CreateShaderResourceView(curTexBuffer, &viewDesc, descHandle);
 
-	//	descHandle.Offset(m_CBV_SRV_UAVDescSize);
-	//	++i;
-	//}
+		descHandle.Offset(m_CBV_SRV_UAVDescSize);
+		++i;
+	}
 }
 
 void ModelsApp::BuildCBViews() {
-	//m_ObjectConstantsViewsStartIndex = m_TexturesViewsStartIndex +  m_Textures.size();
-	m_ObjectConstantsViewsStartIndex = 0;
+	m_ObjectConstantsViewsStartIndex = m_TexturesViewsStartIndex +  m_Textures.size();
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(
 		m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -873,8 +857,7 @@ void ModelsApp::BuildCBViews() {
 
 void ModelsApp::BuildRootSignature() {
 	// init parameters
-	//CD3DX12_ROOT_PARAMETER1 rootParameters[4];
-	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[3];
 
 	// object constants
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange0;
@@ -888,14 +871,14 @@ void ModelsApp::BuildRootSignature() {
 	//CD3DX12_DESCRIPTOR_RANGE1 descriptorRange2;
 	//descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
 
-	//// texture
-	//CD3DX12_DESCRIPTOR_RANGE1 descriptorRange3;
-	//descriptorRange3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	// texture
+	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange3;
+	descriptorRange3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange0);
 	rootParameters[1].InitAsDescriptorTable(1, &descriptorRange1);
 	//rootParameters[2].InitAsDescriptorTable(1, &descriptorRange2);
-	//rootParameters[3].InitAsDescriptorTable(1, &descriptorRange3, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[2].InitAsDescriptorTable(1, &descriptorRange3, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	// set access flags
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
