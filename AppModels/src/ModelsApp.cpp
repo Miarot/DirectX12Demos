@@ -38,7 +38,8 @@ bool ModelsApp::Initialize() {
 
 	m_CBV_SRVDescHeap = CreateDescriptorHeap(
 		m_Device,
-		m_Textures.size() + (m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
+		//m_Textures.size() + (m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
+		(m_RenderItems.size() + 1) * m_NumBackBuffers,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
@@ -77,9 +78,9 @@ bool ModelsApp::Initialize() {
 		it.second->DisposeUploaders();
 	}
 
-	for (auto& it : m_Textures) {
-		it.second->UploadResource = nullptr;
-	}
+	//for (auto& it : m_Textures) {
+	//	it.second->UploadResource = nullptr;
+	//}
 
 	return true;
 }
@@ -118,23 +119,23 @@ void ModelsApp::OnUpdate() {
 
 	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(0, m_PassConstants);
 
-	// update materials if necessary
-	for (auto& it : m_Materials) {
-		auto mat = it.second.get();
+	//// update materials if necessary
+	//for (auto& it : m_Materials) {
+	//	auto mat = it.second.get();
 
-		if (mat->NumDirtyFrames > 0) {
-			m_CurrentFrameResources->m_MaterialsConstantsBuffer->CopyData(
-				mat->MaterialCBIndex,
-				{
-					mat->DiffuseAlbedo,
-					mat->FresnelR0,
-					mat->Roughness
-				}
-			);
+	//	if (mat->NumDirtyFrames > 0) {
+	//		m_CurrentFrameResources->m_MaterialsConstantsBuffer->CopyData(
+	//			mat->MaterialCBIndex,
+	//			{
+	//				mat->DiffuseAlbedo,
+	//				mat->FresnelR0,
+	//				mat->Roughness
+	//			}
+	//		);
 
-			--mat->NumDirtyFrames;
-		}
-	}
+	//		--mat->NumDirtyFrames;
+	//	}
+	//}
 
 	// rotate box
 	auto boxRenderItem = m_RenderItems[2].get();
@@ -263,7 +264,7 @@ void ModelsApp::OnRender() {
 		// draw render items
 		for (uint32_t i = 0; i < m_RenderItems.size(); ++i) {
 			auto renderItem = m_RenderItems[i].get();
-			auto mat = renderItem->m_Material;
+			//auto mat = renderItem->m_Material;
 
 			// set Input-Assembler state
 			commandList->IASetVertexBuffers(0, 1, &renderItem->m_MeshGeo->VertexBufferView());
@@ -277,21 +278,21 @@ void ModelsApp::OnRender() {
 				m_CBV_SRV_UAVDescSize
 			);
 
-			CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
-				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_MaterialConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_Materials.size() + mat->MaterialCBIndex,
-				m_CBV_SRV_UAVDescSize
-			);
+			//CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
+			//	m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+			//	m_MaterialConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_Materials.size() + mat->MaterialCBIndex,
+			//	m_CBV_SRV_UAVDescSize
+			//);
 
-			CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
-				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
-				m_CBV_SRV_UAVDescSize
-			);
+			//CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
+			//	m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+			//	m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
+			//	m_CBV_SRV_UAVDescSize
+			//);
 
 			commandList->SetGraphicsRootDescriptorTable(0, objCBDescHandle);
-			commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
-			commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
+			//commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
+			//commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
 
 			// draw
 			commandList->DrawIndexedInstanced(
@@ -452,89 +453,89 @@ void ModelsApp::InitSceneState() {
 }
 
 void ModelsApp::BuildLights() {
-	m_PassConstants.AmbientLight = XMVectorSet(0.1f, 0.1f, 0.1f, 1.0f);
+	//m_PassConstants.AmbientLight = XMVectorSet(0.1f, 0.1f, 0.1f, 1.0f);
 
-	// directional light 1 
-	{
-		m_PassConstants.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
-		XMVECTOR direction = XMVector3Normalize(-XMVectorSet(1.0f, 2.0f, 3.0f, 0.0f));
-		XMStoreFloat3(&m_PassConstants.Lights[0].Direction, direction);
-	}
+	//// directional light 1 
+	//{
+	//	m_PassConstants.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
+	//	XMVECTOR direction = XMVector3Normalize(-XMVectorSet(1.0f, 2.0f, 3.0f, 0.0f));
+	//	XMStoreFloat3(&m_PassConstants.Lights[0].Direction, direction);
+	//}
 
 
-	// point light 1
-	{
-		m_PassConstants.Lights[1].Strength = { 0.6f, 0.0f, 0.0f };
-		m_PassConstants.Lights[1].Position = { 7.0f, 2.0f, 5.0f };
-		m_PassConstants.Lights[1].FalloffStart = 1.0f;
-		m_PassConstants.Lights[1].FalloffEnd = 8.0f;
-	}
+	//// point light 1
+	//{
+	//	m_PassConstants.Lights[1].Strength = { 0.6f, 0.0f, 0.0f };
+	//	m_PassConstants.Lights[1].Position = { 7.0f, 2.0f, 5.0f };
+	//	m_PassConstants.Lights[1].FalloffStart = 1.0f;
+	//	m_PassConstants.Lights[1].FalloffEnd = 8.0f;
+	//}
 
-	// spot light 1
-	{
-		m_PassConstants.Lights[2].Strength = { 0.0f, 0.8f, 0.0f };
-		m_PassConstants.Lights[2].Position = { 5.0f, 0.0f, 7.0f };
-		m_PassConstants.Lights[2].FalloffStart = 1.0f;
-		m_PassConstants.Lights[2].FalloffEnd = 8.0f;
-		m_PassConstants.Lights[2].Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
-		m_PassConstants.Lights[2].SpotPower = 12.0f;
-	}
+	//// spot light 1
+	//{
+	//	m_PassConstants.Lights[2].Strength = { 0.0f, 0.8f, 0.0f };
+	//	m_PassConstants.Lights[2].Position = { 5.0f, 0.0f, 7.0f };
+	//	m_PassConstants.Lights[2].FalloffStart = 1.0f;
+	//	m_PassConstants.Lights[2].FalloffEnd = 8.0f;
+	//	m_PassConstants.Lights[2].Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	//	m_PassConstants.Lights[2].SpotPower = 12.0f;
+	//}
 }
 
 void ModelsApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
-	// load default texture
-	{
-		auto tex = std::make_unique<Texture>();
+	//// load default texture
+	//{
+	//	auto tex = std::make_unique<Texture>();
 
-		tex->Name = "default";
-		tex->FileName = L"../../AppModels/textures/default.dds";
+	//	tex->Name = "default";
+	//	tex->FileName = L"../../AppModels/textures/default.dds";
 
-		CreateDDSTextureFromFile(
-			m_Device,
-			commandList,
-			tex->FileName,
-			tex->Resource,
-			tex->UploadResource
-		);
+	//	CreateDDSTextureFromFile(
+	//		m_Device,
+	//		commandList,
+	//		tex->FileName,
+	//		tex->Resource,
+	//		tex->UploadResource
+	//	);
 
-		m_Textures[tex->Name] = std::move(tex);
-	}
+	//	m_Textures[tex->Name] = std::move(tex);
+	//}
 
-	// load crate texture
-	{
-		auto crateTex = std::make_unique<Texture>();
+	//// load crate texture
+	//{
+	//	auto crateTex = std::make_unique<Texture>();
 
-		crateTex->Name = "crate";
-		crateTex->FileName = L"../../AppModels/textures/WoodCrate01.dds";
+	//	crateTex->Name = "crate";
+	//	crateTex->FileName = L"../../AppModels/textures/WoodCrate01.dds";
 
-		CreateDDSTextureFromFile(
-			m_Device,
-			commandList,
-			crateTex->FileName,
-			crateTex->Resource,
-			crateTex->UploadResource
-		);
+	//	CreateDDSTextureFromFile(
+	//		m_Device,
+	//		commandList,
+	//		crateTex->FileName,
+	//		crateTex->Resource,
+	//		crateTex->UploadResource
+	//	);
 
-		m_Textures[crateTex->Name] = std::move(crateTex);
-	}
+	//	m_Textures[crateTex->Name] = std::move(crateTex);
+	//}
 
-	// load briks texture
-	{
-		auto brickTex = std::make_unique<Texture>();
+	//// load briks texture
+	//{
+	//	auto brickTex = std::make_unique<Texture>();
 
-		brickTex->Name = "bricks";
-		brickTex->FileName = L"../../AppModels/textures/bricks.dds";
+	//	brickTex->Name = "bricks";
+	//	brickTex->FileName = L"../../AppModels/textures/bricks.dds";
 
-		CreateDDSTextureFromFile(
-			m_Device,
-			commandList,
-			brickTex->FileName,
-			brickTex->Resource,
-			brickTex->UploadResource
-		);
+	//	CreateDDSTextureFromFile(
+	//		m_Device,
+	//		commandList,
+	//		brickTex->FileName,
+	//		brickTex->Resource,
+	//		brickTex->UploadResource
+	//	);
 
-		m_Textures[brickTex->Name] = std::move(brickTex);
-	}
+	//	m_Textures[brickTex->Name] = std::move(brickTex);
+	//}
 }
 
 void ModelsApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
@@ -716,99 +717,99 @@ void ModelsApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
 }
 
 void ModelsApp::BuildMaterials() {
-	// grass material
-	{
-		auto grass = std::make_unique<Material>();
+	//// grass material
+	//{
+	//	auto grass = std::make_unique<Material>();
 
-		grass->Name = "grass";
-		grass->MaterialCBIndex = m_Materials.size();
-		grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.3f, 1.0f);
-		grass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-		grass->Roughness = 0.125f;
+	//	grass->Name = "grass";
+	//	grass->MaterialCBIndex = m_Materials.size();
+	//	grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.3f, 1.0f);
+	//	grass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	//	grass->Roughness = 0.125f;
 
-		m_Materials[grass->Name] = std::move(grass);
-	}
+	//	m_Materials[grass->Name] = std::move(grass);
+	//}
 
-	// water material
-	{
-		auto water = std::make_unique<Material>();
+	//// water material
+	//{
+	//	auto water = std::make_unique<Material>();
 
-		water->Name = "water";
-		water->MaterialCBIndex = m_Materials.size();
-		water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
-		water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-		water->Roughness = 0.0f;
+	//	water->Name = "water";
+	//	water->MaterialCBIndex = m_Materials.size();
+	//	water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
+	//	water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	//	water->Roughness = 0.0f;
 
-		m_Materials[water->Name] = std::move(water);
-	}
+	//	m_Materials[water->Name] = std::move(water);
+	//}
 
-	// bricks material
-	{
-		auto bricks = std::make_unique<Material>();
+	//// bricks material
+	//{
+	//	auto bricks = std::make_unique<Material>();
 
-		bricks->Name = "bricks";
-		bricks->MaterialCBIndex = m_Materials.size();
-		bricks->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		bricks->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-		bricks->Roughness = 0.0f;
-		bricks->TextureName = "bricks";
+	//	bricks->Name = "bricks";
+	//	bricks->MaterialCBIndex = m_Materials.size();
+	//	bricks->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	//	bricks->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	//	bricks->Roughness = 0.0f;
+	//	bricks->TextureName = "bricks";
 
-		m_Materials[bricks->Name] = std::move(bricks);
-	}
+	//	m_Materials[bricks->Name] = std::move(bricks);
+	//}
 
-	// crate material
-	{
-		auto crate = std::make_unique<Material>();
+	//// crate material
+	//{
+	//	auto crate = std::make_unique<Material>();
 
-		crate->Name = "crate";
-		crate->MaterialCBIndex = m_Materials.size();
-		crate->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		crate->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-		crate->Roughness = 0.5f;
-		crate->TextureName = "crate";
+	//	crate->Name = "crate";
+	//	crate->MaterialCBIndex = m_Materials.size();
+	//	crate->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	//	crate->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	//	crate->Roughness = 0.5f;
+	//	crate->TextureName = "crate";
 
-		m_Materials[crate->Name] = std::move(crate);
-	}
+	//	m_Materials[crate->Name] = std::move(crate);
+	//}
 
-	// light material 1
-	{
-		auto light = std::make_unique<Material>();
+	//// light material 1
+	//{
+	//	auto light = std::make_unique<Material>();
 
-		light->Name = "light1";
-		light->MaterialCBIndex = m_Materials.size();
+	//	light->Name = "light1";
+	//	light->MaterialCBIndex = m_Materials.size();
 
-		light->DiffuseAlbedo = XMFLOAT4(
-			1000.0f * m_PassConstants.Lights[1].Strength.x, 
-			1000.0f * m_PassConstants.Lights[1].Strength.y,
-			1000.0f * m_PassConstants.Lights[1].Strength.z,
-			1.0f
-		);
+	//	light->DiffuseAlbedo = XMFLOAT4(
+	//		1000.0f * m_PassConstants.Lights[1].Strength.x, 
+	//		1000.0f * m_PassConstants.Lights[1].Strength.y,
+	//		1000.0f * m_PassConstants.Lights[1].Strength.z,
+	//		1.0f
+	//	);
 
-		light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
-		light->Roughness = 0.0f;
+	//	light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	//	light->Roughness = 0.0f;
 
-		m_Materials[light->Name] = std::move(light);
-	}
+	//	m_Materials[light->Name] = std::move(light);
+	//}
 
-	// light material 2
-	{
-		auto light = std::make_unique<Material>();
+	//// light material 2
+	//{
+	//	auto light = std::make_unique<Material>();
 
-		light->Name = "light2";
-		light->MaterialCBIndex = m_Materials.size();
+	//	light->Name = "light2";
+	//	light->MaterialCBIndex = m_Materials.size();
 
-		light->DiffuseAlbedo = XMFLOAT4(
-			1000.0f * m_PassConstants.Lights[2].Strength.x,
-			1000.0f * m_PassConstants.Lights[2].Strength.y,
-			1000.0f * m_PassConstants.Lights[2].Strength.z,
-			1.0f
-		);
+	//	light->DiffuseAlbedo = XMFLOAT4(
+	//		1000.0f * m_PassConstants.Lights[2].Strength.x,
+	//		1000.0f * m_PassConstants.Lights[2].Strength.y,
+	//		1000.0f * m_PassConstants.Lights[2].Strength.z,
+	//		1.0f
+	//	);
 
-		light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
-		light->Roughness = 0.0f;
+	//	light->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	//	light->Roughness = 0.0f;
 
-		m_Materials[light->Name] = std::move(light);
-	}
+	//	m_Materials[light->Name] = std::move(light);
+	//}
 }
 
 void ModelsApp::BuildRenderItems() {
@@ -820,7 +821,7 @@ void ModelsApp::BuildRenderItems() {
 
 		piramid->m_ModelMatrix = XMMatrixTranslation(2, 0, 2);
 		piramid->m_MeshGeo = curGeo;
-		piramid->m_Material = m_Materials["grass"].get();
+		//piramid->m_Material = m_Materials["grass"].get();
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
 		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
@@ -834,7 +835,7 @@ void ModelsApp::BuildRenderItems() {
 		auto piramid = std::make_unique<RenderItem>();
 
 		piramid->m_ModelMatrix = XMMatrixTranslation(4, 0, 4);
-		piramid->m_Material = m_Materials["water"].get();
+		//piramid->m_Material = m_Materials["water"].get();
 		piramid->m_MeshGeo = curGeo;
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
@@ -850,7 +851,7 @@ void ModelsApp::BuildRenderItems() {
 
 		box->m_ModelMatrix = XMMatrixTranslation(0, 0, 0);
 		box->m_MeshGeo = curGeo;
-		box->m_Material = m_Materials["crate"].get();
+		//box->m_Material = m_Materials["crate"].get();
 		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
 		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
 		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
@@ -865,7 +866,7 @@ void ModelsApp::BuildRenderItems() {
 
 		box->m_ModelMatrix = XMMatrixTranslation(7, 0, 7);
 		box->m_MeshGeo = curGeo;
-		box->m_Material = m_Materials["bricks"].get();
+		//box->m_Material = m_Materials["bricks"].get();
 		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
 		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
 		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
@@ -874,47 +875,47 @@ void ModelsApp::BuildRenderItems() {
 		m_RenderItems.push_back(std::move(box));
 	}
 
-	// point light piramid 1
-	{
-		auto piramid = std::make_unique<RenderItem>();
+	//// point light piramid 1
+	//{
+	//	auto piramid = std::make_unique<RenderItem>();
 
-		piramid->m_ModelMatrix = XMMatrixTranslation(
-			m_PassConstants.Lights[1].Position.x,
-			m_PassConstants.Lights[1].Position.y,
-			m_PassConstants.Lights[1].Position.z
-		);
+	//	piramid->m_ModelMatrix = XMMatrixTranslation(
+	//		m_PassConstants.Lights[1].Position.x,
+	//		m_PassConstants.Lights[1].Position.y,
+	//		m_PassConstants.Lights[1].Position.z
+	//	);
 
-		piramid->m_ModelMatrix = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), piramid->m_ModelMatrix);
-		piramid->m_Material = m_Materials["light1"].get();
-		piramid->m_MeshGeo = curGeo;
-		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
-		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
-		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
-		piramid->m_CBIndex = m_RenderItems.size();
+	//	piramid->m_ModelMatrix = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), piramid->m_ModelMatrix);
+	//	//piramid->m_Material = m_Materials["light1"].get();
+	//	piramid->m_MeshGeo = curGeo;
+	//	piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
+	//	piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
+	//	piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
+	//	piramid->m_CBIndex = m_RenderItems.size();
 
-		m_RenderItems.push_back(std::move(piramid));
-	}
+	//	m_RenderItems.push_back(std::move(piramid));
+	//}
 
-	// spot light piramid 1
-	{
-		auto piramid = std::make_unique<RenderItem>();
+	//// spot light piramid 1
+	//{
+	//	auto piramid = std::make_unique<RenderItem>();
 
-		piramid->m_ModelMatrix = XMMatrixTranslation(
-			m_PassConstants.Lights[2].Position.x,
-			m_PassConstants.Lights[2].Position.y,
-			m_PassConstants.Lights[2].Position.z
-		);
+	//	piramid->m_ModelMatrix = XMMatrixTranslation(
+	//		m_PassConstants.Lights[2].Position.x,
+	//		m_PassConstants.Lights[2].Position.y,
+	//		m_PassConstants.Lights[2].Position.z
+	//	);
 
-		piramid->m_ModelMatrix = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), piramid->m_ModelMatrix);
-		piramid->m_Material = m_Materials["light2"].get();
-		piramid->m_MeshGeo = curGeo;
-		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
-		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
-		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
-		piramid->m_CBIndex = m_RenderItems.size();
+	//	piramid->m_ModelMatrix = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), piramid->m_ModelMatrix);
+	//	//piramid->m_Material = m_Materials["light2"].get();
+	//	piramid->m_MeshGeo = curGeo;
+	//	piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
+	//	piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
+	//	piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
+	//	piramid->m_CBIndex = m_RenderItems.size();
 
-		m_RenderItems.push_back(std::move(piramid));
-	}
+	//	m_RenderItems.push_back(std::move(piramid));
+	//}
 
 }
 
@@ -926,40 +927,42 @@ void ModelsApp::BuildFrameResources() {
 			m_Device,
 			1, 
 			m_RenderItems.size(),
-			m_Materials.size()
+			0
+			//m_Materials.size()
 		));
 	}
 }
 
 void ModelsApp::BuildSRViews() {
-	m_TexturesViewsStartIndex = 0;
+	//m_TexturesViewsStartIndex = 0;
 
-	D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
+	//D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
 
-	viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	viewDesc.Texture2D.MostDetailedMip = 0;
-	viewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	//viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	//viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	//viewDesc.Texture2D.MostDetailedMip = 0;
+	//viewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart());
+	//CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart());
 
-	size_t i = m_TexturesViewsStartIndex;
-	for (auto& it : m_Textures) {
-		it.second->SRVHeapIndex = i;
-		ID3D12Resource* curTexBuffer = it.second->Resource.Get();
+	//size_t i = m_TexturesViewsStartIndex;
+	//for (auto& it : m_Textures) {
+	//	it.second->SRVHeapIndex = i;
+	//	ID3D12Resource* curTexBuffer = it.second->Resource.Get();
 
-		viewDesc.Format = curTexBuffer->GetDesc().Format;
-		viewDesc.Texture2D.MipLevels = curTexBuffer->GetDesc().MipLevels;
+	//	viewDesc.Format = curTexBuffer->GetDesc().Format;
+	//	viewDesc.Texture2D.MipLevels = curTexBuffer->GetDesc().MipLevels;
 
-		m_Device->CreateShaderResourceView(curTexBuffer, &viewDesc, descHandle);
+	//	m_Device->CreateShaderResourceView(curTexBuffer, &viewDesc, descHandle);
 
-		descHandle.Offset(m_CBV_SRV_UAVDescSize);
-		++i;
-	}
+	//	descHandle.Offset(m_CBV_SRV_UAVDescSize);
+	//	++i;
+	//}
 }
 
 void ModelsApp::BuildCBViews() {
-	m_ObjectConstantsViewsStartIndex = m_TexturesViewsStartIndex +  m_Textures.size();
+	//m_ObjectConstantsViewsStartIndex = m_TexturesViewsStartIndex +  m_Textures.size();
+	m_ObjectConstantsViewsStartIndex = 0;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(
 		m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -1009,50 +1012,55 @@ void ModelsApp::BuildCBViews() {
 	}
 
 
-	m_MaterialConstantsViewsStartIndex = m_PassConstantsViewsStartIndex + m_NumBackBuffers;
-	uint32_t materialConstantsElementByteSize = m_FramesResources[0]->m_MaterialsConstantsBuffer->GetElementByteSize();
+	//m_MaterialConstantsViewsStartIndex = m_PassConstantsViewsStartIndex + m_NumBackBuffers;
+	//uint32_t materialConstantsElementByteSize = m_FramesResources[0]->m_MaterialsConstantsBuffer->GetElementByteSize();
 
-	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
-		auto materialConstantsBuffer = m_FramesResources[i]->m_MaterialsConstantsBuffer->Get();
-		D3D12_GPU_VIRTUAL_ADDRESS materialConstantsBufferGPUAdress = materialConstantsBuffer->GetGPUVirtualAddress();
+	//for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
+	//	auto materialConstantsBuffer = m_FramesResources[i]->m_MaterialsConstantsBuffer->Get();
+	//	D3D12_GPU_VIRTUAL_ADDRESS materialConstantsBufferGPUAdress = materialConstantsBuffer->GetGPUVirtualAddress();
 
-		for (uint32_t j = 0; j < m_Materials.size(); ++j) {
-			D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
+	//	for (uint32_t j = 0; j < m_Materials.size(); ++j) {
+	//		D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
 
-			CBViewDesc.BufferLocation = materialConstantsBufferGPUAdress;
-			CBViewDesc.SizeInBytes = materialConstantsElementByteSize;
+	//		CBViewDesc.BufferLocation = materialConstantsBufferGPUAdress;
+	//		CBViewDesc.SizeInBytes = materialConstantsElementByteSize;
 
-			m_Device->CreateConstantBufferView(
-				&CBViewDesc,
-				descHandle
-			);
+	//		m_Device->CreateConstantBufferView(
+	//			&CBViewDesc,
+	//			descHandle
+	//		);
 
-			descHandle.Offset(m_CBV_SRV_UAVDescSize);
-			materialConstantsBufferGPUAdress += materialConstantsElementByteSize;
-		}
-	}
+	//		descHandle.Offset(m_CBV_SRV_UAVDescSize);
+	//		materialConstantsBufferGPUAdress += materialConstantsElementByteSize;
+	//	}
+	//}
 }
 
 void ModelsApp::BuildRootSignature() {
 	// init parameters
-	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
+	//CD3DX12_ROOT_PARAMETER1 rootParameters[4];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
 
+	// object constants
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange0;
 	descriptorRange0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 
+	// pass constants
 	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange1;
 	descriptorRange1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
 
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange2;
-	descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
+	//// material constants
+	//CD3DX12_DESCRIPTOR_RANGE1 descriptorRange2;
+	//descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
 
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange3;
-	descriptorRange3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	//// texture
+	//CD3DX12_DESCRIPTOR_RANGE1 descriptorRange3;
+	//descriptorRange3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange0);
 	rootParameters[1].InitAsDescriptorTable(1, &descriptorRange1);
-	rootParameters[2].InitAsDescriptorTable(1, &descriptorRange2);
-	rootParameters[3].InitAsDescriptorTable(1, &descriptorRange3, D3D12_SHADER_VISIBILITY_PIXEL);
+	//rootParameters[2].InitAsDescriptorTable(1, &descriptorRange2);
+	//rootParameters[3].InitAsDescriptorTable(1, &descriptorRange3, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	// set access flags
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
