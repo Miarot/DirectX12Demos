@@ -23,9 +23,8 @@ bool ModelsApp::Initialize() {
 	Assimp::Importer importer;
 
 	m_Scene = importer.ReadFile(
-		"../../AppModels/models/Sponza/Sponza.gltf", aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder
-		//aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder |
-		//aiProcess_Triangulate    | aiProcess_FlipUVs
+		"../../AppModels/models/Sponza/Sponza.gltf", 
+		aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder | aiProcess_FlipUVs
 	);
 
 	assert(m_Scene && "Scene not loaded");
@@ -445,10 +444,10 @@ void ModelsApp::OnMouseMove(WPARAM wParam, int x, int y) {
 void ModelsApp::InitSceneState() {
 	m_Camera = Camera(
 		45.0f,
-		XM_PIDIV2 + 0.4,
-		XM_PIDIV4 + 0.4,
-		15.0f,
-		XMVectorSet(4.0f, 0.0f, 4.0f, 0.0f),
+		0,
+		XM_PIDIV4,
+		3.0f,
+		XMVectorSet(1.0f, 1.0f, 1.0f, 0.0f),
 		XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
 	);
 
@@ -545,73 +544,74 @@ void ModelsApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
 }
 
 void ModelsApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
-	auto geo = std::make_unique<MeshGeometry>();
+	for (uint32_t i = 0; i < m_Scene->mNumMeshes; ++i) {
+		auto geo = std::make_unique<MeshGeometry>();
+		aiMesh* mesh = m_Scene->mMeshes[i];
 
-	aiMesh* mesh = m_Scene->mMeshes[6];
+		uint32_t numVertexes = mesh->mNumVertices;
+		std::vector<Vertex> vertexes;
+		vertexes.reserve(numVertexes);
 
-	uint32_t numVertexes = mesh->mNumVertices;
-	std::vector<Vertex> vertexes;
-	vertexes.reserve(numVertexes);
+		for (uint32_t j = 0; j < numVertexes; ++j) {
+			aiVector3D vertexPos = mesh->mVertices[j];
+			aiVector3D vertexTexC = mesh->mTextureCoords[0][j];
+			aiVector3D vertexNorm = mesh->mNormals[j];
 
-	for (uint32_t i = 0; i < numVertexes; ++i) {
-		aiVector3D vertexPos = mesh->mVertices[i];
-		//aiVector3D vertexTexC = mesh->mTextureCoords[i];
-		aiVector3D vertexNorm = mesh->mNormals[i];
-
- 		vertexes.push_back({ 
-			XMFLOAT3(vertexPos.x, vertexPos.y, vertexPos.z),
-			XMFLOAT3(vertexNorm.x, vertexNorm.y, vertexNorm.z),
-			XMFLOAT2(0.0f, 0.0f)
-		});
-	}
-
-	uint32_t numIndexes = mesh->mNumFaces * 3;
-	std::vector<uint16_t> indexes;
-	indexes.reserve(numIndexes);
-
-	for (uint32_t i = 0; i < mesh->mNumFaces; ++i) {
-		aiFace face = mesh->mFaces[i];
-
-		assert(face.mNumIndices == 3 && "Faces not traingles!");
-
-		for (uint32_t j = 0; j < face.mNumIndices; ++j) {
-			indexes.push_back(face.mIndices[j]);
+			vertexes.push_back({
+				XMFLOAT3(vertexPos.x, vertexPos.y, vertexPos.z),
+				XMFLOAT3(vertexNorm.x, vertexNorm.y, vertexNorm.z),
+				XMFLOAT2(vertexTexC.x, vertexTexC.y)
+				});
 		}
+
+		uint32_t numIndexes = mesh->mNumFaces * 3;
+		std::vector<uint16_t> indexes;
+		indexes.reserve(numIndexes);
+
+		for (uint32_t j = 0; j < mesh->mNumFaces; ++j) {
+			aiFace face = mesh->mFaces[j];
+
+			assert(face.mNumIndices == 3 && "Faces not traingles!");
+
+			for (uint32_t k = 0; k < face.mNumIndices; ++k) {
+				indexes.push_back(face.mIndices[k]);
+			}
+		}
+
+		uint32_t vbByteSize = sizeof(Vertex) * vertexes.size();
+		uint32_t ibByteSize = sizeof(uint16_t) * indexes.size();
+
+		geo->VertexBufferGPU = CreateGPUResourceAndLoadData(
+			m_Device,
+			commandList,
+			geo->VertexBufferUploader,
+			vertexes.data(),
+			vbByteSize
+		);
+
+		geo->IndexBufferGPU = CreateGPUResourceAndLoadData(
+			m_Device,
+			commandList,
+			geo->IndexBufferUploader,
+			indexes.data(),
+			ibByteSize
+		);
+
+		geo->name = mesh->mName.C_Str();
+		geo->VertexBufferByteSize = vbByteSize;
+		geo->VertexByteStride = sizeof(Vertex);
+		geo->IndexBufferByteSize = ibByteSize;
+		geo->IndexBufferFormat = DXGI_FORMAT_R16_UINT;
+
+		SubmeshGeometry submesh;
+		submesh.IndexCount = numIndexes;
+		submesh.BaseVertexLocation = 0;
+		submesh.StartIndexLocation = 0;
+
+		geo->DrawArgs[mesh->mName.C_Str()] = submesh;
+
+		m_Geometries[geo->name] = std::move(geo);
 	}
-
-	uint32_t vbByteSize = sizeof(Vertex) * vertexes.size();
-	uint32_t ibByteSize = sizeof(uint16_t) * indexes.size();
-
-	geo->VertexBufferGPU = CreateGPUResourceAndLoadData(
-		m_Device,
-		commandList,
-		geo->VertexBufferUploader,
-		vertexes.data(),
-		vbByteSize
-	);
-
-	geo->IndexBufferGPU = CreateGPUResourceAndLoadData(
-		m_Device,
-		commandList,
-		geo->IndexBufferUploader,
-		indexes.data(),
-		ibByteSize
-	);
-
-	geo->name = "Mesh1";
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->IndexBufferByteSize = ibByteSize;
-	geo->IndexBufferFormat = DXGI_FORMAT_R16_UINT;
-
-	SubmeshGeometry submesh;
-	submesh.IndexCount = numIndexes;
-	submesh.BaseVertexLocation = 0;
-	submesh.StartIndexLocation = 0;
-
-	geo->DrawArgs["Mesh1"] = submesh;
-
-	m_Geometries[geo->name] = std::move(geo);
 }
 
 void ModelsApp::BuildMaterials() {
@@ -711,33 +711,46 @@ void ModelsApp::BuildMaterials() {
 }
 
 void ModelsApp::BuildRenderItems() {
-	auto curGeo = m_Geometries["Mesh1"].get();
+	BuildRecursivelyRenderItems(m_Scene->mRootNode, XMMatrixIdentity());
+}
 
-	// mesh 1
-	{
-		auto mesh1 = std::make_unique<RenderItem>();
+void ModelsApp::BuildRecursivelyRenderItems(aiNode* node, XMMATRIX modelMatrix) {
+	aiMatrix4x4 m = node->mTransformation;
 
-		aiMatrix4x4 m = m_Scene->mRootNode->mTransformation;
-
-		mesh1->m_ModelMatrix = XMLoadFloat4x4(&XMFLOAT4X4(
+	modelMatrix = XMMatrixMultiply(
+		XMLoadFloat4x4(&XMFLOAT4X4(
 			m.a1, m.b1, m.c1, m.d1,
 			m.a2, m.b2, m.c2, m.d2,
 			m.a3, m.b3, m.c3, m.d3,
 			m.a4, m.b4, m.c4, m.d4
-		));
+		)),
+		modelMatrix
+	);
 
-		mesh1->m_ModelMatrixInvTrans = XMMatrixTranspose(XMMatrixInverse(
-			&XMMatrixDeterminant(mesh1->m_ModelMatrix),
-			mesh1->m_ModelMatrix
-		));
+	XMMATRIX modelMatrixInvTrans = XMMatrixTranspose(XMMatrixInverse(
+		&XMMatrixDeterminant(modelMatrix),
+		modelMatrix
+	));
 
-		mesh1->m_MeshGeo = curGeo;
-		mesh1->m_IndexCount = curGeo->DrawArgs["Mesh1"].IndexCount;
-		mesh1->m_StartIndexLocation = curGeo->DrawArgs["Mesh1"].StartIndexLocation;
-		mesh1->m_BaseVertexLocation = curGeo->DrawArgs["Mesh1"].BaseVertexLocation;
-		mesh1->m_CBIndex = m_RenderItems.size();
+	for (uint32_t i = 0; i < node->mNumMeshes; ++i) {
+		auto ri = std::make_unique<RenderItem>();
 
-		m_RenderItems.push_back(std::move(mesh1));
+		std::string curMeshName = m_Scene->mMeshes[node->mMeshes[i]]->mName.C_Str();
+		auto curGeo = m_Geometries[curMeshName].get();
+
+		ri->m_ModelMatrix = modelMatrix;
+		ri->m_ModelMatrixInvTrans = modelMatrixInvTrans;
+		ri->m_MeshGeo = curGeo;
+		ri->m_IndexCount = curGeo->DrawArgs[curMeshName].IndexCount;
+		ri->m_StartIndexLocation = curGeo->DrawArgs[curMeshName].StartIndexLocation;
+		ri->m_BaseVertexLocation = curGeo->DrawArgs[curMeshName].BaseVertexLocation;
+		ri->m_CBIndex = m_RenderItems.size();
+
+		m_RenderItems.push_back(std::move(ri));
+	}
+
+	for (uint32_t i = 0; i < node->mNumChildren; ++i) {
+		BuildRecursivelyRenderItems(node->mChildren[i], modelMatrix);
 	}
 }
 

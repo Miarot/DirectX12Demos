@@ -44,6 +44,7 @@ private:
 	void BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
 	void BuildMaterials();
 	void BuildRenderItems();
+	void BuildRecursivelyRenderItems(aiNode* node, XMMATRIX modelMatrix);
 	void BuildFrameResources();
 	void BuildSRViews();
 	void BuildCBViews();
