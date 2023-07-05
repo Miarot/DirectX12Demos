@@ -14,6 +14,7 @@ struct Vertex {
 
 struct ObjectConstants {
 	XMMATRIX ModelMatrix = XMMatrixIdentity();
+	XMMATRIX ModelMatrixInvTrans = XMMatrixIdentity();
 };
 
 //struct Light {
@@ -60,6 +61,7 @@ struct RenderItem {
 	RenderItem() = default;
 
 	XMMATRIX m_ModelMatrix = XMMatrixIdentity();
+	XMMATRIX m_ModelMatrixInvTrans = XMMatrixIdentity();
 	uint32_t m_NumDirtyFramse = m_NumBackBuffers;
 
 	MeshGeometry* m_MeshGeo = nullptr;

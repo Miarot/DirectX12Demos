@@ -18,6 +18,7 @@ struct VertexOut
 struct ObjectConstants
 {
     matrix ModelMatrix;
+    matrix ModelMatrixInvTrans;
 };
 
 struct PassConstants

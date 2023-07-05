@@ -14,6 +14,8 @@
 #include <DirectXMath.h>
 using namespace DirectX;
 
+#include <assimp/scene.h>
+
 #include <map>
 
 class ModelsApp : public BaseApp {
@@ -64,6 +66,7 @@ private:
 	Camera m_Camera;
 	Timer m_Timer;
 	Shaker m_Shaker;
+	const aiScene* m_Scene;
 
 	//std::unordered_map<std::string, std::unique_ptr<Texture>> m_Textures;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;

@@ -6,26 +6,29 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/mesh.h>
 
 #include <array>
 
 ModelsApp::ModelsApp(HINSTANCE hInstance) : BaseApp(hInstance) {
 	Initialize();
-	Assimp::Importer importer;
-
-	const aiScene* scene = importer.ReadFile("../../AppModels/models/Sponza/Sponza.gltf", 0);
-
-	if (nullptr == scene) {
-		OutputDebugString("Scene not loaded\n");
-	} else {
-		OutputDebugString("Scene loaded\n");
-	}
 }
 
 ModelsApp::~ModelsApp() {};
 
 bool ModelsApp::Initialize() {
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
+
+	// load scene
+	Assimp::Importer importer;
+
+	m_Scene = importer.ReadFile(
+		"../../AppModels/models/Sponza/Sponza.gltf", aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder
+		//aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder |
+		//aiProcess_Triangulate    | aiProcess_FlipUVs
+	);
+
+	assert(m_Scene && "Scene not loaded");
 
 	InitSceneState();
 
@@ -137,19 +140,22 @@ void ModelsApp::OnUpdate() {
 	//	}
 	//}
 
-	// rotate box
-	auto boxRenderItem = m_RenderItems[2].get();
-	float angle = static_cast<float>(m_Timer.GetTotalTime() * 90.0);
-	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
-	boxRenderItem->m_ModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
-	boxRenderItem->m_NumDirtyFramse = 3;
+	//// rotate box
+	//auto boxRenderItem = m_RenderItems[2].get();
+	//float angle = static_cast<float>(m_Timer.GetTotalTime() * 90.0);
+	//const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
+	//boxRenderItem->m_ModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
+	//boxRenderItem->m_NumDirtyFramse = 3;
 
 	// update object constants if necessary
 	for (auto& it: m_RenderItems) {
 		if (it->m_NumDirtyFramse > 0) {
 			m_CurrentFrameResources->m_ObjectsConstantsBuffer->CopyData(
 				it->m_CBIndex, 
-				{ it->m_ModelMatrix }
+				{ 
+					it->m_ModelMatrix,
+					it->m_ModelMatrixInvTrans
+				}
 			);
 
 			--it->m_NumDirtyFramse;
@@ -539,181 +545,73 @@ void ModelsApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
 }
 
 void ModelsApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
-	auto boxAndPiramidGeo = std::make_unique<MeshGeometry>();
+	auto geo = std::make_unique<MeshGeometry>();
 
-	const uint32_t numBoxVertexes = 24;
-	const uint32_t numPiramidVertexes = 16;
+	aiMesh* mesh = m_Scene->mMeshes[6];
 
-	std::array<Vertex, numBoxVertexes + numPiramidVertexes> vertexes = {
-		// box
-		// front face
-		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 0, 0
-		Vertex({ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 1, 1
-		Vertex({ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 2, 2
-		Vertex({ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 3, 3
+	uint32_t numVertexes = mesh->mNumVertices;
+	std::vector<Vertex> vertexes;
+	vertexes.reserve(numVertexes);
 
-		// left face
-		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 0, 4
-		Vertex({ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 4, 5
-		Vertex({ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 5, 6
-		Vertex({ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 1, 7
+	for (uint32_t i = 0; i < numVertexes; ++i) {
+		aiVector3D vertexPos = mesh->mVertices[i];
+		//aiVector3D vertexTexC = mesh->mTextureCoords[i];
+		aiVector3D vertexNorm = mesh->mNormals[i];
 
-		// right face
-		Vertex({ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 3, 8
-		Vertex({ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 2, 9
-		Vertex({ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 6, 10
-		Vertex({ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 7, 11
-
-		// top face
-		Vertex({ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 1, 12
-		Vertex({ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 5, 13
-		Vertex({ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 6, 14
-		Vertex({ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 2, 15
-
-		// bottom face
-		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 0, 16
-		Vertex({ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 4, 17
-		Vertex({ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 7, 18
-		Vertex({ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 3, 19
-
-		// back face
-		Vertex({ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 7, 20
-		Vertex({ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 0.0f) }), // 6, 21
-		Vertex({ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 0.0f) }), // 5, 22
-		Vertex({ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(), XMFLOAT2(1.0f, 1.0f) }), // 4, 23
-
-		// piramid
-		// bottom face
-		Vertex({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 0
-		Vertex({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 1
-		Vertex({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 2
-		Vertex({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 3
-
-		// front face
-		Vertex({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 4
-		Vertex({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 5
-		Vertex({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 6
-
-		// back face
-		Vertex({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 7
-		Vertex({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 8
-		Vertex({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 9
-
-		// left face
-		Vertex({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 10
-		Vertex({ XMFLOAT3(0.0f, 0.0f, 0.0f) }), // 0, 11
-		Vertex({ XMFLOAT3(0.0f, 0.0f, 1.0f) }), // 3, 12
-
-		// right face
-		Vertex({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 13
-		Vertex({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 14
-		Vertex({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 15
-	};
-
-	const uint32_t numBoxIndexes = 36;
-	const uint32_t numPiramidIndexes = 18;
-
-	std::array<uint16_t, numBoxIndexes + numPiramidIndexes> indexes =
-	{
-		// box
-		0, 1, 2, 0, 2, 3, // front face
-		4, 5, 6, 4, 6, 7, // left face
-		8, 9, 10, 8, 10, 11, // right face
-		12, 13, 14, 12, 14, 15, // top face
-		19, 18, 17, 19, 17, 16, // bottom face
-		20, 21, 22, 20, 22, 23, // back face
-		// piramid
-		0, 1, 3, 1, 2, 3, // bottom face
-		4, 5, 6, // front face
-		7, 8, 9, // back face
-		10, 11, 12, // left face
-		13, 14, 15 // right face
-	};
-
-	// computer norms for each vertex
-	std::array<XMVECTOR, vertexes.size()> vertexesNorm;
-
-	for (uint32_t i = 0; i < vertexes.size(); ++i) {
-		vertexesNorm[i] = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	}
-	
-	// for box
-	for (uint32_t i = 0; i < numBoxIndexes; i += 3) {
-		uint16_t i0 = indexes[i];
-		uint16_t i1 = indexes[i + 1];
-		uint16_t i2 = indexes[i + 2];
-
-		XMVECTOR p0 = XMLoadFloat3(&vertexes[i0].Position);
-		XMVECTOR p1 = XMLoadFloat3(&vertexes[i1].Position);
-		XMVECTOR p2 = XMLoadFloat3(&vertexes[i2].Position);
-
-		XMVECTOR triangleNorm = XMVector3Cross(p1 - p0, p2 - p0);
-
-		vertexesNorm[i0] += triangleNorm;
-		vertexesNorm[i1] += triangleNorm;
-		vertexesNorm[i2] += triangleNorm;
+ 		vertexes.push_back({ 
+			XMFLOAT3(vertexPos.x, vertexPos.y, vertexPos.z),
+			XMFLOAT3(vertexNorm.x, vertexNorm.y, vertexNorm.z),
+			XMFLOAT2(0.0f, 0.0f)
+		});
 	}
 
-	// for piramid
-	for (uint32_t i = numBoxIndexes; i < indexes.size(); i += 3) {
-		uint16_t i0 = indexes[i] + numBoxVertexes;
-		uint16_t i1 = indexes[i + 1] + numBoxVertexes;
-		uint16_t i2 = indexes[i + 2] + numBoxVertexes;
+	uint32_t numIndexes = mesh->mNumFaces * 3;
+	std::vector<uint16_t> indexes;
+	indexes.reserve(numIndexes);
 
-		XMVECTOR p0 = XMLoadFloat3(&vertexes[i0].Position);
-		XMVECTOR p1 = XMLoadFloat3(&vertexes[i1].Position);
-		XMVECTOR p2 = XMLoadFloat3(&vertexes[i2].Position);
+	for (uint32_t i = 0; i < mesh->mNumFaces; ++i) {
+		aiFace face = mesh->mFaces[i];
 
-		XMVECTOR triangleNorm = XMVector3Cross(p1 - p0, p2 - p0);
+		assert(face.mNumIndices == 3 && "Faces not traingles!");
 
-		vertexesNorm[i0] += triangleNorm;
-		vertexesNorm[i1] += triangleNorm;
-		vertexesNorm[i2] += triangleNorm;
+		for (uint32_t j = 0; j < face.mNumIndices; ++j) {
+			indexes.push_back(face.mIndices[j]);
+		}
 	}
 
-	for (uint32_t i = 0; i < vertexes.size(); ++i) {
-		XMStoreFloat3(&vertexes[i].Norm, XMVector3Normalize(vertexesNorm[i]));
-	}
+	uint32_t vbByteSize = sizeof(Vertex) * vertexes.size();
+	uint32_t ibByteSize = sizeof(uint16_t) * indexes.size();
 
-	UINT vbByteSize = vertexes.size() * sizeof(Vertex);
-	UINT ibByteSize = indexes.size() * sizeof(uint16_t);
-
-	boxAndPiramidGeo->VertexBufferGPU = CreateGPUResourceAndLoadData(
+	geo->VertexBufferGPU = CreateGPUResourceAndLoadData(
 		m_Device,
 		commandList,
-		boxAndPiramidGeo->VertexBufferUploader,
+		geo->VertexBufferUploader,
 		vertexes.data(),
 		vbByteSize
 	);
 
-	boxAndPiramidGeo->IndexBufferGPU = CreateGPUResourceAndLoadData(
+	geo->IndexBufferGPU = CreateGPUResourceAndLoadData(
 		m_Device,
 		commandList,
-		boxAndPiramidGeo->IndexBufferUploader,
+		geo->IndexBufferUploader,
 		indexes.data(),
 		ibByteSize
 	);
 
-	boxAndPiramidGeo->name = "BoxAndPiramid";
-	boxAndPiramidGeo->VertexBufferByteSize = vbByteSize;
-	boxAndPiramidGeo->VertexByteStride = sizeof(Vertex);
-	boxAndPiramidGeo->IndexBufferByteSize = ibByteSize;
-	boxAndPiramidGeo->IndexBufferFormat = DXGI_FORMAT_R16_UINT;
+	geo->name = "Mesh1";
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->IndexBufferByteSize = ibByteSize;
+	geo->IndexBufferFormat = DXGI_FORMAT_R16_UINT;
 
-	SubmeshGeometry boxSubmesh;
-	boxSubmesh.IndexCount = numBoxIndexes;
-	boxSubmesh.BaseVertexLocation = 0;
-	boxSubmesh.StartIndexLocation = 0;
+	SubmeshGeometry submesh;
+	submesh.IndexCount = numIndexes;
+	submesh.BaseVertexLocation = 0;
+	submesh.StartIndexLocation = 0;
 
-	SubmeshGeometry piramidSubmesh;
-	piramidSubmesh.IndexCount = numPiramidIndexes;
-	piramidSubmesh.BaseVertexLocation = numBoxVertexes;
-	piramidSubmesh.StartIndexLocation = numBoxIndexes;
+	geo->DrawArgs["Mesh1"] = submesh;
 
-	boxAndPiramidGeo->DrawArgs["Box"] = boxSubmesh;
-	boxAndPiramidGeo->DrawArgs["Piramid"] = piramidSubmesh;
-
-	m_Geometries[boxAndPiramidGeo->name] = std::move(boxAndPiramidGeo);
+	m_Geometries[geo->name] = std::move(geo);
 }
 
 void ModelsApp::BuildMaterials() {
@@ -813,110 +711,34 @@ void ModelsApp::BuildMaterials() {
 }
 
 void ModelsApp::BuildRenderItems() {
-	auto curGeo = m_Geometries["BoxAndPiramid"].get();
+	auto curGeo = m_Geometries["Mesh1"].get();
 
-	// grass piramid
+	// mesh 1
 	{
-		auto piramid = std::make_unique<RenderItem>();
+		auto mesh1 = std::make_unique<RenderItem>();
 
-		piramid->m_ModelMatrix = XMMatrixTranslation(2, 0, 2);
-		piramid->m_MeshGeo = curGeo;
-		//piramid->m_Material = m_Materials["grass"].get();
-		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
-		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
-		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
-		piramid->m_CBIndex = m_RenderItems.size();
+		aiMatrix4x4 m = m_Scene->mRootNode->mTransformation;
 
-		m_RenderItems.push_back(std::move(piramid));
+		mesh1->m_ModelMatrix = XMLoadFloat4x4(&XMFLOAT4X4(
+			m.a1, m.b1, m.c1, m.d1,
+			m.a2, m.b2, m.c2, m.d2,
+			m.a3, m.b3, m.c3, m.d3,
+			m.a4, m.b4, m.c4, m.d4
+		));
+
+		mesh1->m_ModelMatrixInvTrans = XMMatrixTranspose(XMMatrixInverse(
+			&XMMatrixDeterminant(mesh1->m_ModelMatrix),
+			mesh1->m_ModelMatrix
+		));
+
+		mesh1->m_MeshGeo = curGeo;
+		mesh1->m_IndexCount = curGeo->DrawArgs["Mesh1"].IndexCount;
+		mesh1->m_StartIndexLocation = curGeo->DrawArgs["Mesh1"].StartIndexLocation;
+		mesh1->m_BaseVertexLocation = curGeo->DrawArgs["Mesh1"].BaseVertexLocation;
+		mesh1->m_CBIndex = m_RenderItems.size();
+
+		m_RenderItems.push_back(std::move(mesh1));
 	}
-
-	// whater piramid
-	{
-		auto piramid = std::make_unique<RenderItem>();
-
-		piramid->m_ModelMatrix = XMMatrixTranslation(4, 0, 4);
-		//piramid->m_Material = m_Materials["water"].get();
-		piramid->m_MeshGeo = curGeo;
-		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
-		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
-		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
-		piramid->m_CBIndex = m_RenderItems.size();
-
-		m_RenderItems.push_back(std::move(piramid));
-	}
-
-	// rotating crate box
-	{
-		auto box = std::make_unique<RenderItem>();
-
-		box->m_ModelMatrix = XMMatrixTranslation(0, 0, 0);
-		box->m_MeshGeo = curGeo;
-		//box->m_Material = m_Materials["crate"].get();
-		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
-		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
-		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
-		box->m_CBIndex = m_RenderItems.size();
-
-		m_RenderItems.push_back(std::move(box));
-	}
-
-	// still bricks box
-	{
-		auto box = std::make_unique<RenderItem>();
-
-		box->m_ModelMatrix = XMMatrixTranslation(7, 0, 7);
-		box->m_MeshGeo = curGeo;
-		//box->m_Material = m_Materials["bricks"].get();
-		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
-		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
-		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
-		box->m_CBIndex = m_RenderItems.size();
-
-		m_RenderItems.push_back(std::move(box));
-	}
-
-	//// point light piramid 1
-	//{
-	//	auto piramid = std::make_unique<RenderItem>();
-
-	//	piramid->m_ModelMatrix = XMMatrixTranslation(
-	//		m_PassConstants.Lights[1].Position.x,
-	//		m_PassConstants.Lights[1].Position.y,
-	//		m_PassConstants.Lights[1].Position.z
-	//	);
-
-	//	piramid->m_ModelMatrix = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), piramid->m_ModelMatrix);
-	//	//piramid->m_Material = m_Materials["light1"].get();
-	//	piramid->m_MeshGeo = curGeo;
-	//	piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
-	//	piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
-	//	piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
-	//	piramid->m_CBIndex = m_RenderItems.size();
-
-	//	m_RenderItems.push_back(std::move(piramid));
-	//}
-
-	//// spot light piramid 1
-	//{
-	//	auto piramid = std::make_unique<RenderItem>();
-
-	//	piramid->m_ModelMatrix = XMMatrixTranslation(
-	//		m_PassConstants.Lights[2].Position.x,
-	//		m_PassConstants.Lights[2].Position.y,
-	//		m_PassConstants.Lights[2].Position.z
-	//	);
-
-	//	piramid->m_ModelMatrix = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), piramid->m_ModelMatrix);
-	//	//piramid->m_Material = m_Materials["light2"].get();
-	//	piramid->m_MeshGeo = curGeo;
-	//	piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
-	//	piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
-	//	piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
-	//	piramid->m_CBIndex = m_RenderItems.size();
-
-	//	m_RenderItems.push_back(std::move(piramid));
-	//}
-
 }
 
 void ModelsApp::BuildFrameResources() {
