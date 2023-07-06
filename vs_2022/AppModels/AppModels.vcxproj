@@ -127,7 +127,7 @@ exit /b %1
 if %errorlevel% neq 0 goto :VCEnd</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\MyD3D12Lib\Debug\MyD3D12Lib.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\assimp\lib\Debug\assimp-vc143-mtd.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\bin\CMake\Debug\DirectXTK12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\MyD3D12Lib\Debug\MyD3D12Lib.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\assimp\lib\Debug\assimp-vc143-mtd.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\bin\Debug\DirectXTK12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -183,7 +183,7 @@ exit /b %1
 if %errorlevel% neq 0 goto :VCEnd</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\MyD3D12Lib\Release\MyD3D12Lib.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\assimp\lib\Debug\assimp-vc143-mtd.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\bin\CMake\Release\DirectXTK12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\MyD3D12Lib\Release\MyD3D12Lib.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\assimp\lib\Debug\assimp-vc143-mtd.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\bin\Debug\DirectXTK12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -239,7 +239,7 @@ exit /b %1
 if %errorlevel% neq 0 goto :VCEnd</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\MyD3D12Lib\MinSizeRel\MyD3D12Lib.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\assimp\lib\Debug\assimp-vc143-mtd.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\bin\CMake\MinSizeRel\DirectXTK12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\MyD3D12Lib\MinSizeRel\MyD3D12Lib.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\assimp\lib\Debug\assimp-vc143-mtd.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\bin\Debug\DirectXTK12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -294,7 +294,7 @@ exit /b %1
 if %errorlevel% neq 0 goto :VCEnd</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\MyD3D12Lib\RelWithDebInfo\MyD3D12Lib.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\assimp\lib\Debug\assimp-vc143-mtd.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\bin\CMake\RelWithDebInfo\DirectXTK12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;..\MyD3D12Lib\RelWithDebInfo\MyD3D12Lib.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\assimp\lib\Debug\assimp-vc143-mtd.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\bin\Debug\DirectXTK12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -427,10 +427,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <Name>ZERO_CHECK</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </ProjectReference>
-    <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\DirectXTK12.vcxproj">
-      <Project>{5B09A5CA-3760-3D42-B47D-D854356716F0}</Project>
-      <Name>DirectXTK12</Name>
     </ProjectReference>
     <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\MyD3D12Lib\MyD3D12Lib.vcxproj">
       <Project>{0E37476F-6CA4-3DB0-AB82-C34C2F7F4D9D}</Project>

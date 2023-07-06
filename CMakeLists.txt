@@ -2,8 +2,8 @@ cmake_minimum_required( VERSION 3.25.1 )
 
 project( DirectX12Demos LANGUAGES CXX )
 
-set( ASSIMP_DIR ${PROJECT_SOURCE_DIR}/3rd-party/assimp)
-add_library(assimp SHARED IMPORTED)
+set( ASSIMP_DIR ${PROJECT_SOURCE_DIR}/3rd-party/assimp )
+add_library( assimp SHARED IMPORTED )
 set_target_properties(assimp PROPERTIES
     IMPORTED_CONFIGURATIONS        "DEBUG"
     IMPORTED_LOCATION_DEBUG        ${ASSIMP_DIR}/bin/Debug/assimp-vc143-mtd.dll
@@ -11,7 +11,14 @@ set_target_properties(assimp PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES  ${ASSIMP_DIR}/include
 )
 
-add_subdirectory( 3rd-party/DirectXTK12 )
+set( DIRECTXTK12_DIR ${PROJECT_SOURCE_DIR}/3rd-party/DirectXTK12)
+add_library( DirectXTK12 STATIC IMPORTED )
+set_target_properties( DirectXTK12 PROPERTIES
+    IMPORTED_CONFIGURATIONS        "DEBUG"
+    IMPORTED_LOCATION_DEBUG        ${DIRECTXTK12_DIR}/bin/Debug/DirectXTK12.lib
+    IMPORTED_IMPLIB_DEBUG          ${DIRECTXTK12_DIR}/bin/Debug/DirectXTK12.lib
+    INTERFACE_INCLUDE_DIRECTORIES  ${DIRECTXTK12_DIR}/include
+)
 
 add_subdirectory( MyD3D12Lib )
 

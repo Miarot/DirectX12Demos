@@ -2,7 +2,6 @@ vs_2022/*
 !vs_2022/*.vcxproj
 !vs_2022/*.filters
 !vs_2022/*.sln
-!vs_2022/3rd-party
 !vs_2022/AppSimpleGeometry
 !vs_2022/AppModels
 !vs_2022/MyD3D12Lib

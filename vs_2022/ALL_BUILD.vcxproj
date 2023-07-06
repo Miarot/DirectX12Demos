@@ -181,10 +181,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <Project>{4CB7EBB6-A1C8-3734-9AA5-B88CA479E4A6}</Project>
       <Name>AppSimpleGeometry</Name>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTK12\DirectXTK12.vcxproj">
-      <Project>{5B09A5CA-3760-3D42-B47D-D854356716F0}</Project>
-      <Name>DirectXTK12</Name>
-    </ProjectReference>
     <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\MyD3D12Lib\MyD3D12Lib.vcxproj">
       <Project>{0E37476F-6CA4-3DB0-AB82-C34C2F7F4D9D}</Project>
       <Name>MyD3D12Lib</Name>

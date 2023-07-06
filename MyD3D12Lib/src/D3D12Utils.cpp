@@ -1,8 +1,8 @@
 #include <MyD3D12Lib/D3D12Utils.h>
 #include <MyD3D12Lib/Helpers.h>
 
-#include <DDSTextureLoader.h>
-#include <WICTextureLoader.h>
+#include <DirectXTK12/DDSTextureLoader.h>
+#include <DirectXTK12/WICTextureLoader.h>
 
 #include <d3dcompiler.h>
 #include <d3dx12.h>
