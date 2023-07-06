@@ -93,7 +93,7 @@ void Camera::RotateCamera(int dx, int dy) {
 
 void Camera::ChangeRadius(int dx, int dy) {
 	m_Radius += 0.005f * (dx - dy);
-	m_Radius = clamp(m_Radius, 3.0f, 15.0f);
+	m_Radius = clamp(m_Radius, 1.0f, 15.0f);
 
 	UpdatePosAndDirection();
 }

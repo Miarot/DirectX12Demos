@@ -78,11 +78,13 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/Daniil/work/DirectX12Demos/3rd-party/DirectXTK12/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -93,10 +95,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -109,9 +111,11 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/Daniil/work/DirectX12Demos/3rd-party/DirectXTK12/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <Optimization>MaxSpeed</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -124,10 +128,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -140,9 +144,11 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/Daniil/work/DirectX12Demos/3rd-party/DirectXTK12/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <Optimization>MinSpace</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -155,10 +161,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -171,10 +177,12 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/Daniil/work/DirectX12Demos/3rd-party/DirectXTK12/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <Optimization>MaxSpeed</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -185,10 +193,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Daniil\work\DirectX12Demos\MyD3D12Lib\inc;C:\Users\Daniil\work\DirectX12Demos\3rd-party;C:\Users\Daniil\work\DirectX12Demos\3rd-party\DirectXTK12\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -280,10 +288,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <Name>ZERO_CHECK</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </ProjectReference>
-    <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTex\DirectXTex.vcxproj">
-      <Project>{B247C7F2-FE87-3D9F-848E-2C376A7561F4}</Project>
-      <Name>DirectXTex</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
