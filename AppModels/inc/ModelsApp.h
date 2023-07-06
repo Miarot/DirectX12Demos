@@ -15,6 +15,7 @@ using namespace DirectX;
 #include <assimp/scene.h>
 
 #include <map>
+#include <filesystem>
 
 class ModelsApp : public BaseApp {
 public:
@@ -65,6 +66,7 @@ private:
 	Camera m_Camera;
 	Timer m_Timer;
 	Shaker m_Shaker;
+	std::filesystem::path m_SceneFolder;
 	const aiScene* m_Scene;
 
 	std::unordered_map<std::string, std::unique_ptr<Texture>> m_Textures;

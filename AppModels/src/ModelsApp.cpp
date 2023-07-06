@@ -9,7 +9,6 @@
 #include <assimp/mesh.h>
 
 #include <array>
-#include <filesystem>
 
 ModelsApp::ModelsApp(HINSTANCE hInstance) : BaseApp(hInstance) {
 	Initialize();
@@ -26,8 +25,12 @@ bool ModelsApp::Initialize() {
 	// load scene
 	Assimp::Importer importer;
 
+	m_SceneFolder = "../../3rd-party/Sponza/glTF/";
+	std::filesystem::path scenePath = m_SceneFolder;
+	scenePath += "Sponza.gltf";
+
 	m_Scene = importer.ReadFile(
-		"../../AppModels/models/Sponza/Sponza.gltf", 
+		scenePath.string(),
 		aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder | aiProcess_FlipUVs
 	);
 
@@ -511,8 +514,6 @@ void ModelsApp::BuildLights() {
 }
 
 void ModelsApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
-	std::filesystem::path modelPath = "../../AppModels/models/Sponza/";
-
 	for (uint32_t i = 0; i < m_Scene->mNumMaterials; ++i) {
 		aiString textureRelPath;
 		m_Scene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &textureRelPath);
@@ -521,7 +522,7 @@ void ModelsApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
 			continue;
 		}
 
-		std::filesystem::path textureAbsPath = modelPath;
+		std::filesystem::path textureAbsPath = m_SceneFolder;
 		textureAbsPath += textureRelPath.C_Str();
 
 		auto tex = std::make_unique<Texture>();
