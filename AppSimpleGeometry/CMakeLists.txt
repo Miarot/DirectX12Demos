@@ -71,6 +71,5 @@ target_link_libraries( ${TARGET_NAME}
 	PRIVATE dxgi.lib
 	PRIVATE dxguid.lib
 	PRIVATE d3dcompiler.lib
-	PRIVATE DirectXTex
 	PRIVATE MyD3D12Lib
 )

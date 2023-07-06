@@ -11,8 +11,6 @@ set_target_properties(assimp PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES  ${ASSIMP_DIR}/include
 )
 
-add_subdirectory( 3rd-party/DirectXTex )
-
 add_subdirectory( 3rd-party/DirectXTK12 )
 
 add_subdirectory( MyD3D12Lib )

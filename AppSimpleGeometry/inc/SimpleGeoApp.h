@@ -9,8 +9,6 @@
 #include <MyD3D12Lib/Timer.h>
 #include <MyD3D12Lib/UploadBuffer.h>
 
-#include <DirectXTex/DDSTextureLoader/DDSTextureLoader12.h>
-
 #include <DirectXMath.h>
 using namespace DirectX;
 

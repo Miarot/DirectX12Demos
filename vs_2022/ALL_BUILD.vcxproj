@@ -185,10 +185,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <Project>{5B09A5CA-3760-3D42-B47D-D854356716F0}</Project>
       <Name>DirectXTK12</Name>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\3rd-party\DirectXTex\DirectXTex.vcxproj">
-      <Project>{B247C7F2-FE87-3D9F-848E-2C376A7561F4}</Project>
-      <Name>DirectXTex</Name>
-    </ProjectReference>
     <ProjectReference Include="C:\Users\Daniil\work\DirectX12Demos\vs_2022\MyD3D12Lib\MyD3D12Lib.vcxproj">
       <Project>{0E37476F-6CA4-3DB0-AB82-C34C2F7F4D9D}</Project>
       <Name>MyD3D12Lib</Name>

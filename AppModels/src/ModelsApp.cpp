@@ -472,7 +472,7 @@ void ModelsApp::BuildLights() {
 		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
 		m_PassConstants.Lights[curLight].Position = XMFLOAT3(0.0f, 10.0f, 0.0f);
 		m_PassConstants.Lights[curLight].FalloffStart = 5.0f;
-		m_PassConstants.Lights[curLight].FalloffEnd = 30.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
 		++curLight;
 	}
 
