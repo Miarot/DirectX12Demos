@@ -37,6 +37,16 @@ private:
 	virtual void OnMouseUp(WPARAM wParam, int x, int y) override;
 	virtual void OnMouseMove(WPARAM wParam, int x, int y) override;
 
+	void RenderRegular(ComPtr<ID3D12GraphicsCommandList> commandList);
+
+	void RenderGeometry(
+		ComPtr<ID3D12GraphicsCommandList> commandList,
+		ComPtr<ID3D12PipelineState> pso,
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv
+	);
+
+	void RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList);
+
 	void InitSceneState();
 	void BuildLights();
 	void BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList);
@@ -51,9 +61,13 @@ private:
 	void BuildPipelineStateObject();
 
 	// for Sobel filter
-	void UpdateFramesTextures();
+	void UpdateSobelFrameTexture();
 	void BuildSobelRootSignature();
 	void BuildSobelPipelineStateObject();
+
+	// for SSAO
+	void UpdateSSAOFrameTexture();
+	void BuildSSAOPipelineStateObject();
 
 private:
 	FLOAT m_BackGroundColor[4] = { 0.4f, 0.6f, 0.9f, 1.0f };
@@ -85,12 +99,18 @@ private:
 	std::unordered_map<std::string, ComPtr<ID3D12RootSignature>> m_RootSignatures;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
 
+	ComPtr<ID3D12DescriptorHeap> m_FrameTexturesRTVDescHeap;
+	ComPtr<ID3D12DescriptorHeap> m_FrameTexturesSRVDescHeap;
+
 	// for Sobel filter
 	bool m_IsSobelFilter = false;
-	ComPtr<ID3D12Resource> m_FrameTexturesBuffers;
-	ComPtr<ID3D12DescriptorHeap> m_FrameTextureRTVDescHeap;
-	ComPtr<ID3D12DescriptorHeap> m_FrameTextureSRVDescHeap;
+	ComPtr<ID3D12Resource> m_SobelFrameTextureBuffer;
+	uint32_t m_SobelTextureRTVIndex;
+	uint32_t m_SobelTextureSRVIndex;
 
 	// for SSAO
 	bool m_IsSSAO = false;
+	ComPtr<ID3D12Resource> m_SSAOFrameTextureBuffer;
+	uint32_t m_SSAOtextureRTVIndex;
+	uint32_t m_SSAOtextureSRVIndex;
 };

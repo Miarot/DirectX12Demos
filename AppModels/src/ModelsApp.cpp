@@ -58,24 +58,32 @@ bool ModelsApp::Initialize() {
 	BuildRootSignature();
 	BuildPipelineStateObject();
 
-	// for Sobel filter
-	m_FrameTextureRTVDescHeap = CreateDescriptorHeap(
+	m_FrameTexturesRTVDescHeap = CreateDescriptorHeap(
 		m_Device,
-		1,
+		2,
 		D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_NONE
 	);
 
-	m_FrameTextureSRVDescHeap = CreateDescriptorHeap(
+	m_FrameTexturesSRVDescHeap = CreateDescriptorHeap(
 		m_Device,
-		1,
+		3,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
 
-	UpdateFramesTextures();
+	// for Sobel filter
+	m_SobelTextureRTVIndex = 0;
+	m_SobelTextureSRVIndex = 0;
+	UpdateSobelFrameTexture();
 	BuildSobelRootSignature();
 	BuildSobelPipelineStateObject();
+
+	// for SSAO
+	m_SSAOtextureRTVIndex = m_SobelTextureRTVIndex + 1;
+	m_SSAOtextureSRVIndex = m_SobelTextureSRVIndex + 1;
+	UpdateSobelFrameTexture();
+	BuildSSAOPipelineStateObject();
 
 	// wait while all data loaded
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
@@ -168,192 +176,25 @@ void ModelsApp::OnUpdate() {
 void ModelsApp::OnRender() {
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
 
-	auto backBuffer = m_BackBuffers[m_CurrentBackBufferIndex];
-	auto frameTextureBuffer = m_FrameTexturesBuffers;
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE mainRTV(
-		m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart(),
-		m_CurrentBackBufferIndex, m_RTVDescSize
+	// clear depth stenicl buffer
+	commandList->ClearDepthStencilView(
+		m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		D3D12_CLEAR_FLAG_DEPTH,
+		m_DepthClearValue,
+		m_SteniclClearValue,
+		0, NULL
 	);
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE textureRTV(m_FrameTextureRTVDescHeap->GetCPUDescriptorHandleForHeapStart());
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE geometryRTV;
-
-	if (m_IsSobelFilter) {
-		geometryRTV = textureRTV;
+	if (m_IsSSAO) {
+		RenderSSAO(commandList);
 	} else {
-		geometryRTV = mainRTV;
-	}
-
-	// clear RTs and DS buffer
-	{
-		CD3DX12_RESOURCE_BARRIER backBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			backBuffer.Get(),
-			D3D12_RESOURCE_STATE_PRESENT,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		);
-
-		if (m_IsSobelFilter) {
-			CD3DX12_RESOURCE_BARRIER frameTextureBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-				frameTextureBuffer.Get(),
-				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-				D3D12_RESOURCE_STATE_RENDER_TARGET
-			);
-
-			D3D12_RESOURCE_BARRIER bariers[] = { backBufferBarrier, frameTextureBufferBarrier };
-			commandList->ResourceBarrier(_countof(bariers), bariers);
-
-			commandList->ClearRenderTargetView(textureRTV, m_BackGroundColor, 0, NULL);
-		} else {
-			D3D12_RESOURCE_BARRIER bariers[] = { backBufferBarrier };
-			commandList->ResourceBarrier(_countof(bariers), bariers);
-		}
-
-		commandList->ClearRenderTargetView(mainRTV, m_BackGroundColor, 0, NULL);
-
-		commandList->ClearDepthStencilView(
-			m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-			D3D12_CLEAR_FLAG_DEPTH,
-			m_DepthClearValue, 
-			m_SteniclClearValue,
-			0, NULL
-		);
-	}
-
-	// draw geometry
-	{
-		// set root signature
-		commandList->SetGraphicsRootSignature(m_RootSignatures["Geometry"].Get());
-
-		// set descripotr heaps
-		ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBV_SRVDescHeap.Get() };
-		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
-		// set pass constants
-		commandList->SetGraphicsRootDescriptorTable(
-			1, 
-			CD3DX12_GPU_DESCRIPTOR_HANDLE(
-				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_PassConstantsViewsStartIndex + m_CurrentBackBufferIndex,
-				m_CBV_SRV_UAVDescSize
-			)
-		);
-
-		// set PSO
-		// chose pso depending on z-buffer type and drawing type
-		ComPtr<ID3D12PipelineState> pso;
-
-		if (m_IsInverseDepth) {
-			if (m_IsDrawNorm) {
-				pso = m_PSOs["normInverseDepth"];
-			} else {
-				pso = m_PSOs["inverseDepth"];
-			}
-		} else {
-			if (m_IsDrawNorm) {
-				pso = m_PSOs["normStraightDepth"];
-			}
-			else {
-				pso = m_PSOs["straightDepth"];
-			}
-		}
-
-		commandList->SetPipelineState(pso.Get());
-
-		// set Rasterizer Stage
-		commandList->RSSetScissorRects(1, &m_ScissorRect);
-		commandList->RSSetViewports(1, &m_ViewPort);
-
-		// set Output Mergere Stage
-		commandList->OMSetRenderTargets(1, &geometryRTV, FALSE, &m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
-		
-		// draw render items
-		for (uint32_t i = 0; i < m_RenderItems.size(); ++i) {
-			auto renderItem = m_RenderItems[i].get();
-			auto mat = renderItem->m_Material;
-
-			// set Input-Assembler state
-			commandList->IASetVertexBuffers(0, 1, &renderItem->m_MeshGeo->VertexBufferView());
-			commandList->IASetIndexBuffer(&renderItem->m_MeshGeo->IndexBufferView());
-			commandList->IASetPrimitiveTopology(renderItem->m_PrivitiveType);
-
-			// set object and material constants and texture
-			CD3DX12_GPU_DESCRIPTOR_HANDLE objCBDescHandle(
-				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_ObjectConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_RenderItems.size() + renderItem->m_CBIndex,
-				m_CBV_SRV_UAVDescSize
-			);
-
-			CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
-				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_MaterialConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_Materials.size() + mat->CBIndex,
-				m_CBV_SRV_UAVDescSize
-			);
-
-			CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
-				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
-				m_CBV_SRV_UAVDescSize
-			);
-
-			commandList->SetGraphicsRootDescriptorTable(0, objCBDescHandle);
-			commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
-			commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
-
-			// draw
-			commandList->DrawIndexedInstanced(
-				renderItem->m_IndexCount,
-				1,
-				renderItem->m_StartIndexLocation,
-				renderItem->m_BaseVertexLocation,
-				0
-			);
-		}
-	}
-
-	// apply filter and draw to main render target
-	if (m_IsSobelFilter) {
-		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			frameTextureBuffer.Get(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-		);
-
-		commandList->ResourceBarrier(1, &barrier);
-
-		// unbind all resources from pipeline
-		commandList->ClearState(NULL);
-
-		// set root signature and descripotr heaps
-		commandList->SetGraphicsRootSignature(m_RootSignatures["Sobel"].Get());
-		ID3D12DescriptorHeap* descriptorHeaps[] = { m_FrameTextureSRVDescHeap.Get() };
-		commandList->SetDescriptorHeaps(1, descriptorHeaps);
-
-		// set pso
-		commandList->SetPipelineState(m_PSOs["Sobel"].Get());
-
-		// set Rasterizer Stage
-		commandList->RSSetScissorRects(1, &m_ScissorRect);
-		commandList->RSSetViewports(1, &m_ViewPort);
-
-		// set Output Mergere Stage
-		commandList->OMSetRenderTargets(1, &mainRTV, FALSE, NULL);
-
-		// set Input Asembler Stage
-		commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-		// set root parameter
-		commandList->SetGraphicsRootDescriptorTable(0, m_FrameTextureSRVDescHeap->GetGPUDescriptorHandleForHeapStart());
-
-		// draw
-		commandList->DrawInstanced(3, 1, 0, 0);
+		RenderRegular(commandList);
 	}
 
 	// Present
 	{
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			backBuffer.Get(),
+			m_BackBuffers[m_CurrentBackBufferIndex].Get(),
 			D3D12_RESOURCE_STATE_RENDER_TARGET,
 			D3D12_RESOURCE_STATE_PRESENT
 		);
@@ -371,9 +212,242 @@ void ModelsApp::OnRender() {
 	}
 }
 
+void ModelsApp::RenderRegular(ComPtr<ID3D12GraphicsCommandList> commandList) {
+	CD3DX12_CPU_DESCRIPTOR_HANDLE mainRTV(
+		m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_CurrentBackBufferIndex, m_RTVDescSize
+	);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE sobelTextureRTV(
+		m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_SobelTextureRTVIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	// clear RTs and DS buffer
+	{
+		CD3DX12_RESOURCE_BARRIER backBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_BackBuffers[m_CurrentBackBufferIndex].Get(),
+			D3D12_RESOURCE_STATE_PRESENT,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		);
+
+		if (m_IsSobelFilter) {
+			CD3DX12_RESOURCE_BARRIER frameTextureBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+				m_SobelFrameTextureBuffer.Get(),
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+				D3D12_RESOURCE_STATE_RENDER_TARGET
+			);
+
+			D3D12_RESOURCE_BARRIER bariers[] = { backBufferBarrier, frameTextureBufferBarrier };
+			commandList->ResourceBarrier(_countof(bariers), bariers);
+
+			commandList->ClearRenderTargetView(sobelTextureRTV, m_BackGroundColor, 0, NULL);
+		}
+		else {
+			D3D12_RESOURCE_BARRIER bariers[] = { backBufferBarrier };
+			commandList->ResourceBarrier(_countof(bariers), bariers);
+		}
+
+		commandList->ClearRenderTargetView(mainRTV, m_BackGroundColor, 0, NULL);
+	}
+
+	// chose pso depending on z-buffer type and drawing type
+	ComPtr<ID3D12PipelineState> pso;
+
+	if (m_IsDrawNorm) {
+		pso = m_IsInverseDepth ? m_PSOs["normInverseDepth"] : m_PSOs["normStraightDepth"];
+	}
+	else {
+		pso = m_IsInverseDepth ? m_PSOs["inverseDepth"] : m_PSOs["straightDepth"];
+	}
+
+	// chose rtv depending on filter
+	CD3DX12_CPU_DESCRIPTOR_HANDLE geometryRTV;
+
+	if (m_IsSobelFilter) {
+		geometryRTV = sobelTextureRTV;
+	}
+	else {
+		geometryRTV = mainRTV;
+	}
+
+	RenderGeometry(commandList, pso, geometryRTV);
+
+	// apply filter and draw to main render target
+	if (m_IsSobelFilter) {
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_SobelFrameTextureBuffer.Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		);
+
+		commandList->ResourceBarrier(1, &barrier);
+
+		// unbind all resources from pipeline
+		commandList->ClearState(NULL);
+
+		// set root signature and descripotr heaps
+		commandList->SetGraphicsRootSignature(m_RootSignatures["Sobel"].Get());
+		ID3D12DescriptorHeap* descriptorHeaps[] = { m_FrameTexturesSRVDescHeap.Get() };
+		commandList->SetDescriptorHeaps(1, descriptorHeaps);
+
+		// set pso
+		commandList->SetPipelineState(m_PSOs["Sobel"].Get());
+
+		// set Rasterizer Stage
+		commandList->RSSetScissorRects(1, &m_ScissorRect);
+		commandList->RSSetViewports(1, &m_ViewPort);
+
+		// set Output Mergere Stage
+		commandList->OMSetRenderTargets(1, &mainRTV, FALSE, NULL);
+
+		// set Input Asembler Stage
+		commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// set root parameter
+		commandList->SetGraphicsRootDescriptorTable(
+			0,
+			CD3DX12_GPU_DESCRIPTOR_HANDLE(
+				m_FrameTexturesSRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_SobelTextureSRVIndex,
+				m_CBV_SRV_UAVDescSize
+			)
+		);
+
+		// draw
+		commandList->DrawInstanced(3, 1, 0, 0);
+	}
+}
+
+void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
+	CD3DX12_CPU_DESCRIPTOR_HANDLE mainRTV(
+		m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_CurrentBackBufferIndex, m_RTVDescSize
+	);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE ssaoTextureRTV(
+		m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_SSAOtextureRTVIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	// clear RTs
+	{
+		CD3DX12_RESOURCE_BARRIER backBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_BackBuffers[m_CurrentBackBufferIndex].Get(),
+			D3D12_RESOURCE_STATE_PRESENT,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		);
+
+		CD3DX12_RESOURCE_BARRIER frameTextureBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_SSAOFrameTextureBuffer.Get(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		);
+
+		D3D12_RESOURCE_BARRIER bariers[] = { backBufferBarrier, frameTextureBufferBarrier };
+		commandList->ResourceBarrier(_countof(bariers), bariers);
+
+		commandList->ClearRenderTargetView(mainRTV, m_BackGroundColor, 0, NULL);
+
+		FLOAT color[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		commandList->ClearRenderTargetView(ssaoTextureRTV, color, 0, NULL);
+	}
+
+	ComPtr<ID3D12PipelineState> pso = m_IsInverseDepth ? m_PSOs["SSAOinverseDepth"] : m_PSOs["SSAOstraightDepth"];
+
+	RenderGeometry(commandList, pso, ssaoTextureRTV);
+
+	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		m_SSAOFrameTextureBuffer.Get(),
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+	);
+
+	commandList->ResourceBarrier(1, &barrier);
+}
+
+void ModelsApp::RenderGeometry(
+	ComPtr<ID3D12GraphicsCommandList> commandList,
+	ComPtr<ID3D12PipelineState> pso,
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtv)
+{
+
+	// set root signature
+	commandList->SetGraphicsRootSignature(m_RootSignatures["Geometry"].Get());
+
+	// set descripotr heaps
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBV_SRVDescHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+	// set pass constants
+	commandList->SetGraphicsRootDescriptorTable(
+		1,
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(
+			m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+			m_PassConstantsViewsStartIndex + m_CurrentBackBufferIndex,
+			m_CBV_SRV_UAVDescSize
+		)
+	);
+
+	commandList->SetPipelineState(pso.Get());
+
+	// set Rasterizer Stage
+	commandList->RSSetScissorRects(1, &m_ScissorRect);
+	commandList->RSSetViewports(1, &m_ViewPort);
+
+	// set Output Mergere Stage
+	commandList->OMSetRenderTargets(1, &rtv, FALSE, &m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
+
+	// draw render items
+	for (uint32_t i = 0; i < m_RenderItems.size(); ++i) {
+		auto renderItem = m_RenderItems[i].get();
+		auto mat = renderItem->m_Material;
+
+		// set Input-Assembler state
+		commandList->IASetVertexBuffers(0, 1, &renderItem->m_MeshGeo->VertexBufferView());
+		commandList->IASetIndexBuffer(&renderItem->m_MeshGeo->IndexBufferView());
+		commandList->IASetPrimitiveTopology(renderItem->m_PrivitiveType);
+
+		// set object and material constants and texture
+		CD3DX12_GPU_DESCRIPTOR_HANDLE objCBDescHandle(
+			m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+			m_ObjectConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_RenderItems.size() + renderItem->m_CBIndex,
+			m_CBV_SRV_UAVDescSize
+		);
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
+			m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+			m_MaterialConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_Materials.size() + mat->CBIndex,
+			m_CBV_SRV_UAVDescSize
+		);
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
+			m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+			m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
+			m_CBV_SRV_UAVDescSize
+		);
+
+		commandList->SetGraphicsRootDescriptorTable(0, objCBDescHandle);
+		commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
+		commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
+
+		// draw
+		commandList->DrawIndexedInstanced(
+			renderItem->m_IndexCount,
+			1,
+			renderItem->m_StartIndexLocation,
+			renderItem->m_BaseVertexLocation,
+			0
+		);
+	}
+}
+
 void ModelsApp::OnResize() {
 	BaseApp::OnResize();
-	UpdateFramesTextures();
+	UpdateSobelFrameTexture();
+	UpdateSSAOFrameTexture();
 }
 
 void ModelsApp::OnKeyPressed(WPARAM wParam) {
@@ -403,6 +477,8 @@ void ModelsApp::OnKeyPressed(WPARAM wParam) {
 	case '4':
 		m_IsDrawNorm = !m_IsDrawNorm;
 		break;
+	case '5':
+		m_IsSSAO = !m_IsSSAO;
 	case 'W':
 	case 'S':
 	case 'A':
@@ -955,7 +1031,7 @@ void ModelsApp::BuildPipelineStateObject() {
 	m_PSOs["normInverseDepth"] = normInverseDepthPSO;
 }
 
-void ModelsApp::UpdateFramesTextures() {
+void ModelsApp::UpdateSobelFrameTexture() {
 	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, m_ClientWidth, m_ClientHeight);
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
@@ -967,19 +1043,27 @@ void ModelsApp::UpdateFramesTextures() {
 		&resourceDesc,
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		&clearValue,
-		IID_PPV_ARGS(&m_FrameTexturesBuffers)
+		IID_PPV_ARGS(&m_SobelFrameTextureBuffer)
 	));
 
 	m_Device->CreateRenderTargetView(
-		m_FrameTexturesBuffers.Get(), 
+		m_SobelFrameTextureBuffer.Get(),
 		nullptr, 
-		m_FrameTextureRTVDescHeap->GetCPUDescriptorHandleForHeapStart()
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			m_SobelTextureRTVIndex,
+			m_CBV_SRV_UAVDescSize
+		)
 	);
 
 	m_Device->CreateShaderResourceView(
-		m_FrameTexturesBuffers.Get(),
+		m_SobelFrameTextureBuffer.Get(),
 		nullptr, 
-		m_FrameTextureSRVDescHeap->GetCPUDescriptorHandleForHeapStart()
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			m_SobelTextureSRVIndex,
+			m_CBV_SRV_UAVDescSize
+		)
 	);
 }
 
@@ -1062,4 +1146,106 @@ void ModelsApp::BuildSobelPipelineStateObject() {
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&sobelPSO)));
 
 	m_PSOs["Sobel"] = sobelPSO;
+}
+
+void ModelsApp::BuildSSAOPipelineStateObject() {
+	// Compile shaders	
+	ComPtr<ID3DBlob> geoVertexShaderBlob = CompileShader(L"../../AppModels/shaders/GeoVertexShader.hlsl", "main", "vs_5_1");
+
+	D3D_SHADER_MACRO defines[] = {
+		"ALPHA_TEST", "1",
+		NULL, NULL
+	};
+
+	ComPtr<ID3DBlob> geoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/SSAONormVPixelShader.hlsl", "main", "ps_5_1", defines);
+
+	// Create rasterizer state description
+	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
+	//rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+
+	// Create input layout
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[]{
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"NORM", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+	};
+
+	D3D12_INPUT_LAYOUT_DESC inpuitLayout{ inputElementDescs, _countof(inputElementDescs) };
+
+	// Create pipeline state object description
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
+
+	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+
+	psoDesc.pRootSignature = m_RootSignatures["Geometry"].Get();
+
+	psoDesc.VS = {
+		reinterpret_cast<BYTE*>(geoVertexShaderBlob->GetBufferPointer()),
+		geoVertexShaderBlob->GetBufferSize()
+	};
+
+	psoDesc.PS = {
+		reinterpret_cast<BYTE*>(geoPixelShaderBlob->GetBufferPointer()),
+		geoPixelShaderBlob->GetBufferSize()
+	};
+
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	psoDesc.SampleMask = UINT_MAX;
+	psoDesc.RasterizerState = rasterizerDesc;
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.InputLayout = inpuitLayout;
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	psoDesc.DSVFormat = m_DepthSencilFormat;
+	psoDesc.SampleDesc = { 1, 0 };
+
+	ComPtr<ID3D12PipelineState> straightDepthPSO;
+	ComPtr<ID3D12PipelineState> inverseDepthPSO;
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
+
+	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
+
+	m_PSOs["SSAOstraightDepth"] = straightDepthPSO;
+	m_PSOs["SSAOinverseDepth"] = inverseDepthPSO;
+}
+
+void ModelsApp::UpdateSSAOFrameTexture() {
+	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R16G16B16A16_FLOAT, m_ClientWidth, m_ClientHeight);
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+	FLOAT color[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	CD3DX12_CLEAR_VALUE clearValue{ DXGI_FORMAT_R16G16B16A16_FLOAT , color };
+
+	ThrowIfFailed(m_Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		&clearValue,
+		IID_PPV_ARGS(&m_SSAOFrameTextureBuffer)
+	));
+
+	m_Device->CreateRenderTargetView(
+		m_SSAOFrameTextureBuffer.Get(),
+		nullptr,
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			m_SSAOtextureRTVIndex,
+			m_CBV_SRV_UAVDescSize
+		)
+	);
+
+	m_Device->CreateShaderResourceView(
+		m_SSAOFrameTextureBuffer.Get(),
+		nullptr,
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			m_SSAOtextureSRVIndex,
+			m_CBV_SRV_UAVDescSize
+		)
+	);
 }
