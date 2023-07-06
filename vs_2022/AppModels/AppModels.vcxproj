@@ -398,7 +398,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</EnableDebuggingInformation>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">-Qembed_debug</AdditionalOptions>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\NormPixelShader.hlsl">
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SobelPixelShader.hlsl">
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableDebuggingInformation>
       <ShaderType>Pixel</ShaderType>
       <ShaderModel>6.0</ShaderModel>
@@ -407,7 +407,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</EnableDebuggingInformation>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">-Qembed_debug</AdditionalOptions>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SobelPixelShader.hlsl">
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAONormVPixelShader.hlsl">
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableDebuggingInformation>
       <ShaderType>Pixel</ShaderType>
       <ShaderModel>6.0</ShaderModel>

@@ -27,22 +27,25 @@ float4 main(VertexOut pin) : SV_Target
         1 - MaterilaConstantsCB.Roughness
     };
     
-    float4 inderectLight = mat.DiffuseAlbedo * PassConstantsCB.AmbientLight;
-        
+    #ifdef ALPHA_TEST
+        clip(mat.DiffuseAlbedo.a - 0.1f);
+    #endif
     
     float3 norm = normalize(pin.Norm);
+    
+    #ifdef DRAW_NORMS
+        return float4((norm + 1) / 2, 1.0f);
+    #endif
+    
     float3 toEye = normalize(PassConstantsCB.EyePos - pin.PosW);
 
+    float4 inderectLight = mat.DiffuseAlbedo * PassConstantsCB.AmbientLight;
     float4 directLight = ComputeLighting(PassConstantsCB.Lights, mat, norm, toEye, pin.PosW);
         
     float4 color = inderectLight + directLight;
         
     // It is said that it is common convention to take alpha from diffuse material
     color.a = mat.DiffuseAlbedo.a;
-    
-    #ifdef ALPHA_TEST
-        clip(color.a - 0.1f);
-    #endif
     
     return color;
 }

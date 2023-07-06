@@ -22,9 +22,9 @@ set( VERTEX_SHADER_FILES
 )
 
 set( PIXEL_SHADER_FILES
-	shaders/GeoPixelShader.hlsl
-	shaders/NormPixelShader.hlsl
+	shaders/GeoPixelShader.hlsl	
 	shaders/SobelPixelShader.hlsl
+	shaders/SSAONormVPixelShader.hlsl
 )
 
 set( SHADER_HEADER_FILES

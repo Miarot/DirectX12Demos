@@ -35,10 +35,10 @@
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\GeoPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\NormPixelShader.hlsl">
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SobelPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SobelPixelShader.hlsl">
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAONormVPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
   </ItemGroup>
