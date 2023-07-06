@@ -40,5 +40,9 @@ float4 main(VertexOut pin) : SV_Target
     // It is said that it is common convention to take alpha from diffuse material
     color.a = mat.DiffuseAlbedo.a;
     
+    #ifdef ALPHA_TEST
+        clip(color.a - 0.1f);
+    #endif
+    
     return color;
 }

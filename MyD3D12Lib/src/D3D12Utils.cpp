@@ -13,7 +13,8 @@ using namespace DirectX;
 ComPtr<ID3DBlob> CompileShader(
 	const std::wstring& filename,
 	const std::string& entrypoint,
-	const std::string& target)
+	const std::string& target,
+	const D3D_SHADER_MACRO * defines)
 {
 	ComPtr<ID3DBlob> shaderBlob;
 	ComPtr<ID3DBlob> error;
@@ -25,7 +26,7 @@ ComPtr<ID3DBlob> CompileShader(
 
 	hr = D3DCompileFromFile(
 		filename.c_str(),
-		NULL,
+		defines,
 		D3D_COMPILE_STANDARD_FILE_INCLUDE,
 		entrypoint.c_str(),
 		target.c_str(),

@@ -13,7 +13,8 @@ using Microsoft::WRL::ComPtr;
 ComPtr<ID3DBlob> CompileShader(
 	const std::wstring& filename,
 	const std::string& entrypoint,
-	const std::string& target
+	const std::string& target,
+	const D3D_SHADER_MACRO* defines = NULL
 );
 
 // texture loading

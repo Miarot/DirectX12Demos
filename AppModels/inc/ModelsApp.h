@@ -90,4 +90,7 @@ private:
 	ComPtr<ID3D12Resource> m_FrameTexturesBuffers;
 	ComPtr<ID3D12DescriptorHeap> m_FrameTextureRTVDescHeap;
 	ComPtr<ID3D12DescriptorHeap> m_FrameTextureSRVDescHeap;
+
+	// for SSAO
+	bool m_IsSSAO = false;
 };

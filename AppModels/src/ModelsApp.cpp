@@ -870,7 +870,14 @@ void ModelsApp::BuildRootSignature() {
 void ModelsApp::BuildPipelineStateObject() {
 	// Compile shaders	
 	ComPtr<ID3DBlob> geoVertexShaderBlob = CompileShader(L"../../AppModels/shaders/GeoVertexShader.hlsl", "main", "vs_5_1");
-	ComPtr<ID3DBlob> geoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1");
+
+	D3D_SHADER_MACRO defines[] = {
+		"ALPHA_TEST", "1",
+		NULL, NULL
+	};
+
+	ComPtr<ID3DBlob> geoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", defines);
+	
 	ComPtr<ID3DBlob> normPixelShaderBlob = CompileShader(L"../../AppModels/shaders/NormPixelShader.hlsl", "main", "ps_5_1");
 
 	// Create rasterizer state description
