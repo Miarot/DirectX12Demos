@@ -92,7 +92,7 @@ void SimpleGeoApp::OnUpdate() {
 	m_PassConstants.Proj = GetProjectionMatrix(
 		m_IsInverseDepth,
 		m_Camera.GetFoV(),
-		m_ClientHeight / static_cast<float>(m_ClientWidth)
+		m_ClientWidth / static_cast<float>(m_ClientHeight)
 	);
 
 	if (m_IsShakeEffect) {
