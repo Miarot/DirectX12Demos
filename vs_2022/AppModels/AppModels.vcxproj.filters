@@ -32,6 +32,9 @@
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SobelVertexShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAOVertexShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FXCompile>
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\GeoPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
@@ -41,12 +44,18 @@
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAONormVPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAOPixelShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FXCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\GeoUtils.hlsli">
       <Filter>Shaders</Filter>
     </None>
     <None Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\LightUtils.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\Common.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

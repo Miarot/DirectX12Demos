@@ -10,6 +10,7 @@
     #define NUM_SPOT_LIGHTS 3
 #endif
 
+#include "Common.hlsli"
 #include "GeoUtils.hlsli"
 
 ConstantBuffer<PassConstants> PassConstantsCB : register(b1);

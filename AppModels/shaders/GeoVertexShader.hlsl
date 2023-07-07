@@ -1,3 +1,4 @@
+#include "Common.hlsli"
 #include "GeoUtils.hlsli"
 
 ConstantBuffer<ObjectConstants> ObjectConstantsCB : register(b0);

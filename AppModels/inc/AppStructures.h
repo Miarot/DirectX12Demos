@@ -30,6 +30,7 @@ struct PassConstants {
 	XMMATRIX View = XMMatrixIdentity();
 	XMMATRIX Proj = XMMatrixIdentity();
 	XMMATRIX ViewProj = XMMatrixIdentity();
+	XMMATRIX ProjInv = XMMatrixIdentity();
 
 	XMFLOAT3 EyePos;
 	float TotalTime = 0.0f;

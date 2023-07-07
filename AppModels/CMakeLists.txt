@@ -19,17 +19,20 @@ set( SRC_FILES
 set( VERTEX_SHADER_FILES
     shaders/GeoVertexShader.hlsl
 	shaders/SobelVertexShader.hlsl
+	shaders/SSAOVertexShader.hlsl
 )
 
 set( PIXEL_SHADER_FILES
 	shaders/GeoPixelShader.hlsl	
 	shaders/SobelPixelShader.hlsl
 	shaders/SSAONormVPixelShader.hlsl
+	shaders/SSAOPixelShader.hlsl
 )
 
 set( SHADER_HEADER_FILES
 	shaders/GeoUtils.hlsli
 	shaders/LightUtils.hlsli
+	shaders/Common.hlsli
 )
 set( SHADER_FILES
 	${VERTEX_SHADER_FILES}

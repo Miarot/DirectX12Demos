@@ -67,6 +67,8 @@ private:
 
 	// for SSAO
 	void UpdateSSAOFrameTexture();
+	void BuildSSAONormPipelineStateObject();
+	void BuildSSAORootSignature();
 	void BuildSSAOPipelineStateObject();
 
 private:

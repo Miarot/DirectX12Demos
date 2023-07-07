@@ -83,6 +83,8 @@ bool ModelsApp::Initialize() {
 	m_SSAOtextureRTVIndex = m_SobelTextureRTVIndex + 1;
 	m_SSAOtextureSRVIndex = m_SobelTextureSRVIndex + 1;
 	UpdateSobelFrameTexture();
+	BuildSSAONormPipelineStateObject();
+	BuildSSAORootSignature();
 	BuildSSAOPipelineStateObject();
 
 	// wait while all data loaded
@@ -127,7 +129,8 @@ void ModelsApp::OnUpdate() {
 	m_PassConstants.Proj = GetProjectionMatrix(
 		m_IsInverseDepth,
 		m_Camera.GetFoV(),
-		m_ClientHeight / static_cast<float>(m_ClientWidth)
+		m_ClientHeight / static_cast<float>(m_ClientWidth),
+		1.0f
 	);
 
 	if (m_IsShakeEffect) {
@@ -135,6 +138,12 @@ void ModelsApp::OnUpdate() {
 	}
 
 	m_PassConstants.ViewProj = XMMatrixMultiply(m_PassConstants.View, m_PassConstants.Proj);
+
+	m_PassConstants.ProjInv = XMMatrixInverse(
+		&XMMatrixDeterminant(m_PassConstants.Proj),
+		m_PassConstants.Proj
+	);
+
 	XMStoreFloat3(&m_PassConstants.EyePos, m_Camera.GetCameraPos());
 	m_PassConstants.TotalTime = float(m_Timer.GetTotalTime());
 
@@ -355,17 +364,84 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 		commandList->ClearRenderTargetView(ssaoTextureRTV, color, 0, NULL);
 	}
 
-	ComPtr<ID3D12PipelineState> pso = m_IsInverseDepth ? m_PSOs["SSAOinverseDepth"] : m_PSOs["SSAOstraightDepth"];
+	ComPtr<ID3D12PipelineState> pso = m_IsInverseDepth ? m_PSOs["ssaoNormInverseDepth"] : m_PSOs["ssaoNormStraightDepth"];
 
 	RenderGeometry(commandList, pso, ssaoTextureRTV);
 
-	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+	CD3DX12_RESOURCE_BARRIER frameTextureBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
 		m_SSAOFrameTextureBuffer.Get(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET,
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
 	);
 
-	commandList->ResourceBarrier(1, &barrier);
+	CD3DX12_RESOURCE_BARRIER dsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		m_DSBuffer.Get(),
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+	);
+
+	CD3DX12_RESOURCE_BARRIER barriers[] = { frameTextureBarrier, dsBarrier };
+
+	commandList->ResourceBarrier(_countof(barriers), barriers);
+
+	// unbind all resources from pipeline
+	commandList->ClearState(NULL);
+
+	// set root signature
+	commandList->SetGraphicsRootSignature(m_RootSignatures["SSAO"].Get());
+
+	// set desc heap for pass constants
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBV_SRVDescHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+	// set pass constants
+	commandList->SetGraphicsRootDescriptorTable(
+		1,
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(
+			m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+			m_PassConstantsViewsStartIndex + m_CurrentBackBufferIndex,
+			m_CBV_SRV_UAVDescSize
+		)
+	);
+
+	// set desc heap for texture
+	ID3D12DescriptorHeap* textureDescHeaps[] = { m_FrameTexturesSRVDescHeap.Get() };
+	commandList->SetDescriptorHeaps(1, textureDescHeaps);
+
+	// set texture
+	commandList->SetGraphicsRootDescriptorTable(
+		0,
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(
+			m_FrameTexturesSRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+			m_SSAOtextureSRVIndex,
+			m_CBV_SRV_UAVDescSize
+		)
+	);
+
+	// set pso
+	commandList->SetPipelineState(m_PSOs["SSAO"].Get());
+
+	// set Rasterizer Stage
+	commandList->RSSetScissorRects(1, &m_ScissorRect);
+	commandList->RSSetViewports(1, &m_ViewPort);
+
+	// set Output Mergere Stage
+	commandList->OMSetRenderTargets(1, &mainRTV, FALSE, NULL);
+
+	// set Input Asembler Stage
+	commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// draw
+	commandList->DrawInstanced(6, 1, 0, 0);
+
+	// return ds buffer in write state
+	dsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		m_DSBuffer.Get(),
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE
+	);
+
+	commandList->ResourceBarrier(1, &dsBarrier);
 }
 
 void ModelsApp::RenderGeometry(
@@ -470,6 +546,7 @@ void ModelsApp::OnKeyPressed(WPARAM wParam) {
 
 		m_DirectCommandQueue->Flush();
 		ResizeDSBuffer();
+		UpdateSSAOFrameTexture();
 		break;
 	case '3':
 		m_IsSobelFilter = !m_IsSobelFilter;
@@ -479,6 +556,7 @@ void ModelsApp::OnKeyPressed(WPARAM wParam) {
 		break;
 	case '5':
 		m_IsSSAO = !m_IsSSAO;
+		break;
 	case 'W':
 	case 'S':
 	case 'A':
@@ -489,6 +567,8 @@ void ModelsApp::OnKeyPressed(WPARAM wParam) {
 		m_DirectCommandQueue->Flush();
 		BuildPipelineStateObject();
 		BuildSobelPipelineStateObject();
+		BuildSSAONormPipelineStateObject();
+		BuildSSAOPipelineStateObject();
 		break;
 	}
 }
@@ -881,26 +961,22 @@ void ModelsApp::BuildRootSignature() {
 	// init parameters
 	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
 
-	// object constants
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange0;
-	descriptorRange0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE1 objConstsDescRange;
+	objConstsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 
-	// pass constants
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange1;
-	descriptorRange1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+	CD3DX12_DESCRIPTOR_RANGE1 passConstsDescRange;
+	passConstsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
 
-	// material constants
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange2;
-	descriptorRange2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
+	CD3DX12_DESCRIPTOR_RANGE1 matConstsDescRange;
+	matConstsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
 
-	// texture
-	CD3DX12_DESCRIPTOR_RANGE1 descriptorRange3;
-	descriptorRange3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE1 texDescRange;
+	texDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
-	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange0);
-	rootParameters[1].InitAsDescriptorTable(1, &descriptorRange1);
-	rootParameters[2].InitAsDescriptorTable(1, &descriptorRange2);
-	rootParameters[3].InitAsDescriptorTable(1, &descriptorRange3, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[0].InitAsDescriptorTable(1, &objConstsDescRange);
+	rootParameters[1].InitAsDescriptorTable(1, &passConstsDescRange);
+	rootParameters[2].InitAsDescriptorTable(1, &matConstsDescRange);
+	rootParameters[3].InitAsDescriptorTable(1, &texDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	// set access flags
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
@@ -1000,7 +1076,7 @@ void ModelsApp::BuildPipelineStateObject() {
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	psoDesc.DSVFormat = m_DepthSencilFormat;
+	psoDesc.DSVFormat = m_DepthSencilViewFormat;
 	psoDesc.SampleDesc = { 1, 0 };
 
 	ComPtr<ID3D12PipelineState> straightDepthPSO;
@@ -1148,7 +1224,63 @@ void ModelsApp::BuildSobelPipelineStateObject() {
 	m_PSOs["Sobel"] = sobelPSO;
 }
 
-void ModelsApp::BuildSSAOPipelineStateObject() {
+void ModelsApp::UpdateSSAOFrameTexture() {
+	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R16G16B16A16_FLOAT, m_ClientWidth, m_ClientHeight);
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+	FLOAT color[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	CD3DX12_CLEAR_VALUE clearValue{ DXGI_FORMAT_R16G16B16A16_FLOAT , color };
+
+	ThrowIfFailed(m_Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		&clearValue,
+		IID_PPV_ARGS(&m_SSAOFrameTextureBuffer)
+	));
+
+	m_Device->CreateRenderTargetView(
+		m_SSAOFrameTextureBuffer.Get(),
+		nullptr,
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			m_SSAOtextureRTVIndex,
+			m_CBV_SRV_UAVDescSize
+		)
+	);
+
+	m_Device->CreateShaderResourceView(
+		m_SSAOFrameTextureBuffer.Get(),
+		NULL,
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			m_SSAOtextureSRVIndex,
+			m_CBV_SRV_UAVDescSize
+		)
+	);
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC dsViewDesc = {};
+
+	dsViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	dsViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	dsViewDesc.Texture2D.MostDetailedMip = 0;
+	dsViewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	dsViewDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	dsViewDesc.Texture2D.MipLevels = 1;
+
+	m_Device->CreateShaderResourceView(
+		m_DSBuffer.Get(),
+		&dsViewDesc,
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			m_SSAOtextureSRVIndex + 1,
+			m_CBV_SRV_UAVDescSize
+		)
+	);
+}
+
+void ModelsApp::BuildSSAONormPipelineStateObject() {
 	// Compile shaders	
 	ComPtr<ID3DBlob> geoVertexShaderBlob = CompileShader(L"../../AppModels/shaders/GeoVertexShader.hlsl", "main", "vs_5_1");
 
@@ -1197,7 +1329,7 @@ void ModelsApp::BuildSSAOPipelineStateObject() {
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	psoDesc.DSVFormat = m_DepthSencilFormat;
+	psoDesc.DSVFormat = m_DepthSencilViewFormat;
 	psoDesc.SampleDesc = { 1, 0 };
 
 	ComPtr<ID3D12PipelineState> straightDepthPSO;
@@ -1209,43 +1341,90 @@ void ModelsApp::BuildSSAOPipelineStateObject() {
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
 
-	m_PSOs["SSAOstraightDepth"] = straightDepthPSO;
-	m_PSOs["SSAOinverseDepth"] = inverseDepthPSO;
+	m_PSOs["ssaoNormStraightDepth"] = straightDepthPSO;
+	m_PSOs["ssaoNormInverseDepth"] = inverseDepthPSO;
 }
 
-void ModelsApp::UpdateSSAOFrameTexture() {
-	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R16G16B16A16_FLOAT, m_ClientWidth, m_ClientHeight);
-	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+void ModelsApp::BuildSSAORootSignature() {
+	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
 
-	FLOAT color[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	CD3DX12_CLEAR_VALUE clearValue{ DXGI_FORMAT_R16G16B16A16_FLOAT , color };
+	CD3DX12_DESCRIPTOR_RANGE1 normalMapDepthDescRange;
+	normalMapDepthDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
 
-	ThrowIfFailed(m_Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
-		&resourceDesc,
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-		&clearValue,
-		IID_PPV_ARGS(&m_SSAOFrameTextureBuffer)
+	CD3DX12_DESCRIPTOR_RANGE1 passConstantsDescRange;
+	passConstantsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+
+	rootParameters[0].InitAsDescriptorTable(1, &normalMapDepthDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[1].InitAsDescriptorTable(1, &passConstantsDescRange);
+
+	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 0, NULL, rootSignatureFlags);
+
+	ComPtr<ID3DBlob> rootSignatureBlob;
+	ComPtr<ID3DBlob> errorBlob;
+	ThrowIfFailed(D3DX12SerializeVersionedRootSignature(
+		&rootSignatureDesc,
+		GetRootSignatureVersion(m_Device),
+		&rootSignatureBlob,
+		&errorBlob
 	));
 
-	m_Device->CreateRenderTargetView(
-		m_SSAOFrameTextureBuffer.Get(),
-		nullptr,
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(
-			m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-			m_SSAOtextureRTVIndex,
-			m_CBV_SRV_UAVDescSize
-		)
-	);
+	ComPtr<ID3D12RootSignature> ssaoRootSignature;
 
-	m_Device->CreateShaderResourceView(
-		m_SSAOFrameTextureBuffer.Get(),
-		nullptr,
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(
-			m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-			m_SSAOtextureSRVIndex,
-			m_CBV_SRV_UAVDescSize
-		)
-	);
+	ThrowIfFailed(m_Device->CreateRootSignature(
+		0,
+		rootSignatureBlob->GetBufferPointer(),
+		rootSignatureBlob->GetBufferSize(),
+		IID_PPV_ARGS(&ssaoRootSignature)
+	));
+
+	m_RootSignatures["SSAO"] = ssaoRootSignature;
+}
+
+void ModelsApp::BuildSSAOPipelineStateObject() {
+	// Compile shaders	
+	ComPtr<ID3DBlob> ssaoVertexShaderBlob = CompileShader(L"../../AppModels/shaders/SSAOVertexShader.hlsl", "main", "vs_5_1");
+	ComPtr<ID3DBlob> ssaoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/SSAOPixelShader.hlsl", "main", "ps_5_1");
+
+	// Create pipeline state object description
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
+
+	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+
+	psoDesc.pRootSignature = m_RootSignatures["SSAO"].Get();
+
+	psoDesc.VS = {
+		reinterpret_cast<BYTE*>(ssaoVertexShaderBlob->GetBufferPointer()),
+		ssaoVertexShaderBlob->GetBufferSize()
+	};
+
+	psoDesc.PS = {
+		reinterpret_cast<BYTE*>(ssaoPixelShaderBlob->GetBufferPointer()),
+		ssaoPixelShaderBlob->GetBufferSize()
+	};
+
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	psoDesc.SampleMask = UINT_MAX;
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+
+	CD3DX12_DEPTH_STENCIL_DESC depthStencilState(D3D12_DEFAULT);
+	depthStencilState.DepthEnable = FALSE;
+	psoDesc.DepthStencilState = depthStencilState;
+
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
+	psoDesc.SampleDesc = { 1, 0 };
+
+	ComPtr<ID3D12PipelineState> ssaoPSO;
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoPSO)));
+
+	m_PSOs["SSAO"] = ssaoPSO;
 }

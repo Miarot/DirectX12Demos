@@ -357,14 +357,14 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 ComPtr<ID3D12Resource> CreateDepthStencilBuffer(
 	ComPtr<ID3D12Device2> device,
 	uint32_t width, uint32_t height, 
-	DXGI_FORMAT format, 
+	DXGI_FORMAT bufferFormat, DXGI_FORMAT viewFormat, 
 	float depthClearValue, 
 	uint8_t stencilClearValue)
 {
 	ComPtr<ID3D12Resource> depthStencilBuffer;
 
 	D3D12_RESOURCE_DESC dsBufferDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-		format,
+		bufferFormat,
 		width, height,
 		1, 0, 1, 0,
 		D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
@@ -373,7 +373,7 @@ ComPtr<ID3D12Resource> CreateDepthStencilBuffer(
 	);
 
 	D3D12_CLEAR_VALUE dsClearValue{};
-	dsClearValue.Format = format;
+	dsClearValue.Format = viewFormat;
 	dsClearValue.DepthStencil = { depthClearValue, stencilClearValue };
 
 	ThrowIfFailed(device->CreateCommittedResource(

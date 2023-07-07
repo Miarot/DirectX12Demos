@@ -164,7 +164,7 @@ bool BaseApp::Initialize() {
 	m_DSBuffer = CreateDepthStencilBuffer(
 		m_Device, 
 		m_ClientWidth, m_ClientHeight, 
-		m_DepthSencilFormat,
+		m_DepthSencilBufferFormat, m_DepthSencilViewFormat,
 		m_DepthClearValue,
 		m_SteniclClearValue
 	);
@@ -325,7 +325,7 @@ void BaseApp::UpdateBackBuffersView()
 void BaseApp::UpdateDSView() {
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 
-	dsvDesc.Format = m_DepthSencilFormat;
+	dsvDesc.Format = m_DepthSencilViewFormat;
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Texture2D.MipSlice = 0;
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
@@ -339,7 +339,7 @@ void BaseApp::ResizeDSBuffer() {
 	m_DSBuffer = CreateDepthStencilBuffer(
 		m_Device,
 		m_ClientWidth, m_ClientHeight,
-		m_DepthSencilFormat,
+		m_DepthSencilBufferFormat, m_DepthSencilViewFormat,
 		m_DepthClearValue,
 		m_SteniclClearValue
 	);

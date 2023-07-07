@@ -69,7 +69,8 @@ protected:
 	bool m_FullScreen = false;
 	uint32_t m_ClientWidth = 1280;
 	uint32_t m_ClientHeight = 720;
-	DXGI_FORMAT m_DepthSencilFormat = DXGI_FORMAT_D32_FLOAT;
+	DXGI_FORMAT m_DepthSencilBufferFormat = DXGI_FORMAT_R32_TYPELESS;
+	DXGI_FORMAT m_DepthSencilViewFormat = DXGI_FORMAT_D32_FLOAT;
 	float m_DepthClearValue = 1.0f;
 	uint8_t m_SteniclClearValue = 0;
 
