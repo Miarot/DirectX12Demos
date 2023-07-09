@@ -31,12 +31,19 @@ struct PassConstants {
 	XMMATRIX Proj = XMMatrixIdentity();
 	XMMATRIX ViewProj = XMMatrixIdentity();
 	XMMATRIX ProjInv = XMMatrixIdentity();
+	XMMATRIX ProjTex = XMMatrixIdentity();
 
 	XMFLOAT3 EyePos;
 	float TotalTime = 0.0f;
 
 	XMVECTOR AmbientLight;
 	Light Lights[16];
+
+	XMVECTOR RandomDirections[14];
+	float OcclusionRadius = 0.2f;
+	float OcclusionFadeStart = 0.2f;
+	float OcclusionFadeEnd = 1.0f;
+	float OcclusionEpsilon = 0.05;;
 };
 
 struct MaterialConstants {

@@ -158,7 +158,7 @@ XMMATRIX GetProjectionMatrix(
 {
 	// fov --- horizontal field of view
 	// aspect ratio --- screen width / height
-	// projection plane distance from camera
+	// d --- projection plane distance from camera
 	float d = 1 / tan(XMConvertToRadians(fov) / 2);
 
 	// coefficients for z projection z' = A + B/z after perspective division

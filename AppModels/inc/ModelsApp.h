@@ -70,6 +70,7 @@ private:
 	void BuildSSAONormPipelineStateObject();
 	void BuildSSAORootSignature();
 	void BuildSSAOPipelineStateObject();
+	void BuildRandomVectors(ComPtr<ID3D12GraphicsCommandList> commandList);
 
 private:
 	FLOAT m_BackGroundColor[4] = { 0.4f, 0.6f, 0.9f, 1.0f };
@@ -97,6 +98,7 @@ private:
 	uint32_t m_ObjectConstantsViewsStartIndex;
 	uint32_t m_PassConstantsViewsStartIndex;
 	uint32_t m_MaterialConstantsViewsStartIndex;
+	uint32_t m_NextCBV_SRVDescHeapIndex = 0;
 
 	std::unordered_map<std::string, ComPtr<ID3D12RootSignature>> m_RootSignatures;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
@@ -115,4 +117,6 @@ private:
 	ComPtr<ID3D12Resource> m_SSAOFrameTextureBuffer;
 	uint32_t m_SSAOtextureRTVIndex;
 	uint32_t m_SSAOtextureSRVIndex;
+	ComPtr<ID3D12Resource> m_RandomVectorsBuffer;
+	ComPtr<ID3D12Resource> m_RandomVectorsUploadBuffer;
 };

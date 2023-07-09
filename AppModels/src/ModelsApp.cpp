@@ -1,7 +1,9 @@
 #include <ModelsApp.h>
 #include <MyD3D12Lib/D3D12Utils.h>
+#include <MyD3D12Lib/Helpers.h>
 
 #include <d3dx12.h>
+#include <DirectXPackedVector.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -47,7 +49,7 @@ bool ModelsApp::Initialize() {
 
 	m_CBV_SRVDescHeap = CreateDescriptorHeap(
 		m_Device,
-		m_Textures.size() + (m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
+		m_Textures.size() + (m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers + 1,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
@@ -67,7 +69,7 @@ bool ModelsApp::Initialize() {
 
 	m_FrameTexturesSRVDescHeap = CreateDescriptorHeap(
 		m_Device,
-		3,
+		4,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
@@ -82,10 +84,11 @@ bool ModelsApp::Initialize() {
 	// for SSAO
 	m_SSAOtextureRTVIndex = m_SobelTextureRTVIndex + 1;
 	m_SSAOtextureSRVIndex = m_SobelTextureSRVIndex + 1;
-	UpdateSobelFrameTexture();
 	BuildSSAONormPipelineStateObject();
 	BuildSSAORootSignature();
 	BuildSSAOPipelineStateObject();
+	BuildRandomVectors(commandList);
+	UpdateSobelFrameTexture();
 
 	// wait while all data loaded
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
@@ -99,6 +102,8 @@ bool ModelsApp::Initialize() {
 	for (auto& it : m_Textures) {
 		it.second->UploadResource = nullptr;
 	}
+
+	m_RandomVectorsUploadBuffer = nullptr;
 
 	return true;
 }
@@ -142,6 +147,16 @@ void ModelsApp::OnUpdate() {
 	m_PassConstants.ProjInv = XMMatrixInverse(
 		&XMMatrixDeterminant(m_PassConstants.Proj),
 		m_PassConstants.Proj
+	);
+
+	m_PassConstants.ProjTex = XMMatrixMultiply(
+		m_PassConstants.Proj, 
+		XMMATRIX(
+			0.5f, 0.0f, 0.0f, 0.0f,
+			0.0f, -0.5f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.5f, 0.5f, 0.0f, 1.0f
+		)
 	);
 
 	XMStoreFloat3(&m_PassConstants.EyePos, m_Camera.GetCameraPos());
@@ -857,7 +872,7 @@ void ModelsApp::BuildFrameResources() {
 }
 
 void ModelsApp::BuildSRViews() {
-	m_TexturesViewsStartIndex = 0;
+	m_TexturesViewsStartIndex = m_NextCBV_SRVDescHeapIndex;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
 
@@ -881,10 +896,12 @@ void ModelsApp::BuildSRViews() {
 		descHandle.Offset(m_CBV_SRV_UAVDescSize);
 		++i;
 	}
+
+	m_NextCBV_SRVDescHeapIndex += m_Textures.size();
 }
 
 void ModelsApp::BuildCBViews() {
-	m_ObjectConstantsViewsStartIndex = m_TexturesViewsStartIndex +  m_Textures.size();
+	m_ObjectConstantsViewsStartIndex = m_NextCBV_SRVDescHeapIndex;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(
 		m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -914,7 +931,9 @@ void ModelsApp::BuildCBViews() {
 		}
 	}
 
-	m_PassConstantsViewsStartIndex = m_ObjectConstantsViewsStartIndex + m_NumBackBuffers * m_RenderItems.size();
+	m_NextCBV_SRVDescHeapIndex += m_NumBackBuffers * m_RenderItems.size();
+
+	m_PassConstantsViewsStartIndex =m_NextCBV_SRVDescHeapIndex;
 	uint32_t passConstansElementByteSize = m_FramesResources[0]->m_PassConstantsBuffer->GetElementByteSize();
 
 	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
@@ -933,7 +952,9 @@ void ModelsApp::BuildCBViews() {
 		descHandle.Offset(m_CBV_SRV_UAVDescSize);
 	}
 
-	m_MaterialConstantsViewsStartIndex = m_PassConstantsViewsStartIndex + m_NumBackBuffers;
+	m_NextCBV_SRVDescHeapIndex += m_NumBackBuffers;
+
+	m_MaterialConstantsViewsStartIndex = m_NextCBV_SRVDescHeapIndex;
 	uint32_t materialConstantsElementByteSize = m_FramesResources[0]->m_MaterialsConstantsBuffer->GetElementByteSize();
 
 	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
@@ -955,6 +976,8 @@ void ModelsApp::BuildCBViews() {
 			materialConstantsBufferGPUAdress += materialConstantsElementByteSize;
 		}
 	}
+
+	m_NextCBV_SRVDescHeapIndex += m_NumBackBuffers * m_Materials.size();
 }
 
 void ModelsApp::BuildRootSignature() {
@@ -1252,7 +1275,7 @@ void ModelsApp::UpdateSSAOFrameTexture() {
 
 	m_Device->CreateShaderResourceView(
 		m_SSAOFrameTextureBuffer.Get(),
-		NULL,
+		nullptr,
 		CD3DX12_CPU_DESCRIPTOR_HANDLE(
 			m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 			m_SSAOtextureSRVIndex,
@@ -1275,6 +1298,16 @@ void ModelsApp::UpdateSSAOFrameTexture() {
 		CD3DX12_CPU_DESCRIPTOR_HANDLE(
 			m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 			m_SSAOtextureSRVIndex + 1,
+			m_CBV_SRV_UAVDescSize
+		)
+	);
+
+	m_Device->CreateShaderResourceView(
+		m_RandomVectorsBuffer.Get(),
+		nullptr,
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			m_SSAOtextureSRVIndex + 2,
 			m_CBV_SRV_UAVDescSize
 		)
 	);
@@ -1349,7 +1382,7 @@ void ModelsApp::BuildSSAORootSignature() {
 	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
 
 	CD3DX12_DESCRIPTOR_RANGE1 normalMapDepthDescRange;
-	normalMapDepthDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
+	normalMapDepthDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE1 passConstantsDescRange;
 	passConstantsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
@@ -1362,8 +1395,42 @@ void ModelsApp::BuildSSAORootSignature() {
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
+	// create sampler
+	CD3DX12_STATIC_SAMPLER_DESC depthSamplerDesc(
+		0,
+		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+		0.0f, 1,
+		D3D12_COMPARISON_FUNC_LESS_EQUAL,
+		D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE
+	);
+
+	CD3DX12_STATIC_SAMPLER_DESC linWrapSamplerDesc(
+		1,
+		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP
+	);
+
+	CD3DX12_STATIC_SAMPLER_DESC pointClampSamplerDesc(
+		2,
+		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP
+	);
+
+	D3D12_STATIC_SAMPLER_DESC samplersDescs[] = { 
+		depthSamplerDesc, 
+		linWrapSamplerDesc,
+		pointClampSamplerDesc
+	};
+
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 0, NULL, rootSignatureFlags);
+	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, _countof(samplersDescs), samplersDescs, rootSignatureFlags);
 
 	ComPtr<ID3DBlob> rootSignatureBlob;
 	ComPtr<ID3DBlob> errorBlob;
@@ -1427,4 +1494,84 @@ void ModelsApp::BuildSSAOPipelineStateObject() {
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoPSO)));
 
 	m_PSOs["SSAO"] = ssaoPSO;
+}
+
+void ModelsApp::BuildRandomVectors(ComPtr<ID3D12GraphicsCommandList> commandList) {
+	// evenly distributed vectors 
+	m_PassConstants.RandomDirections[0] = XMVectorSet(-1.0f, -1.0f, -1.0f, 0.0f);
+	m_PassConstants.RandomDirections[1] = XMVectorSet(1.0f, 1.0f, 1.0f, 0.0f);
+
+	m_PassConstants.RandomDirections[2] = XMVectorSet(1.0f, -1.0f, -1.0f, 0.0f);
+	m_PassConstants.RandomDirections[3] = XMVectorSet(-1.0f, 1.0f, 1.0f, 0.0f);
+
+	m_PassConstants.RandomDirections[4] = XMVectorSet(-1.0f, 1.0f, -1.0f, 0.0f);
+	m_PassConstants.RandomDirections[5] = XMVectorSet(1.0f, -1.0f, 1.0f, 0.0f);
+
+	m_PassConstants.RandomDirections[6] = XMVectorSet(1.0f, -1.0f, -1.0f, 0.0f);
+	m_PassConstants.RandomDirections[7] = XMVectorSet(-1.0f, 1.0f, 1.0f, 0.0f);
+
+	m_PassConstants.RandomDirections[8] = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+	m_PassConstants.RandomDirections[9] = XMVectorSet(-1.0f, 0.0f, 0.0f, 0.0f);
+
+	m_PassConstants.RandomDirections[10] = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	m_PassConstants.RandomDirections[11] = XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f);
+
+	m_PassConstants.RandomDirections[12] = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+	m_PassConstants.RandomDirections[13] = XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f);
+
+	for (uint32_t i = 0; i < 14; ++i) {
+		m_PassConstants.RandomDirections[i] = randFloat(0.25f, 1.0f) * XMVector3Normalize(m_PassConstants.RandomDirections[i]);
+	}
+
+	const uint32_t texWidth = 256;
+	const uint32_t texHeight = 256;
+
+	PackedVector::XMCOLOR data[texWidth * texHeight];
+
+	for (uint32_t i = 0; i < texHeight; ++i) {
+		for (uint32_t j = 0; j < texWidth; ++j) {
+			data[255*i + j] = PackedVector::XMCOLOR(randFloat(), randFloat(), randFloat(), 0.0f);
+		}
+	}
+
+	ThrowIfFailed(m_Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, texWidth, texHeight, 1, 1),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_PPV_ARGS(&m_RandomVectorsBuffer)
+	));
+
+	uint64_t uploadBufferSize = GetRequiredIntermediateSize(m_RandomVectorsBuffer.Get(), 0, 1);
+
+	ThrowIfFailed(m_Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&m_RandomVectorsUploadBuffer)
+	));
+
+	D3D12_SUBRESOURCE_DATA subResouceData = {};
+	subResouceData.pData = data;
+	subResouceData.RowPitch = texWidth * sizeof(PackedVector::XMCOLOR);
+	subResouceData.SlicePitch = subResouceData.RowPitch * texHeight;
+
+	UpdateSubresources(
+		commandList.Get(),
+		m_RandomVectorsBuffer.Get(),
+		m_RandomVectorsUploadBuffer.Get(),
+		0, 0, 1,
+		&subResouceData
+	);
+
+	D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		m_RandomVectorsBuffer.Get(),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_GENERIC_READ
+	);
+
+	commandList->ResourceBarrier(1, &barrier);
 }
