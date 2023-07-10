@@ -160,6 +160,11 @@ void ModelsApp::OnUpdate() {
 		)
 	);
 
+	m_PassConstants.ViewProjTex = XMMatrixMultiply(
+		m_PassConstants.View,
+		m_PassConstants.ProjTex
+	);
+
 	XMStoreFloat3(&m_PassConstants.EyePos, m_Camera.GetCameraPos());
 	m_PassConstants.TotalTime = float(m_Timer.GetTotalTime());
 
@@ -605,6 +610,7 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 		commandList->ResourceBarrier(_countof(barriers), barriers);
 	}
 
+	RenderGeometry(commandList, m_PSOs["geoWithSSAO"], mainRTV);
 }
 
 void ModelsApp::RenderGeometry(
@@ -615,6 +621,21 @@ void ModelsApp::RenderGeometry(
 
 	// set root signature
 	commandList->SetGraphicsRootSignature(m_RootSignatures["Geometry"].Get());
+
+	if (m_IsSSAO) {
+		// set descripotr heap for occlusion map
+		ID3D12DescriptorHeap* descriptorHeaps[] = { m_FrameTexturesSRVDescHeap.Get() };
+		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+		commandList->SetGraphicsRootDescriptorTable(
+			4,
+			CD3DX12_GPU_DESCRIPTOR_HANDLE(
+				m_FrameTexturesSRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_SSAO_SRV_StartIndex + 3,
+				m_CBV_SRV_UAVDescSize
+			)
+		);
+	}
 
 	// set descripotr heaps
 	ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBV_SRVDescHeap.Get() };
@@ -779,7 +800,7 @@ void ModelsApp::InitSceneState() {
 }
 
 void ModelsApp::BuildLights() {
-	m_PassConstants.AmbientLight = XMVectorSet(0.2f, 0.2f, 0.2f, 1.0f);
+	m_PassConstants.AmbientLight = XMVectorSet(0.4f, 0.4f, 0.4f, 1.0f);
 	uint32_t curLight = 0;
 	// directional light 1 
 	{
@@ -1130,7 +1151,7 @@ void ModelsApp::BuildCBViews() {
 
 void ModelsApp::BuildRootSignature() {
 	// init parameters
-	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[5];
 
 	CD3DX12_DESCRIPTOR_RANGE1 objConstsDescRange;
 	objConstsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
@@ -1144,10 +1165,14 @@ void ModelsApp::BuildRootSignature() {
 	CD3DX12_DESCRIPTOR_RANGE1 texDescRange;
 	texDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
+	CD3DX12_DESCRIPTOR_RANGE1 occlusionMapDescRange;
+	occlusionMapDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
 	rootParameters[0].InitAsDescriptorTable(1, &objConstsDescRange);
 	rootParameters[1].InitAsDescriptorTable(1, &passConstsDescRange);
 	rootParameters[2].InitAsDescriptorTable(1, &matConstsDescRange);
 	rootParameters[3].InitAsDescriptorTable(1, &texDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[4].InitAsDescriptorTable(1, &occlusionMapDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	// set access flags
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
@@ -1209,6 +1234,14 @@ void ModelsApp::BuildPipelineStateObject() {
 
 	ComPtr<ID3DBlob> normPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", normDefines);
 
+	D3D_SHADER_MACRO ssaoDefines[] = {
+		"ALPHA_TEST", "1",
+		"SSAO", "1",
+		NULL, NULL
+	};
+
+	ComPtr<ID3DBlob> ssaoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", ssaoDefines);
+
 	// Create rasterizer state description
 	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
 	//rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
@@ -1254,6 +1287,7 @@ void ModelsApp::BuildPipelineStateObject() {
 	ComPtr<ID3D12PipelineState> inverseDepthPSO;
 	ComPtr<ID3D12PipelineState> normStraightDepthPSO;
 	ComPtr<ID3D12PipelineState> normInverseDepthPSO;
+	ComPtr<ID3D12PipelineState> ssaoPSO;
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
 
@@ -1272,10 +1306,20 @@ void ModelsApp::BuildPipelineStateObject() {
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
 
+	psoDesc.PS = {
+		reinterpret_cast<BYTE*>(ssaoPixelShaderBlob->GetBufferPointer()),
+		ssaoPixelShaderBlob->GetBufferSize()
+	};
+
+	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoPSO)));
+
 	m_PSOs["straightDepth"] = straightDepthPSO;
 	m_PSOs["inverseDepth"] = inverseDepthPSO;	
 	m_PSOs["normStraightDepth"] = normStraightDepthPSO;
-	m_PSOs["normInverseDepth"] = normInverseDepthPSO;
+	m_PSOs["normInverseDepth"] = normInverseDepthPSO;	
+	m_PSOs["geoWithSSAO"] = ssaoPSO;
 }
 
 void ModelsApp::UpdateSobelFrameTexture() {

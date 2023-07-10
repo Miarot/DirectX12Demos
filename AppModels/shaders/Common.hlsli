@@ -13,6 +13,7 @@ struct PassConstants
     matrix ViewProj;
     matrix ProjInv;
     matrix ProjTex;
+    matrix ViewProjTex;
     
     float3 EyePos;
     float TotalTime;
