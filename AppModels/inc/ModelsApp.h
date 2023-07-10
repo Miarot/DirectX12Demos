@@ -37,7 +37,11 @@ private:
 	virtual void OnMouseUp(WPARAM wParam, int x, int y) override;
 	virtual void OnMouseMove(WPARAM wParam, int x, int y) override;
 
-	void RenderRegular(ComPtr<ID3D12GraphicsCommandList> commandList);
+	void RenderSobelFilter(
+		ComPtr<ID3D12GraphicsCommandList> commandList,
+		ID3D12Resource* rtBuffer,
+		D3D12_CPU_DESCRIPTOR_HANDLE rtv
+	);
 
 	void RenderGeometry(
 		ComPtr<ID3D12GraphicsCommandList> commandList,
