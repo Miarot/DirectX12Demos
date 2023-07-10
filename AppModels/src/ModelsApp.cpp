@@ -224,65 +224,51 @@ void ModelsApp::OnRender() {
 		0, NULL
 	);
 
-	if (m_IsSSAO) {
+	if (m_DrawingType == DrawingType::SSAO) {
 		// render occlusion map 
 		RenderSSAO(commandList);
 	}
 
 	// render geometry
 	{
-		// for Sobel filter render geometry in intermediate texture
-		ID3D12Resource* curRTBuffer;
-		CD3DX12_CPU_DESCRIPTOR_HANDLE curRTV;
-		D3D12_RESOURCE_STATES curRTBufferPrevState;
-
-		if (m_IsSobelFilter) {
-			curRTBuffer = m_SobelFrameTextureBuffer.Get();
-
-			curRTV = CD3DX12_CPU_DESCRIPTOR_HANDLE(
-				m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-				m_SobelTextureRTVIndex, m_CBV_SRV_UAVDescSize
-			);
-
-			curRTBufferPrevState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-		}
-		else {
-			curRTBuffer = m_BackBuffers[m_CurrentBackBufferIndex].Get();
-			curRTV = mainRTV;
-			curRTBufferPrevState = D3D12_RESOURCE_STATE_PRESENT;
-		}
-
-		CD3DX12_RESOURCE_BARRIER curRTBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			curRTBuffer,
-			curRTBufferPrevState,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		);
-
-		commandList->ResourceBarrier(1, &curRTBarrier);
-		commandList->ClearRenderTargetView(curRTV, m_BackGroundColor, 0, NULL);
-
 		// chose pso depending on z-buffer type and drawing type
 		ComPtr<ID3D12PipelineState> pso;
 
 		switch (m_DrawingType)
 		{
-		case DrawingType::Ordinar:
-			if (m_IsSSAO) {
-				pso = m_PSOs["geoWithSSAO"];
-			}
-			else {
+			case DrawingType::Ordinar:
 				pso = m_IsInverseDepth ? m_PSOs["inverseDepth"] : m_PSOs["straightDepth"];
-			}
-			break;
-		case DrawingType::Normals:
-			pso = m_IsInverseDepth ? m_PSOs["normInverseDepth"] : m_PSOs["normStraightDepth"];
-			break;
-		case DrawingType::SSAOonly:
-			pso = m_PSOs["SSAOonly"];
-			break;
+				break;
+			case DrawingType::Normals:
+				pso = m_IsInverseDepth ? m_PSOs["normInverseDepth"] : m_PSOs["normStraightDepth"];
+				break;
+			case DrawingType::SSAO:
+				pso = m_IsOnlySSAO ? m_PSOs["SSAOonly"] : m_PSOs["geoWithSSAO"];
+				break;
 		}
 
-		RenderGeometry(commandList, pso, curRTV);
+		// for Sobel filter render geometry in intermediate texture
+		if (m_IsSobelFilter) {
+			CD3DX12_CPU_DESCRIPTOR_HANDLE sobelTexRTV(
+				m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+				m_SobelTextureRTVIndex, m_CBV_SRV_UAVDescSize
+			);
+
+			RenderGeometry(
+				commandList, pso, 
+				m_SobelFrameTextureBuffer.Get(), sobelTexRTV, 
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+				m_BackGroundColor
+			);
+		}
+		else {
+			RenderGeometry(
+				commandList, pso,
+				mainRTBuffer, mainRTV,
+				D3D12_RESOURCE_STATE_PRESENT,
+				m_BackGroundColor
+			);
+		}
 	}
 
 	if (m_IsSobelFilter) {
@@ -389,17 +375,14 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 
 	// draw normal map
 	{
-		CD3DX12_RESOURCE_BARRIER normalMapBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_NormalMapBuffer.Get(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		);
-
-		D3D12_RESOURCE_BARRIER bariers[] = { normalMapBufferBarrier };
-		commandList->ResourceBarrier(_countof(bariers), bariers);
-
 		ComPtr<ID3D12PipelineState> pso = m_IsInverseDepth ? m_PSOs["ssaoNormInverseDepth"] : m_PSOs["ssaoNormStraightDepth"];
-		RenderGeometry(commandList, pso, normalMapRTV);
+
+		RenderGeometry(
+			commandList, pso, 
+			m_NormalMapBuffer.Get(), normalMapRTV, 
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			m_NormalMapBufferClearValue
+		);
 	}
 
 	// draw occlusion map
@@ -546,13 +529,24 @@ void ModelsApp::RenderBlur(
 void ModelsApp::RenderGeometry(
 	ComPtr<ID3D12GraphicsCommandList> commandList,
 	ComPtr<ID3D12PipelineState> pso,
-	D3D12_CPU_DESCRIPTOR_HANDLE rtv)
+	ID3D12Resource* rtBuffer,
+	D3D12_CPU_DESCRIPTOR_HANDLE rtv,
+	D3D12_RESOURCE_STATES rtBufferPrevState,
+	std::array<FLOAT, 4> rtClearValue)
 {
+	CD3DX12_RESOURCE_BARRIER rtBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		rtBuffer,
+		rtBufferPrevState,
+		D3D12_RESOURCE_STATE_RENDER_TARGET
+	);
+
+	commandList->ResourceBarrier(1, &rtBarrier);
+	commandList->ClearRenderTargetView(rtv, rtClearValue.data(), 0, NULL);
 
 	// set root signature
 	commandList->SetGraphicsRootSignature(m_RootSignatures["Geometry"].Get());
 
-	if (m_IsSSAO) {
+	if (m_DrawingType == DrawingType::SSAO) {
 		// set descripotr heap for occlusion map
 		ID3D12DescriptorHeap* descriptorHeaps[] = { m_FrameTexturesSRVDescHeap.Get() };
 		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
@@ -674,16 +668,15 @@ void ModelsApp::OnKeyPressed(WPARAM wParam) {
 		}
 		break;
 	case '5':
-		m_IsSSAO = !m_IsSSAO;
-		break;
-	case '6':
-		if (m_DrawingType == DrawingType::SSAOonly) {
+		if (m_DrawingType == DrawingType::SSAO) {
 			m_DrawingType = DrawingType::Ordinar;
 		}
 		else {
-			m_IsSSAO = true;
-			m_DrawingType = DrawingType::SSAOonly;
+			m_DrawingType = DrawingType::SSAO;
 		}
+		break;
+	case '6':
+		m_IsOnlySSAO = !m_IsOnlySSAO;
 		break;
 	case 'W':
 	case 'S':
@@ -1288,7 +1281,7 @@ void ModelsApp::UpdateSobelFrameTexture() {
 	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, m_ClientWidth, m_ClientHeight);
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-	CD3DX12_CLEAR_VALUE clearValue{ DXGI_FORMAT_R8G8B8A8_UNORM , m_BackGroundColor };
+	CD3DX12_CLEAR_VALUE clearValue{ DXGI_FORMAT_R8G8B8A8_UNORM , m_BackGroundColor.data() };
 
 	ThrowIfFailed(m_Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -1423,8 +1416,7 @@ void ModelsApp::UpdateSSAOBuffersAndViews() {
 
 	normalMapDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-	FLOAT black[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	CD3DX12_CLEAR_VALUE normalMapClearValue{ DXGI_FORMAT_R16G16B16A16_FLOAT , black };
+	CD3DX12_CLEAR_VALUE normalMapClearValue{ DXGI_FORMAT_R16G16B16A16_FLOAT , m_NormalMapBufferClearValue.data() };
 
 	ThrowIfFailed(m_Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),

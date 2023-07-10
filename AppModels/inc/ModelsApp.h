@@ -15,6 +15,7 @@ using namespace DirectX;
 #include <assimp/scene.h>
 
 #include <map>
+#include <array>
 #include <filesystem>
 
 class ModelsApp : public BaseApp {
@@ -46,7 +47,10 @@ private:
 	void RenderGeometry(
 		ComPtr<ID3D12GraphicsCommandList> commandList,
 		ComPtr<ID3D12PipelineState> pso,
-		D3D12_CPU_DESCRIPTOR_HANDLE rtv
+		ID3D12Resource* rtBuffer,
+		D3D12_CPU_DESCRIPTOR_HANDLE rtv,
+		D3D12_RESOURCE_STATES rtBufferPrevState,
+		std::array<FLOAT, 4> rtClearValue
 	);
 
 	void RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList);
@@ -87,9 +91,9 @@ private:
 	void InitBlurWeights();
 
 private:
-	FLOAT m_BackGroundColor[4] = { 0.4f, 0.6f, 0.9f, 1.0f };
+	std::array<FLOAT, 4> m_BackGroundColor = { 0.4f, 0.6f, 0.9f, 1.0f };
 
-	enum DrawingType { Ordinar = 0, Normals, SSAOonly };
+	enum DrawingType { Ordinar = 0, Normals, SSAO };
 
 	DrawingType m_DrawingType = DrawingType::Ordinar;
 	bool m_IsInverseDepth = false;
@@ -129,7 +133,7 @@ private:
 	uint32_t m_SobelTextureSRVIndex;
 
 	// for SSAO
-	bool m_IsSSAO = false;
+	bool m_IsOnlySSAO = false;
 	ComPtr<ID3D12Resource> m_NormalMapBuffer;
 	ComPtr<ID3D12Resource> m_OcclusionMapBuffer0;
 	ComPtr<ID3D12Resource> m_OcclusionMapBuffer1;
@@ -137,6 +141,7 @@ private:
 	ComPtr<ID3D12Resource> m_RandomMapUploadBuffer;
 	uint32_t m_SSAO_RTV_StartIndex;
 	uint32_t m_SSAO_SRV_StartIndex;
+	std::array<FLOAT, 4> m_NormalMapBufferClearValue = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	static const int m_BlurRadius = 5;
 	float m_BlurWeights[2 * m_BlurRadius + 1];
