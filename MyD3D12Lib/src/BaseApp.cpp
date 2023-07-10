@@ -143,7 +143,7 @@ bool BaseApp::Initialize() {
 		m_AllowTearing
 	);
 
-	m_BackBuffersDescHeap = CreateDescriptorHeap(
+	m_RTVDescHeap = CreateDescriptorHeap(
 		m_Device,
 		m_NumBackBuffers, 
 		D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 
@@ -311,7 +311,7 @@ void BaseApp::FullScreen(bool fullScreen) {
 
 void BaseApp::UpdateBackBuffersView()
 {
-	CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorHandle(m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorHandle(m_RTVDescHeap->GetCPUDescriptorHandleForHeapStart());
 	ComPtr<ID3D12Resource> currentResource;
 
 	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {

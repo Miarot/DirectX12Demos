@@ -123,8 +123,6 @@ private:
 	std::unordered_map<std::string, ComPtr<ID3D12RootSignature>> m_RootSignatures;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
 
-	ComPtr<ID3D12DescriptorHeap> m_FrameTexturesRTVDescHeap;
-
 	// for Sobel filter
 	bool m_IsSobelFilter = false;
 	static const uint32_t m_NumSobelRTV = 1;

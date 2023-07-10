@@ -71,15 +71,18 @@ bool ModelsApp::Initialize() {
 	BuildRootSignature();
 	BuildPipelineStateObject();
 
-	m_FrameTexturesRTVDescHeap = CreateDescriptorHeap(
+	// recreate rtv descriptro heap for effects
+	m_RTVDescHeap = CreateDescriptorHeap(
 		m_Device,
-		m_NumSobelRTV + m_NumSSAO_RTV,
+		m_NumBackBuffers + m_NumSobelRTV + m_NumSSAO_RTV,
 		D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_NONE
 	);
 
+	UpdateBackBuffersView();
+
 	// for Sobel filter
-	m_SobelTextureRTVIndex = 0;
+	m_SobelTextureRTVIndex = m_NumBackBuffers;
 	m_SobelTextureSRVIndex = m_NextCBV_SRVDescHeapIndex;
 	UpdateSobelFrameTexture();
 	BuildSobelRootSignature();
@@ -215,7 +218,7 @@ void ModelsApp::OnRender() {
 
 	ID3D12Resource* mainRTBuffer = m_BackBuffers[m_CurrentBackBufferIndex].Get();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE mainRTV(
-		m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_RTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 		m_CurrentBackBufferIndex, m_RTVDescSize
 	);
 
@@ -254,8 +257,8 @@ void ModelsApp::OnRender() {
 		// for Sobel filter render geometry in intermediate texture
 		if (m_IsSobelFilter) {
 			CD3DX12_CPU_DESCRIPTOR_HANDLE sobelTexRTV(
-				m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-				m_SobelTextureRTVIndex, m_CBV_SRV_UAVDescSize
+				m_RTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+				m_SobelTextureRTVIndex, m_RTVDescSize
 			);
 
 			RenderGeometry(
@@ -458,7 +461,7 @@ void ModelsApp::RenderSobelFilter(
 void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	// get RTV's
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescHandle(
-		m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_RTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 		m_SSAO_RTV_StartIndex, m_RTVDescSize
 	);
 
@@ -1295,7 +1298,7 @@ void ModelsApp::UpdateSobelFrameTexture() {
 		m_SobelFrameTextureBuffer.Get(),
 		nullptr, 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE(
-			m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			m_RTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 			m_SobelTextureRTVIndex,
 			m_CBV_SRV_UAVDescSize
 		)
@@ -1395,7 +1398,7 @@ void ModelsApp::BuildSobelPipelineStateObject() {
 
 void ModelsApp::UpdateSSAOBuffersAndViews() {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_RTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 		m_SSAO_RTV_StartIndex,
 		m_RTVDescSize
 	);

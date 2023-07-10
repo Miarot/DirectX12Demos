@@ -81,7 +81,7 @@ protected:
 	ComPtr<ID3D12Resource> m_BackBuffers[m_NumBackBuffers];
 	uint32_t m_BackBuffersFenceValues[m_NumBackBuffers];
 	uint32_t m_CurrentBackBufferIndex;
-	ComPtr<ID3D12DescriptorHeap> m_BackBuffersDescHeap;
+	ComPtr<ID3D12DescriptorHeap> m_RTVDescHeap;
 	uint32_t m_RTVDescSize;
 	uint32_t m_CBV_SRV_UAVDescSize;
 	ComPtr<ID3D12Resource> m_DSBuffer;

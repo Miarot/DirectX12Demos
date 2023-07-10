@@ -151,7 +151,7 @@ void SimpleGeoApp::OnRender() {
 	auto frameTextureBuffer = m_FrameTexturesBuffers;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE mainRTV(
-		m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_RTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 		m_CurrentBackBufferIndex, m_RTVDescSize
 	);
 
