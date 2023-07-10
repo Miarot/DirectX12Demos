@@ -29,7 +29,10 @@ float4 main(VertexOut pin) : SV_Target
     float3 randVec = 2 * RandomMap.SampleLevel(LinearWrapSampler, pin.TexC * 8.0f, 0.0f).xyz - 1.0f; 
     float sumOcclusion = 0.0f;
     
-    for (int i = 0; i < 10; ++i) {
+    int numSamples = 10;
+    
+    for (int i = 0; i < numSamples; ++i)
+    {
         // get random point q near p
         float3 offset = reflect(PassConstantsCB.RandomDirections[i].xyz, randVec);
         float3 q = p + sign(dot(offset, n)) * PassConstantsCB.OcclusionRadius * offset;
@@ -60,7 +63,7 @@ float4 main(VertexOut pin) : SV_Target
         sumOcclusion += curOcclusion;
     }
     
-    sumOcclusion /= 10;
+    sumOcclusion /= numSamples;
     
     return saturate(pow(1 - sumOcclusion, 2.0f));
 }

@@ -280,9 +280,9 @@ void ModelsApp::RenderRegular(ComPtr<ID3D12GraphicsCommandList> commandList) {
 		else {
 			D3D12_RESOURCE_BARRIER bariers[] = { backBufferBarrier };
 			commandList->ResourceBarrier(_countof(bariers), bariers);
-		}
 
-		commandList->ClearRenderTargetView(mainRTV, m_BackGroundColor, 0, NULL);
+			commandList->ClearRenderTargetView(mainRTV, m_BackGroundColor, 0, NULL);
+		}
 	}
 
 	// chose pso depending on z-buffer type and drawing type
@@ -468,117 +468,15 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	// draw
 	commandList->DrawInstanced(6, 1, 0, 0);
 
-	{
-		CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_OcclusionMapBuffer0.Get(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-		);
 
-		CD3DX12_RESOURCE_BARRIER occlusionMap1Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_OcclusionMapBuffer1.Get(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		);
-
-		CD3DX12_RESOURCE_BARRIER barriers[] = { 
-			occlusionMap0Barrier, 
-			occlusionMap1Barrier,
-		};
-
-		commandList->ResourceBarrier(_countof(barriers), barriers);
-	}
-
-	// set blur constants
+	// blur occlusion map
 	commandList->SetGraphicsRoot32BitConstant(3, m_BlurRadius, 0);
 	commandList->SetGraphicsRoot32BitConstants(3, 11, m_BlurWeights, 1);
-	commandList->SetGraphicsRoot32BitConstant(3, false, 12);
-
-	commandList->SetGraphicsRootDescriptorTable(1, occlusionMap0SRV);
-	commandList->SetPipelineState(m_PSOs["Blur"].Get());
-	commandList->OMSetRenderTargets(1, &occlusionMap1RTV, FALSE, NULL);
-	commandList->DrawInstanced(6, 1, 0, 0);
-
-	{
-		CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_OcclusionMapBuffer0.Get(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		);
-
-		CD3DX12_RESOURCE_BARRIER occlusionMap1Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_OcclusionMapBuffer1.Get(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-		);
-
-		CD3DX12_RESOURCE_BARRIER barriers[] = {
-			occlusionMap0Barrier,
-			occlusionMap1Barrier
-		};
-
-		commandList->ResourceBarrier(_countof(barriers), barriers);
+	
+	for (int i = 0; i < 2; ++i) {
+		RenderBlur(commandList, m_OcclusionMapBuffer1, occlusionMap1RTV, m_OcclusionMapBuffer0, occlusionMap0SRV, false);
+		RenderBlur(commandList, m_OcclusionMapBuffer0, occlusionMap0RTV, m_OcclusionMapBuffer1, occlusionMap1SRV, true);
 	}
-
-	commandList->SetGraphicsRoot32BitConstant(3, true, 12);
-	commandList->SetGraphicsRootDescriptorTable(1, occlusionMap1SRV);
-	commandList->SetPipelineState(m_PSOs["Blur"].Get());
-	commandList->OMSetRenderTargets(1, &occlusionMap0RTV, FALSE, NULL);
-	commandList->DrawInstanced(6, 1, 0, 0);
-
-	{
-		CD3DX12_RESOURCE_BARRIER occlusionMap1Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_OcclusionMapBuffer1.Get(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		);
-
-		CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_OcclusionMapBuffer0.Get(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-		);
-
-		CD3DX12_RESOURCE_BARRIER barriers[] = {
-			occlusionMap0Barrier,
-			occlusionMap1Barrier
-		};
-
-		commandList->ResourceBarrier(_countof(barriers), barriers);
-	}
-
-	commandList->SetGraphicsRoot32BitConstant(3, false, 12);
-	commandList->SetGraphicsRootDescriptorTable(1, occlusionMap0SRV);
-	commandList->SetPipelineState(m_PSOs["Blur"].Get());
-	commandList->OMSetRenderTargets(1, &occlusionMap1RTV, FALSE, NULL);
-	commandList->DrawInstanced(6, 1, 0, 0);
-
-	{
-		CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_OcclusionMapBuffer0.Get(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		);
-
-		CD3DX12_RESOURCE_BARRIER occlusionMap1Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_OcclusionMapBuffer1.Get(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-		);
-
-		CD3DX12_RESOURCE_BARRIER barriers[] = {
-			occlusionMap0Barrier,
-			occlusionMap1Barrier
-		};
-
-		commandList->ResourceBarrier(_countof(barriers), barriers);
-	}
-
-	commandList->SetGraphicsRoot32BitConstant(3, true, 12);
-	commandList->SetGraphicsRootDescriptorTable(1, occlusionMap1SRV);
-	commandList->SetPipelineState(m_PSOs["Blur"].Get());
-	commandList->OMSetRenderTargets(1, &occlusionMap0RTV, FALSE, NULL);
-	commandList->DrawInstanced(6, 1, 0, 0);
 
 	// return ds buffer in write state
 	{
@@ -615,6 +513,39 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	pso = m_IsSSAOonly ? m_PSOs["SSAOonly"] : m_PSOs["geoWithSSAO"];
 
 	RenderGeometry(commandList, pso, mainRTV);
+}
+
+void ModelsApp::RenderBlur(
+	ComPtr<ID3D12GraphicsCommandList> commandList,
+	ComPtr<ID3D12Resource> rtBuffer,
+	D3D12_CPU_DESCRIPTOR_HANDLE rtv,
+	ComPtr<ID3D12Resource> srBuffer,
+	D3D12_GPU_DESCRIPTOR_HANDLE srv,
+	bool isHorizontal)
+{
+	CD3DX12_RESOURCE_BARRIER occlusionMap1Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		rtBuffer.Get(),
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		D3D12_RESOURCE_STATE_RENDER_TARGET
+	);
+
+	CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		srBuffer.Get(),
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+	);
+
+	CD3DX12_RESOURCE_BARRIER barriers[] = {
+		occlusionMap0Barrier,
+		occlusionMap1Barrier
+	};
+
+	commandList->ResourceBarrier(_countof(barriers), barriers);
+	commandList->SetGraphicsRoot32BitConstant(3, isHorizontal, 12);
+	commandList->SetGraphicsRootDescriptorTable(1, srv);
+	commandList->SetPipelineState(m_PSOs["Blur"].Get());
+	commandList->OMSetRenderTargets(1, &rtv, FALSE, NULL);
+	commandList->DrawInstanced(6, 1, 0, 0);
 }
 
 void ModelsApp::RenderGeometry(
@@ -1879,11 +1810,12 @@ void ModelsApp::BuildRandomMapBuffer(ComPtr<ID3D12GraphicsCommandList> commandLi
 }
 
 void ModelsApp::InitBlurWeights() {
-	// weights for Gaussian blur with sigma = 1
+	// weights for Gaussian blur
+	float sigma = 3.0f;
 	float weightsSum = 0.0f;
 
 	for (int i = -m_BlurRadius; i < m_BlurRadius; ++i) {
-		m_BlurWeights[m_BlurRadius + i] = std::exp(-std::pow(i, 2.0f) / 2.0f);
+		m_BlurWeights[m_BlurRadius + i] = std::exp(-std::pow(static_cast<float>(i) / sigma, 2.0f) / 2.0f);
 		weightsSum += m_BlurWeights[m_BlurRadius + i];
 	}
 

@@ -47,6 +47,15 @@ private:
 
 	void RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList);
 
+	void RenderBlur(
+		ComPtr<ID3D12GraphicsCommandList> commandList,
+		ComPtr<ID3D12Resource> rtBuffer,
+		D3D12_CPU_DESCRIPTOR_HANDLE rtv,
+		ComPtr<ID3D12Resource> srBuffer,
+		D3D12_GPU_DESCRIPTOR_HANDLE srv,
+		bool isHorizontal
+	);
+
 	void InitSceneState();
 	void BuildLights();
 	void BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList);
@@ -125,5 +134,5 @@ private:
 	uint32_t m_SSAO_SRV_StartIndex;
 
 	static const int m_BlurRadius = 5;
-	float m_BlurWeights[2 * m_BlurRadius - 1];
+	float m_BlurWeights[2 * m_BlurRadius + 1];
 };
