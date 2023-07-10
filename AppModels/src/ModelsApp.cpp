@@ -608,9 +608,13 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 		};
 
 		commandList->ResourceBarrier(_countof(barriers), barriers);
+
+		commandList->ClearRenderTargetView(mainRTV, m_BackGroundColor, 0, NULL);
 	}
 
-	RenderGeometry(commandList, m_PSOs["geoWithSSAO"], mainRTV);
+	pso = m_IsSSAOonly ? m_PSOs["SSAOonly"] : m_PSOs["geoWithSSAO"];
+
+	RenderGeometry(commandList, pso, mainRTV);
 }
 
 void ModelsApp::RenderGeometry(
@@ -741,6 +745,9 @@ void ModelsApp::OnKeyPressed(WPARAM wParam) {
 	case '5':
 		m_IsSSAO = !m_IsSSAO;
 		break;
+	case '6':
+		m_IsSSAOonly = !m_IsSSAOonly;
+		break;
 	case 'W':
 	case 'S':
 	case 'A':
@@ -808,7 +815,6 @@ void ModelsApp::BuildLights() {
 		m_PassConstants.Lights[curLight].Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
 		++curLight;
 	}
-
 
 	// point light 1
 	{
@@ -1242,6 +1248,15 @@ void ModelsApp::BuildPipelineStateObject() {
 
 	ComPtr<ID3DBlob> ssaoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", ssaoDefines);
 
+	D3D_SHADER_MACRO ssaoOnlyDefines[] = {
+		"ALPHA_TEST", "1",
+		"SSAO", "1",
+		"SSAO_ONLY", "1",
+		NULL, NULL
+	};
+
+	ComPtr<ID3DBlob> ssaoOnlyPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", ssaoOnlyDefines);
+
 	// Create rasterizer state description
 	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
 	//rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
@@ -1288,6 +1303,7 @@ void ModelsApp::BuildPipelineStateObject() {
 	ComPtr<ID3D12PipelineState> normStraightDepthPSO;
 	ComPtr<ID3D12PipelineState> normInverseDepthPSO;
 	ComPtr<ID3D12PipelineState> ssaoPSO;
+	ComPtr<ID3D12PipelineState> ssaoOnlyPSO;
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
 
@@ -1306,20 +1322,28 @@ void ModelsApp::BuildPipelineStateObject() {
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
 
+	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
 	psoDesc.PS = {
 		reinterpret_cast<BYTE*>(ssaoPixelShaderBlob->GetBufferPointer()),
 		ssaoPixelShaderBlob->GetBufferSize()
 	};
 
-	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_EQUAL;
-
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoPSO)));
+
+	psoDesc.PS = {
+		reinterpret_cast<BYTE*>(ssaoOnlyPixelShaderBlob->GetBufferPointer()),
+		ssaoOnlyPixelShaderBlob->GetBufferSize()
+	};
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoOnlyPSO)));
 
 	m_PSOs["straightDepth"] = straightDepthPSO;
 	m_PSOs["inverseDepth"] = inverseDepthPSO;	
 	m_PSOs["normStraightDepth"] = normStraightDepthPSO;
 	m_PSOs["normInverseDepth"] = normInverseDepthPSO;	
 	m_PSOs["geoWithSSAO"] = ssaoPSO;
+	m_PSOs["SSAOonly"] = ssaoOnlyPSO;
 }
 
 void ModelsApp::UpdateSobelFrameTexture() {

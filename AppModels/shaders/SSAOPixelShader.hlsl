@@ -26,7 +26,7 @@ float4 main(VertexOut pin) : SV_Target
     float3 p = pin.PosV * pz / pin.PosV.z;
     
     float3 n = NormalsMap.SampleLevel(PointClampSampler, pin.TexC, 0.0f).xyz;
-    float3 randVec = 2 * RandomMap.SampleLevel(LinearWrapSampler, pin.TexC * 4.0f, 0.0f).xyz - 1.0f; 
+    float3 randVec = 2 * RandomMap.SampleLevel(LinearWrapSampler, pin.TexC * 8.0f, 0.0f).xyz - 1.0f; 
     float sumOcclusion = 0.0f;
     
     for (int i = 0; i < 10; ++i) {

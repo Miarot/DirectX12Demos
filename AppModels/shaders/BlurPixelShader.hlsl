@@ -69,7 +69,6 @@ float4 main(VertexOut pin) : SV_Target
         if (dot(centerNormal, nearNormal) > 0.8f && abs(centerDepth - nearDepth) < 0.2f) {
             occlusion += blurWeights[BlurConstantsCB.Radius + i] * OcclusionMap.SampleLevel(LinearWrapSampler, nearTexC, 0.0f).r;
             addedWeightsSum += blurWeights[BlurConstantsCB.Radius + i];
-
         }
     }
     

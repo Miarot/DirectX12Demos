@@ -115,6 +115,7 @@ private:
 
 	// for SSAO
 	bool m_IsSSAO = false;
+	bool m_IsSSAOonly = false;
 	ComPtr<ID3D12Resource> m_NormalMapBuffer;
 	ComPtr<ID3D12Resource> m_OcclusionMapBuffer0;
 	ComPtr<ID3D12Resource> m_OcclusionMapBuffer1;

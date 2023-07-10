@@ -45,8 +45,12 @@ float4 main(VertexOut pin) : SV_Target
         float4 occlusionMapTexC = mul(PassConstantsCB.ViewProjTex, float4(pin.PosW, 1.0f));
         occlusionMapTexC /= occlusionMapTexC.w;
         float occlusion = OcclusionMap.SampleLevel(LinearWrapSampler, occlusionMapTexC.xy, 0.0f).r;
+        
+        #ifdef SSAO_ONLY
+            return occlusion;
+        #endif
+    
         inderectLight = occlusion;
-        //return occlusion;
     #endif
     
     inderectLight *= mat.DiffuseAlbedo * PassConstantsCB.AmbientLight;
