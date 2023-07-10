@@ -209,6 +209,11 @@ void ModelsApp::OnUpdate() {
 void ModelsApp::OnRender() {
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
 
+	CD3DX12_CPU_DESCRIPTOR_HANDLE mainRTV(
+		m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_CurrentBackBufferIndex, m_RTVDescSize
+	);
+
 	// clear depth stenicl buffer
 	commandList->ClearDepthStencilView(
 		m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -220,9 +225,9 @@ void ModelsApp::OnRender() {
 
 	if (m_IsSSAO) {
 		RenderSSAO(commandList);
-	} else {
-		RenderRegular(commandList);
 	}
+
+	RenderRegular(commandList);
 
 	// Present
 	{
@@ -288,11 +293,22 @@ void ModelsApp::RenderRegular(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	// chose pso depending on z-buffer type and drawing type
 	ComPtr<ID3D12PipelineState> pso;
 
-	if (m_IsDrawNorm) {
-		pso = m_IsInverseDepth ? m_PSOs["normInverseDepth"] : m_PSOs["normStraightDepth"];
-	}
-	else {
-		pso = m_IsInverseDepth ? m_PSOs["inverseDepth"] : m_PSOs["straightDepth"];
+	switch (m_DrawingType)
+	{
+		case DrawingType::Ordinar:
+			if (m_IsSSAO) {
+				pso = m_PSOs["geoWithSSAO"];
+			}
+			else {
+				pso = m_IsInverseDepth ? m_PSOs["inverseDepth"] : m_PSOs["straightDepth"];
+			}
+			break;
+		case DrawingType::Normals:
+			pso = m_IsInverseDepth ? m_PSOs["normInverseDepth"] : m_PSOs["normStraightDepth"];
+			break;
+		case DrawingType::SSAOonly:
+			pso = m_PSOs["SSAOonly"];
+			break;
 	}
 
 	// chose rtv depending on filter
@@ -300,8 +316,7 @@ void ModelsApp::RenderRegular(ComPtr<ID3D12GraphicsCommandList> commandList) {
 
 	if (m_IsSobelFilter) {
 		geometryRTV = sobelTextureRTV;
-	}
-	else {
+	} else {
 		geometryRTV = mainRTV;
 	}
 
@@ -354,31 +369,27 @@ void ModelsApp::RenderRegular(ComPtr<ID3D12GraphicsCommandList> commandList) {
 }
 
 void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
-	CD3DX12_CPU_DESCRIPTOR_HANDLE mainRTV(
-		m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart(),
-		m_CurrentBackBufferIndex, m_RTVDescSize
-	);
-
+	// get RTV's
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescHandle(
 		m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 		m_SSAO_RTV_StartIndex, m_RTVDescSize
 	);
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE normalMapRTV = rtvDescHandle;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE occlusionMap0RTV = rtvDescHandle.Offset(m_RTVDescSize);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE occlusionMap1RTV = rtvDescHandle.Offset(m_RTVDescSize);
+	D3D12_CPU_DESCRIPTOR_HANDLE normalMapRTV = rtvDescHandle;
+	D3D12_CPU_DESCRIPTOR_HANDLE occlusionMap0RTV = rtvDescHandle.Offset(m_RTVDescSize);
+	D3D12_CPU_DESCRIPTOR_HANDLE occlusionMap1RTV = rtvDescHandle.Offset(m_RTVDescSize);
 
+	// get SRV's
 	CD3DX12_GPU_DESCRIPTOR_HANDLE srvDescHandle(
 		m_FrameTexturesSRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
 		m_SSAO_RTV_StartIndex, m_CBV_SRV_UAVDescSize
 	);
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE normalMapSRV = srvDescHandle;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSRV = srvDescHandle.Offset(m_CBV_SRV_UAVDescSize);
-	CD3DX12_GPU_DESCRIPTOR_HANDLE randomMapSRV = srvDescHandle.Offset(m_CBV_SRV_UAVDescSize);
-	CD3DX12_GPU_DESCRIPTOR_HANDLE occlusionMap0SRV = srvDescHandle.Offset(m_CBV_SRV_UAVDescSize);
-	CD3DX12_GPU_DESCRIPTOR_HANDLE occlusionMap1SRV = srvDescHandle.Offset(m_CBV_SRV_UAVDescSize);
+	D3D12_GPU_DESCRIPTOR_HANDLE normalMapSRV = srvDescHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE occlusionMap0SRV = srvDescHandle.Offset(3 * m_CBV_SRV_UAVDescSize);
+	D3D12_GPU_DESCRIPTOR_HANDLE occlusionMap1SRV = srvDescHandle.Offset(m_CBV_SRV_UAVDescSize);
 
+	// draw normal map
 	{
 		CD3DX12_RESOURCE_BARRIER normalMapBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
 			m_NormalMapBuffer.Get(),
@@ -388,13 +399,12 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 
 		D3D12_RESOURCE_BARRIER bariers[] = { normalMapBufferBarrier };
 		commandList->ResourceBarrier(_countof(bariers), bariers);
+
+		ComPtr<ID3D12PipelineState> pso = m_IsInverseDepth ? m_PSOs["ssaoNormInverseDepth"] : m_PSOs["ssaoNormStraightDepth"];
+		RenderGeometry(commandList, pso, normalMapRTV);
 	}
 
-
-	ComPtr<ID3D12PipelineState> pso = m_IsInverseDepth ? m_PSOs["ssaoNormInverseDepth"] : m_PSOs["ssaoNormStraightDepth"];
-
-	RenderGeometry(commandList, pso, normalMapRTV);
-
+	// draw occlusion map
 	{
 		CD3DX12_RESOURCE_BARRIER normalMapBarrir = CD3DX12_RESOURCE_BARRIER::Transition(
 			m_NormalMapBuffer.Get(),
@@ -416,69 +426,70 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 
 		CD3DX12_RESOURCE_BARRIER barriers[] = { normalMapBarrir, dsMapBarrier, occlusionMap0Barrier };
 		commandList->ResourceBarrier(_countof(barriers), barriers);
+
+		// unbind all resources from pipeline
+		commandList->ClearState(NULL);
+
+		// set root signature
+		commandList->SetGraphicsRootSignature(m_RootSignatures["SSAO"].Get());
+
+		// set desc heap for pass constants
+		ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBV_SRVDescHeap.Get() };
+		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+		// set pass constants
+		commandList->SetGraphicsRootDescriptorTable(
+			2,
+			CD3DX12_GPU_DESCRIPTOR_HANDLE(
+				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_PassConstantsViewsStartIndex + m_CurrentBackBufferIndex,
+				m_CBV_SRV_UAVDescSize
+			)
+		);
+
+		// set desc heap for srvs
+		ID3D12DescriptorHeap* normalMapDescHeap[] = { m_FrameTexturesSRVDescHeap.Get() };
+		commandList->SetDescriptorHeaps(1, normalMapDescHeap);
+
+		// set normal, depth and random map as SRV
+		commandList->SetGraphicsRootDescriptorTable(
+			0,
+			normalMapSRV
+		);
+
+		// set pso
+		commandList->SetPipelineState(m_PSOs["SSAO"].Get());
+
+		// set Rasterizer Stage
+		D3D12_VIEWPORT curViewPort = m_ViewPort;
+		curViewPort.Width /= 2;
+		curViewPort.Height /= 2;
+
+		commandList->RSSetScissorRects(1, &m_ScissorRect);
+		commandList->RSSetViewports(1, &curViewPort);
+
+		// set Output Mergere Stage
+		commandList->OMSetRenderTargets(1, &occlusionMap0RTV, FALSE, NULL);
+
+		// set Input Asembler Stage
+		commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// draw
+		commandList->DrawInstanced(6, 1, 0, 0);
 	}
-
-	// unbind all resources from pipeline
-	commandList->ClearState(NULL);
-
-	// set root signature
-	commandList->SetGraphicsRootSignature(m_RootSignatures["SSAO"].Get());
-
-	// set desc heap for pass constants
-	ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBV_SRVDescHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
-	// set pass constants
-	commandList->SetGraphicsRootDescriptorTable(
-		2,
-		CD3DX12_GPU_DESCRIPTOR_HANDLE(
-			m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-			m_PassConstantsViewsStartIndex + m_CurrentBackBufferIndex,
-			m_CBV_SRV_UAVDescSize
-		)
-	);
-
-	// set desc heap for texture
-	ID3D12DescriptorHeap* textureDescHeaps[] = { m_FrameTexturesSRVDescHeap.Get() };
-	commandList->SetDescriptorHeaps(1, textureDescHeaps);
-
-	// set texture
-	commandList->SetGraphicsRootDescriptorTable(
-		0,
-		normalMapSRV
-	);
-
-	// set pso
-	commandList->SetPipelineState(m_PSOs["SSAO"].Get());
-
-	// set Rasterizer Stage
-	D3D12_VIEWPORT curViewPort = m_ViewPort;
-	curViewPort.Width /= 2;
-	curViewPort.Height /= 2;
-
-	commandList->RSSetScissorRects(1, &m_ScissorRect);
-	commandList->RSSetViewports(1, &curViewPort);
-
-	// set Output Mergere Stage
-	commandList->OMSetRenderTargets(1, &occlusionMap0RTV, FALSE, NULL);
-
-	// set Input Asembler Stage
-	commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	// draw
-	commandList->DrawInstanced(6, 1, 0, 0);
-
 
 	// blur occlusion map
-	commandList->SetGraphicsRoot32BitConstant(3, m_BlurRadius, 0);
-	commandList->SetGraphicsRoot32BitConstants(3, 11, m_BlurWeights, 1);
-	
-	for (int i = 0; i < 2; ++i) {
-		RenderBlur(commandList, m_OcclusionMapBuffer1, occlusionMap1RTV, m_OcclusionMapBuffer0, occlusionMap0SRV, false);
-		RenderBlur(commandList, m_OcclusionMapBuffer0, occlusionMap0RTV, m_OcclusionMapBuffer1, occlusionMap1SRV, true);
+	{
+		commandList->SetGraphicsRoot32BitConstant(3, m_BlurRadius, 0);
+		commandList->SetGraphicsRoot32BitConstants(3, 11, m_BlurWeights, 1);
+
+		for (int i = 0; i < 2; ++i) {
+			RenderBlur(commandList, m_OcclusionMapBuffer1, occlusionMap1RTV, m_OcclusionMapBuffer0, occlusionMap0SRV, false);
+			RenderBlur(commandList, m_OcclusionMapBuffer0, occlusionMap0RTV, m_OcclusionMapBuffer1, occlusionMap1SRV, true);
+		}
 	}
 
-	// return ds buffer in write state
+	// return ds buffer in write state and occlusion map in sr state
 	{
 		CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 			m_OcclusionMapBuffer0.Get(),
@@ -492,27 +503,13 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 			D3D12_RESOURCE_STATE_DEPTH_WRITE
 		);
 
-
-		CD3DX12_RESOURCE_BARRIER mainRTVBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_BackBuffers[m_CurrentBackBufferIndex].Get(),
-			D3D12_RESOURCE_STATE_PRESENT,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		);
-
 		CD3DX12_RESOURCE_BARRIER barriers[] = {
 			occlusionMap0Barrier,
 			dsMapBarrier,
-			mainRTVBarrier
 		};
 
 		commandList->ResourceBarrier(_countof(barriers), barriers);
-
-		commandList->ClearRenderTargetView(mainRTV, m_BackGroundColor, 0, NULL);
 	}
-
-	pso = m_IsSSAOonly ? m_PSOs["SSAOonly"] : m_PSOs["geoWithSSAO"];
-
-	RenderGeometry(commandList, pso, mainRTV);
 }
 
 void ModelsApp::RenderBlur(
@@ -551,7 +548,7 @@ void ModelsApp::RenderBlur(
 void ModelsApp::RenderGeometry(
 	ComPtr<ID3D12GraphicsCommandList> commandList,
 	ComPtr<ID3D12PipelineState> pso,
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtv)
+	D3D12_CPU_DESCRIPTOR_HANDLE rtv)
 {
 
 	// set root signature
@@ -562,6 +559,7 @@ void ModelsApp::RenderGeometry(
 		ID3D12DescriptorHeap* descriptorHeaps[] = { m_FrameTexturesSRVDescHeap.Get() };
 		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
+		// set occlusion map
 		commandList->SetGraphicsRootDescriptorTable(
 			4,
 			CD3DX12_GPU_DESCRIPTOR_HANDLE(
@@ -671,13 +669,23 @@ void ModelsApp::OnKeyPressed(WPARAM wParam) {
 		m_IsSobelFilter = !m_IsSobelFilter;
 		break;
 	case '4':
-		m_IsDrawNorm = !m_IsDrawNorm;
+		if (m_DrawingType == DrawingType::Normals) {
+			m_DrawingType = DrawingType::Ordinar;
+		} else {
+			m_DrawingType = DrawingType::Normals;
+		}
 		break;
 	case '5':
 		m_IsSSAO = !m_IsSSAO;
 		break;
 	case '6':
-		m_IsSSAOonly = !m_IsSSAOonly;
+		if (m_DrawingType == DrawingType::SSAOonly) {
+			m_DrawingType = DrawingType::Ordinar;
+		}
+		else {
+			m_IsSSAO = true;
+			m_DrawingType = DrawingType::SSAOonly;
+		}
 		break;
 	case 'W':
 	case 'S':
@@ -1222,6 +1230,7 @@ void ModelsApp::BuildPipelineStateObject() {
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.RasterizerState = rasterizerDesc;
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 	psoDesc.InputLayout = inpuitLayout;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
@@ -1238,7 +1247,7 @@ void ModelsApp::BuildPipelineStateObject() {
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
 
-	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
+	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
 
@@ -1249,7 +1258,7 @@ void ModelsApp::BuildPipelineStateObject() {
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normInverseDepthPSO)));
 	
-	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
 

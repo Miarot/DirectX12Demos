@@ -42,7 +42,7 @@ private:
 	void RenderGeometry(
 		ComPtr<ID3D12GraphicsCommandList> commandList,
 		ComPtr<ID3D12PipelineState> pso,
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv
+		D3D12_CPU_DESCRIPTOR_HANDLE rtv
 	);
 
 	void RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList);
@@ -85,9 +85,11 @@ private:
 private:
 	FLOAT m_BackGroundColor[4] = { 0.4f, 0.6f, 0.9f, 1.0f };
 
+	enum DrawingType { Ordinar = 0, Normals, SSAOonly };
+
+	DrawingType m_DrawingType = DrawingType::Ordinar;
 	bool m_IsInverseDepth = false;
 	bool m_IsShakeEffect = false;
-	bool m_IsDrawNorm = false;
 	PassConstants m_PassConstants;
 	POINT m_LastMousePos;
 	Camera m_Camera;
@@ -124,7 +126,6 @@ private:
 
 	// for SSAO
 	bool m_IsSSAO = false;
-	bool m_IsSSAOonly = false;
 	ComPtr<ID3D12Resource> m_NormalMapBuffer;
 	ComPtr<ID3D12Resource> m_OcclusionMapBuffer0;
 	ComPtr<ID3D12Resource> m_OcclusionMapBuffer1;
