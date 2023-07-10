@@ -18,6 +18,7 @@ ConstantBuffer<MaterialConstants> MaterilaConstantsCB : register(b2);
 
 Texture2D Texture : register(t0);
 Texture2D OcclusionMap : register(t1);
+
 SamplerState LinearWrapSampler : register(s0);
 
 float4 main(VertexOut pin) : SV_Target
@@ -36,6 +37,11 @@ float4 main(VertexOut pin) : SV_Target
     float3 norm = normalize(pin.Norm);
     
     #ifdef DRAW_NORMS
+        #ifdef SSAO
+            float3 normV = mul((float3x3)PassConstantsCB.View, norm);
+            return float4(normV, 0.0f);
+        #endif
+    
         return float4((norm + 1) / 2, 1.0f);
     #endif
     

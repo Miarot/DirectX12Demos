@@ -87,7 +87,6 @@ bool ModelsApp::Initialize() {
 	// for SSAO
 	m_SSAO_RTV_StartIndex = m_SobelTextureRTVIndex + m_NumSobelRTV;
 	m_SSAO_SRV_StartIndex = m_SobelTextureSRVIndex + m_NumSobelSRV;
-	BuildSSAONormPipelineStateObject();
 	BuildSSAORootSignature();
 	BuildSSAOPipelineStateObject();
 	BuildRandomMapBuffer(commandList);
@@ -683,7 +682,6 @@ void ModelsApp::OnKeyPressed(WPARAM wParam) {
 		m_DirectCommandQueue->Flush();
 		BuildPipelineStateObject();
 		BuildSobelPipelineStateObject();
-		BuildSSAONormPipelineStateObject();
 		BuildSSAOPipelineStateObject();
 		break;
 	}
@@ -1152,45 +1150,6 @@ void ModelsApp::BuildRootSignature() {
 }
 
 void ModelsApp::BuildPipelineStateObject() {
-	// Compile shaders	
-	ComPtr<ID3DBlob> geoVertexShaderBlob = CompileShader(L"../../AppModels/shaders/GeoVertexShader.hlsl", "main", "vs_5_1");
-	
-	D3D_SHADER_MACRO geoDefines[] = {
-		"ALPHA_TEST", "1",
-		NULL, NULL
-	};
-
-	ComPtr<ID3DBlob> geoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", geoDefines);
-    
-	D3D_SHADER_MACRO normDefines[] = {
-		"ALPHA_TEST", "1",
-		"DRAW_NORMS", "1",
-		NULL, NULL
-	};
-
-	ComPtr<ID3DBlob> normPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", normDefines);
-
-	D3D_SHADER_MACRO ssaoDefines[] = {
-		"ALPHA_TEST", "1",
-		"SSAO", "1",
-		NULL, NULL
-	};
-
-	ComPtr<ID3DBlob> ssaoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", ssaoDefines);
-
-	D3D_SHADER_MACRO ssaoOnlyDefines[] = {
-		"ALPHA_TEST", "1",
-		"SSAO", "1",
-		"SSAO_ONLY", "1",
-		NULL, NULL
-	};
-
-	ComPtr<ID3DBlob> ssaoOnlyPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", ssaoOnlyDefines);
-
-	// Create rasterizer state description
-	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
-	//rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
-
 	// Create input layout
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[]{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
@@ -1206,20 +1165,9 @@ void ModelsApp::BuildPipelineStateObject() {
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
 	psoDesc.pRootSignature = m_RootSignatures["Geometry"].Get();
-
-	psoDesc.VS = {
-		reinterpret_cast<BYTE*>(geoVertexShaderBlob->GetBufferPointer()),
-		geoVertexShaderBlob->GetBufferSize()
-	};
-
-	psoDesc.PS = {
-		reinterpret_cast<BYTE*>(geoPixelShaderBlob->GetBufferPointer()),
-		geoPixelShaderBlob->GetBufferSize()
-	};
-
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
-	psoDesc.RasterizerState = rasterizerDesc;
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 	psoDesc.InputLayout = inpuitLayout;
@@ -1229,52 +1177,115 @@ void ModelsApp::BuildPipelineStateObject() {
 	psoDesc.DSVFormat = m_DepthSencilViewFormat;
 	psoDesc.SampleDesc = { 1, 0 };
 
-	ComPtr<ID3D12PipelineState> straightDepthPSO;
-	ComPtr<ID3D12PipelineState> inverseDepthPSO;
-	ComPtr<ID3D12PipelineState> normStraightDepthPSO;
-	ComPtr<ID3D12PipelineState> normInverseDepthPSO;
-	ComPtr<ID3D12PipelineState> ssaoPSO;
-	ComPtr<ID3D12PipelineState> ssaoOnlyPSO;
-
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
-
-	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
-
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
-
-	psoDesc.PS = {
-		reinterpret_cast<BYTE*>(normPixelShaderBlob->GetBufferPointer()),
-		normPixelShaderBlob->GetBufferSize()
-	};
-
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normInverseDepthPSO)));
+	ComPtr<ID3DBlob> geoVertexShaderBlob = CompileShader(L"../../AppModels/shaders/GeoVertexShader.hlsl", "main", "vs_5_1");
 	
-	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
-
-	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_EQUAL;
-
-	psoDesc.PS = {
-		reinterpret_cast<BYTE*>(ssaoPixelShaderBlob->GetBufferPointer()),
-		ssaoPixelShaderBlob->GetBufferSize()
+	psoDesc.VS = {
+		reinterpret_cast<BYTE*>(geoVertexShaderBlob->GetBufferPointer()),
+		geoVertexShaderBlob->GetBufferSize()
 	};
 
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoPSO)));
+	// for ordinar rendering
+	{
+		ComPtr<ID3D12PipelineState> straightDepthPSO;
+		ComPtr<ID3D12PipelineState> inverseDepthPSO;
 
-	psoDesc.PS = {
-		reinterpret_cast<BYTE*>(ssaoOnlyPixelShaderBlob->GetBufferPointer()),
-		ssaoOnlyPixelShaderBlob->GetBufferSize()
-	};
+		D3D_SHADER_MACRO geoDefines[] = { "ALPHA_TEST", "1", NULL, NULL };
+		ComPtr<ID3DBlob> geoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", geoDefines);
 
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoOnlyPSO)));
+		psoDesc.PS = {
+			reinterpret_cast<BYTE*>(geoPixelShaderBlob->GetBufferPointer()),
+			geoPixelShaderBlob->GetBufferSize()
+		};
 
-	m_PSOs["straightDepth"] = straightDepthPSO;
-	m_PSOs["inverseDepth"] = inverseDepthPSO;	
-	m_PSOs["normStraightDepth"] = normStraightDepthPSO;
-	m_PSOs["normInverseDepth"] = normInverseDepthPSO;	
-	m_PSOs["geoWithSSAO"] = ssaoPSO;
-	m_PSOs["SSAOonly"] = ssaoOnlyPSO;
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
+		m_PSOs["straightDepth"] = straightDepthPSO;
+
+		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
+		m_PSOs["inverseDepth"] = inverseDepthPSO;
+	}
+
+	// for normals rendering
+	{
+		ComPtr<ID3D12PipelineState> normStraightDepthPSO;
+		ComPtr<ID3D12PipelineState> normInverseDepthPSO;
+
+		D3D_SHADER_MACRO normDefines[] = { "ALPHA_TEST", "1", "DRAW_NORMS", "1", NULL, NULL };
+		ComPtr<ID3DBlob> normPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", normDefines);
+
+		psoDesc.PS = {
+			reinterpret_cast<BYTE*>(normPixelShaderBlob->GetBufferPointer()),
+			normPixelShaderBlob->GetBufferSize()
+		};
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normInverseDepthPSO)));
+		m_PSOs["normInverseDepth"] = normInverseDepthPSO;
+
+		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
+		m_PSOs["normStraightDepth"] = normStraightDepthPSO;
+	}
+
+	// for SSAO rendering
+	{
+		ComPtr<ID3D12PipelineState> ssaoPSO;
+
+		D3D_SHADER_MACRO ssaoDefines[] = { "ALPHA_TEST", "1", "SSAO", "1", NULL, NULL };
+		ComPtr<ID3DBlob> ssaoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", ssaoDefines);
+
+		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+		psoDesc.PS = {
+			reinterpret_cast<BYTE*>(ssaoPixelShaderBlob->GetBufferPointer()),
+			ssaoPixelShaderBlob->GetBufferSize()
+		};
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoPSO)));
+		m_PSOs["geoWithSSAO"] = ssaoPSO;
+	}
+
+	// for SSAO only rendering
+	{
+		ComPtr<ID3D12PipelineState> ssaoOnlyPSO;
+
+		D3D_SHADER_MACRO ssaoOnlyDefines[] = { "ALPHA_TEST", "1", "SSAO", "1", "SSAO_ONLY", "1", NULL, NULL };
+		ComPtr<ID3DBlob> ssaoOnlyPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", ssaoOnlyDefines);
+
+		psoDesc.PS = {
+			reinterpret_cast<BYTE*>(ssaoOnlyPixelShaderBlob->GetBufferPointer()),
+			ssaoOnlyPixelShaderBlob->GetBufferSize()
+		};
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoOnlyPSO)));
+		m_PSOs["SSAOonly"] = ssaoOnlyPSO;
+	}
+
+	// for normals for SSAO drawing
+	{
+		ComPtr<ID3D12PipelineState> ssaoNormalsStraightPSO;
+		ComPtr<ID3D12PipelineState> ssaoNormalsInversePSO;
+
+		D3D_SHADER_MACRO ssaoNormalsDefines[] = { "ALPHA_TEST", "1", "DRAW_NORMS", "1", "SSAO", "1", NULL, NULL };
+		ComPtr<ID3DBlob> ssaoNormalsPSBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", ssaoNormalsDefines);
+
+		psoDesc.PS = {
+			reinterpret_cast<BYTE*>(ssaoNormalsPSBlob->GetBufferPointer()),
+			ssaoNormalsPSBlob->GetBufferSize()
+		};
+
+		psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoNormalsStraightPSO)));
+		m_PSOs["ssaoNormStraightDepth"] = ssaoNormalsStraightPSO;
+
+		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoNormalsInversePSO)));
+		m_PSOs["ssaoNormInverseDepth"] = ssaoNormalsInversePSO;
+	}
 }
 
 void ModelsApp::UpdateSobelFrameTexture() {
@@ -1516,71 +1527,6 @@ void ModelsApp::UpdateSSAOBuffersAndViews() {
 		nullptr,
 		srvDescHandle.Offset(m_CBV_SRV_UAVDescSize)
 	);
-}
-
-void ModelsApp::BuildSSAONormPipelineStateObject() {
-	// Compile shaders	
-	ComPtr<ID3DBlob> geoVertexShaderBlob = CompileShader(L"../../AppModels/shaders/GeoVertexShader.hlsl", "main", "vs_5_1");
-
-	D3D_SHADER_MACRO defines[] = {
-		"ALPHA_TEST", "1",
-		NULL, NULL
-	};
-
-	ComPtr<ID3DBlob> geoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/SSAONormVPixelShader.hlsl", "main", "ps_5_1", defines);
-
-	// Create rasterizer state description
-	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
-	//rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
-
-	// Create input layout
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[]{
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"NORM", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
-	};
-
-	D3D12_INPUT_LAYOUT_DESC inpuitLayout{ inputElementDescs, _countof(inputElementDescs) };
-
-	// Create pipeline state object description
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
-
-	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-
-	psoDesc.pRootSignature = m_RootSignatures["Geometry"].Get();
-
-	psoDesc.VS = {
-		reinterpret_cast<BYTE*>(geoVertexShaderBlob->GetBufferPointer()),
-		geoVertexShaderBlob->GetBufferSize()
-	};
-
-	psoDesc.PS = {
-		reinterpret_cast<BYTE*>(geoPixelShaderBlob->GetBufferPointer()),
-		geoPixelShaderBlob->GetBufferSize()
-	};
-
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.SampleMask = UINT_MAX;
-	psoDesc.RasterizerState = rasterizerDesc;
-	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	psoDesc.InputLayout = inpuitLayout;
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 1;
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	psoDesc.DSVFormat = m_DepthSencilViewFormat;
-	psoDesc.SampleDesc = { 1, 0 };
-
-	ComPtr<ID3D12PipelineState> straightDepthPSO;
-	ComPtr<ID3D12PipelineState> inverseDepthPSO;
-
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
-
-	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
-
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
-
-	m_PSOs["ssaoNormStraightDepth"] = straightDepthPSO;
-	m_PSOs["ssaoNormInverseDepth"] = inverseDepthPSO;
 }
 
 void ModelsApp::BuildSSAORootSignature() {

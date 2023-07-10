@@ -42,11 +42,13 @@ float4 main(VertexOut pin) : SV_Target
         BlurConstantsCB.Weight9, BlurConstantsCB.Weight10
     };
     
+    // get occlusion, normal and depth for central pixel
     float occlusion = blurWeights[BlurConstantsCB.Radius] * OcclusionMap.SampleLevel(LinearWrapSampler, pin.TexC, 0.0f).r;
     float3 centerNormal = NormalMap.SampleLevel(LinearWrapSampler, pin.TexC, 0.0f).xyz;
     float centerDepth = DepthMap.SampleLevel(DepthSampler, pin.TexC, 0.0f).r;
     centerDepth = PassConstantsCB.Proj[2][3] / (centerDepth - PassConstantsCB.Proj[2][2]);
     
+    // choose tex step
     float2 texOffset;
     if (BlurConstantsCB.IsHorizontal) {
         texOffset = float2(PassConstantsCB.OcclusionMapWidthInv, 0.0f);
@@ -61,17 +63,20 @@ float4 main(VertexOut pin) : SV_Target
             continue;
         }
         
+        // get normal and depth for nearby pixel
         float2 nearTexC = pin.TexC + i * texOffset;
         float3 nearNormal = NormalMap.SampleLevel(LinearWrapSampler, nearTexC, 0.0f).xyz;
         float nearDepth = DepthMap.SampleLevel(DepthSampler, nearTexC, 0.0f).r;
         nearDepth = PassConstantsCB.Proj[2][3] / (nearDepth - PassConstantsCB.Proj[2][2]);
         
+        // if normals or depths differs to much then it is probably edge 
         if (dot(centerNormal, nearNormal) > 0.8f && abs(centerDepth - nearDepth) < 0.2f) {
             occlusion += blurWeights[BlurConstantsCB.Radius + i] * OcclusionMap.SampleLevel(LinearWrapSampler, nearTexC, 0.0f).r;
             addedWeightsSum += blurWeights[BlurConstantsCB.Radius + i];
         }
     }
     
+    // normalize to actualy added weights
     occlusion /= addedWeightsSum;
 
     return occlusion;

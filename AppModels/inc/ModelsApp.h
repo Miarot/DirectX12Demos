@@ -84,7 +84,6 @@ private:
 
 	// for SSAO
 	void UpdateSSAOBuffersAndViews();
-	void BuildSSAONormPipelineStateObject();
 	void BuildSSAORootSignature();
 	void BuildSSAOPipelineStateObject();
 	void BuildRandomMapBuffer(ComPtr<ID3D12GraphicsCommandList> commandList);

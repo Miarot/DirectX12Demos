@@ -5,11 +5,11 @@ ConstantBuffer<PassConstants> PassConstantsCB : register(b1);
 ConstantBuffer<MaterialConstants> MaterilaConstantsCB : register(b2);
 
 Texture2D Texture : register(t0);
-SamplerState Sampler : register(s0);
+SamplerState LinearWrapSampler : register(s0);
 
 float4 main(VertexOut pin) : SV_Target
 {
-    float4 diffeseAlbedo = MaterilaConstantsCB.DiffuseAlbedo * Texture.Sample(Sampler, pin.TexC);
+    float4 diffeseAlbedo = MaterilaConstantsCB.DiffuseAlbedo * Texture.Sample(LinearWrapSampler, pin.TexC);
     
     #ifdef ALPHA_TEST
         clip(diffeseAlbedo.a - 0.1f);
