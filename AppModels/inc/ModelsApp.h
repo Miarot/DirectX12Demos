@@ -124,16 +124,19 @@ private:
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;
 
 	ComPtr<ID3D12DescriptorHeap> m_FrameTexturesRTVDescHeap;
-	ComPtr<ID3D12DescriptorHeap> m_FrameTexturesSRVDescHeap;
 
 	// for Sobel filter
 	bool m_IsSobelFilter = false;
+	static const uint32_t m_NumSobelRTV = 1;
+	static const uint32_t m_NumSobelSRV = 1;
 	ComPtr<ID3D12Resource> m_SobelFrameTextureBuffer;
 	uint32_t m_SobelTextureRTVIndex;
 	uint32_t m_SobelTextureSRVIndex;
 
 	// for SSAO
 	bool m_IsOnlySSAO = false;
+	static const uint32_t m_NumSSAO_RTV = 3;
+	static const uint32_t m_NumSSAO_SRV = 5;
 	ComPtr<ID3D12Resource> m_NormalMapBuffer;
 	ComPtr<ID3D12Resource> m_OcclusionMapBuffer0;
 	ComPtr<ID3D12Resource> m_OcclusionMapBuffer1;
