@@ -18,9 +18,8 @@ set( SRC_FILES
 
 set( VERTEX_SHADER_FILES
     shaders/GeoVertexShader.hlsl
-	shaders/SobelVertexShader.hlsl
 	shaders/SSAOVertexShader.hlsl
-	shaders/BlurVertexShader.hlsl
+	shaders/FullScreenQuadVS.hlsl
 )
 
 set( PIXEL_SHADER_FILES

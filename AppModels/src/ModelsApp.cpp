@@ -22,8 +22,6 @@ bool ModelsApp::Initialize() {
 	// initialization for DirectXTK12
 	ThrowIfFailed(::CoInitializeEx(NULL, COINIT_MULTITHREADED));
 
-	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
-
 	// load scene
 	Assimp::Importer importer;
 
@@ -40,22 +38,24 @@ bool ModelsApp::Initialize() {
 
 	InitSceneState();
 
+	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
+
 	BuildTextures(commandList);
 	BuildLights();
 	BuildGeometry(commandList);
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
+	BuildRootSignature();
+	BuildPipelineStateObject();
 
+	// count size for CBV and SRV descriptor heap
 	uint32_t numCBVandSRVforRenderItems = 0;
 
 	numCBVandSRVforRenderItems += 1; // for pass constants
 	numCBVandSRVforRenderItems += m_RenderItems.size(); // for object constants
 	numCBVandSRVforRenderItems += m_Materials.size(); // for material constants
-	numCBVandSRVforRenderItems *= m_NumBackBuffers; // all prev for each back buffer
-
-	//numViewsForRenderItems += 1; // ??
-
+	numCBVandSRVforRenderItems *= m_NumBackBuffers; // repeat all prev constants for each back buffer
 	numCBVandSRVforRenderItems += m_Textures.size(); // for textures
 
 	m_CBV_SRVDescHeap = CreateDescriptorHeap(
@@ -68,9 +68,6 @@ bool ModelsApp::Initialize() {
 	BuildSRViews();
 	BuildCBViews();
 
-	BuildRootSignature();
-	BuildPipelineStateObject();
-
 	// recreate rtv descriptro heap for effects
 	m_RTVDescHeap = CreateDescriptorHeap(
 		m_Device,
@@ -78,7 +75,6 @@ bool ModelsApp::Initialize() {
 		D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_NONE
 	);
-
 	UpdateBackBuffersView();
 
 	// for Sobel filter
@@ -455,7 +451,7 @@ void ModelsApp::RenderSobelFilter(
 	);
 
 	// draw
-	commandList->DrawInstanced(3, 1, 0, 0);
+	commandList->DrawInstanced(6, 1, 0, 0);
 }
 
 void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
@@ -720,11 +716,13 @@ void ModelsApp::OnMouseMove(WPARAM wParam, int x, int y) {
 }
 
 void ModelsApp::InitSceneState() {
+	m_DrawingType = DrawingType::Ordinar;
+
 	m_Camera = Camera(
 		45.0f,
 		0,
-		XM_PIDIV4,
-		3.0f,
+		XM_PIDIV2,
+		2.0f,
 		XMVectorSet(1.0f, 1.0f, 1.0f, 0.0f),
 		XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
 	);
@@ -1355,7 +1353,7 @@ void ModelsApp::BuildSobelRootSignature() {
 
 void ModelsApp::BuildSobelPipelineStateObject() {
 	// Compile shaders	
-	ComPtr<ID3DBlob> sobelVertexShaderBlob = CompileShader(L"../../AppModels/shaders/SobelVertexShader.hlsl", "main", "vs_5_1");
+	ComPtr<ID3DBlob> sobelVertexShaderBlob = CompileShader(L"../../AppModels/shaders/FullScreenQuadVS.hlsl", "main", "vs_5_1");
 	ComPtr<ID3DBlob> sobelPixelShaderBlob = CompileShader(L"../../AppModels/shaders/SobelPixelShader.hlsl", "main", "ps_5_1");
 
 	// Create pipeline state object description
@@ -1708,7 +1706,7 @@ void ModelsApp::BuildSSAOPipelineStateObject() {
 	m_PSOs["SSAO"] = ssaoPSO;
 
 	// Compile shaders for blur
-	ComPtr<ID3DBlob> blurVertexShaderBlob = CompileShader(L"../../AppModels/shaders/BlurVertexShader.hlsl", "main", "vs_5_1");
+	ComPtr<ID3DBlob> blurVertexShaderBlob = CompileShader(L"../../AppModels/shaders/FullScreenQuadVS.hlsl", "main", "vs_5_1");
 	ComPtr<ID3DBlob> blurPixelShaderBlob = CompileShader(L"../../AppModels/shaders/BlurPixelShader.hlsl", "main", "ps_5_1");
 
 	psoDesc.VS = {

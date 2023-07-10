@@ -380,15 +380,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</EnableDebuggingInformation>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">-Qembed_debug</AdditionalOptions>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SobelVertexShader.hlsl">
-      <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableDebuggingInformation>
-      <ShaderType>Vertex</ShaderType>
-      <ShaderModel>6.0</ShaderModel>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">-Qembed_debug</AdditionalOptions>
-      <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DisableOptimizations>
-      <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</EnableDebuggingInformation>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">-Qembed_debug</AdditionalOptions>
-    </FXCompile>
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAOVertexShader.hlsl">
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableDebuggingInformation>
       <ShaderType>Vertex</ShaderType>
@@ -398,7 +389,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</EnableDebuggingInformation>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">-Qembed_debug</AdditionalOptions>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\BlurVertexShader.hlsl">
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\FullScreenQuadVS.hlsl">
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableDebuggingInformation>
       <ShaderType>Vertex</ShaderType>
       <ShaderModel>6.0</ShaderModel>

@@ -29,13 +29,10 @@
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\GeoVertexShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SobelVertexShader.hlsl">
-      <Filter>Shaders</Filter>
-    </FXCompile>
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAOVertexShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\BlurVertexShader.hlsl">
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\FullScreenQuadVS.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\GeoPixelShader.hlsl">
