@@ -62,14 +62,14 @@ bool ModelsApp::Initialize() {
 
 	m_FrameTexturesRTVDescHeap = CreateDescriptorHeap(
 		m_Device,
-		2,
+		4,
 		D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_NONE
 	);
 
 	m_FrameTexturesSRVDescHeap = CreateDescriptorHeap(
 		m_Device,
-		4,
+		6,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
@@ -82,13 +82,14 @@ bool ModelsApp::Initialize() {
 	BuildSobelPipelineStateObject();
 
 	// for SSAO
-	m_SSAOtextureRTVIndex = m_SobelTextureRTVIndex + 1;
-	m_SSAOtextureSRVIndex = m_SobelTextureSRVIndex + 1;
+	m_SSAO_RTV_StartIndex = m_SobelTextureRTVIndex + 1;
+	m_SSAO_SRV_StartIndex = m_SobelTextureSRVIndex + 1;
 	BuildSSAONormPipelineStateObject();
 	BuildSSAORootSignature();
 	BuildSSAOPipelineStateObject();
-	BuildRandomVectors(commandList);
-	UpdateSobelFrameTexture();
+	BuildRandomMapBuffer(commandList);
+	UpdateSSAOBuffersAndViews();
+	InitBlurWeights();
 
 	// wait while all data loaded
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
@@ -103,7 +104,7 @@ bool ModelsApp::Initialize() {
 		it.second->UploadResource = nullptr;
 	}
 
-	m_RandomVectorsUploadBuffer = nullptr;
+	m_RandomMapUploadBuffer = nullptr;
 
 	return true;
 }
@@ -161,6 +162,9 @@ void ModelsApp::OnUpdate() {
 
 	XMStoreFloat3(&m_PassConstants.EyePos, m_Camera.GetCameraPos());
 	m_PassConstants.TotalTime = float(m_Timer.GetTotalTime());
+
+	m_PassConstants.OcclusionMapWidthInv = 2.0f / static_cast<float>(m_ClientWidth);
+	m_PassConstants.OcclusionMapHeightInv = 2.0f / static_cast<float>(m_ClientHeight);
 
 	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(0, m_PassConstants);
 
@@ -350,54 +354,64 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 		m_CurrentBackBufferIndex, m_RTVDescSize
 	);
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE ssaoTextureRTV(
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescHandle(
 		m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-		m_SSAOtextureRTVIndex,
-		m_CBV_SRV_UAVDescSize
+		m_SSAO_RTV_StartIndex, m_RTVDescSize
 	);
 
-	// clear RTs
-	{
-		CD3DX12_RESOURCE_BARRIER backBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_BackBuffers[m_CurrentBackBufferIndex].Get(),
-			D3D12_RESOURCE_STATE_PRESENT,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE normalMapRTV = rtvDescHandle;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE occlusionMap0RTV = rtvDescHandle.Offset(m_RTVDescSize);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE occlusionMap1RTV = rtvDescHandle.Offset(m_RTVDescSize);
 
-		CD3DX12_RESOURCE_BARRIER frameTextureBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_SSAOFrameTextureBuffer.Get(),
+	CD3DX12_GPU_DESCRIPTOR_HANDLE srvDescHandle(
+		m_FrameTexturesSRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+		m_SSAO_RTV_StartIndex, m_CBV_SRV_UAVDescSize
+	);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE normalMapSRV = srvDescHandle;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSRV = srvDescHandle.Offset(m_CBV_SRV_UAVDescSize);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE randomMapSRV = srvDescHandle.Offset(m_CBV_SRV_UAVDescSize);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE occlusionMap0SRV = srvDescHandle.Offset(m_CBV_SRV_UAVDescSize);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE occlusionMap1SRV = srvDescHandle.Offset(m_CBV_SRV_UAVDescSize);
+
+	{
+		CD3DX12_RESOURCE_BARRIER normalMapBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_NormalMapBuffer.Get(),
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 			D3D12_RESOURCE_STATE_RENDER_TARGET
 		);
 
-		D3D12_RESOURCE_BARRIER bariers[] = { backBufferBarrier, frameTextureBufferBarrier };
+		D3D12_RESOURCE_BARRIER bariers[] = { normalMapBufferBarrier };
 		commandList->ResourceBarrier(_countof(bariers), bariers);
-
-		commandList->ClearRenderTargetView(mainRTV, m_BackGroundColor, 0, NULL);
-
-		FLOAT color[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-		commandList->ClearRenderTargetView(ssaoTextureRTV, color, 0, NULL);
 	}
+
 
 	ComPtr<ID3D12PipelineState> pso = m_IsInverseDepth ? m_PSOs["ssaoNormInverseDepth"] : m_PSOs["ssaoNormStraightDepth"];
 
-	RenderGeometry(commandList, pso, ssaoTextureRTV);
+	RenderGeometry(commandList, pso, normalMapRTV);
 
-	CD3DX12_RESOURCE_BARRIER frameTextureBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_SSAOFrameTextureBuffer.Get(),
-		D3D12_RESOURCE_STATE_RENDER_TARGET,
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-	);
+	{
+		CD3DX12_RESOURCE_BARRIER normalMapBarrir = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_NormalMapBuffer.Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		);
 
-	CD3DX12_RESOURCE_BARRIER dsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_DSBuffer.Get(),
-		D3D12_RESOURCE_STATE_DEPTH_WRITE,
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-	);
+		CD3DX12_RESOURCE_BARRIER dsMapBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_DSBuffer.Get(),
+			D3D12_RESOURCE_STATE_DEPTH_WRITE,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		);
 
-	CD3DX12_RESOURCE_BARRIER barriers[] = { frameTextureBarrier, dsBarrier };
+		CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_OcclusionMapBuffer0.Get(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		);
 
-	commandList->ResourceBarrier(_countof(barriers), barriers);
+		CD3DX12_RESOURCE_BARRIER barriers[] = { normalMapBarrir, dsMapBarrier, occlusionMap0Barrier };
+		commandList->ResourceBarrier(_countof(barriers), barriers);
+	}
 
 	// unbind all resources from pipeline
 	commandList->ClearState(NULL);
@@ -411,7 +425,7 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 
 	// set pass constants
 	commandList->SetGraphicsRootDescriptorTable(
-		1,
+		2,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE(
 			m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
 			m_PassConstantsViewsStartIndex + m_CurrentBackBufferIndex,
@@ -426,22 +440,22 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	// set texture
 	commandList->SetGraphicsRootDescriptorTable(
 		0,
-		CD3DX12_GPU_DESCRIPTOR_HANDLE(
-			m_FrameTexturesSRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-			m_SSAOtextureSRVIndex,
-			m_CBV_SRV_UAVDescSize
-		)
+		normalMapSRV
 	);
 
 	// set pso
 	commandList->SetPipelineState(m_PSOs["SSAO"].Get());
 
 	// set Rasterizer Stage
+	D3D12_VIEWPORT curViewPort = m_ViewPort;
+	curViewPort.Width /= 2;
+	curViewPort.Height /= 2;
+
 	commandList->RSSetScissorRects(1, &m_ScissorRect);
-	commandList->RSSetViewports(1, &m_ViewPort);
+	commandList->RSSetViewports(1, &curViewPort);
 
 	// set Output Mergere Stage
-	commandList->OMSetRenderTargets(1, &mainRTV, FALSE, NULL);
+	commandList->OMSetRenderTargets(1, &occlusionMap0RTV, FALSE, NULL);
 
 	// set Input Asembler Stage
 	commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -449,14 +463,148 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	// draw
 	commandList->DrawInstanced(6, 1, 0, 0);
 
-	// return ds buffer in write state
-	dsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_DSBuffer.Get(),
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-		D3D12_RESOURCE_STATE_DEPTH_WRITE
-	);
+	{
+		CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_OcclusionMapBuffer0.Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		);
 
-	commandList->ResourceBarrier(1, &dsBarrier);
+		CD3DX12_RESOURCE_BARRIER occlusionMap1Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_OcclusionMapBuffer1.Get(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		);
+
+		CD3DX12_RESOURCE_BARRIER barriers[] = { 
+			occlusionMap0Barrier, 
+			occlusionMap1Barrier,
+		};
+
+		commandList->ResourceBarrier(_countof(barriers), barriers);
+	}
+
+	// set blur constants
+	commandList->SetGraphicsRoot32BitConstant(3, m_BlurRadius, 0);
+	commandList->SetGraphicsRoot32BitConstants(3, 11, m_BlurWeights, 1);
+	commandList->SetGraphicsRoot32BitConstant(3, false, 12);
+
+	commandList->SetGraphicsRootDescriptorTable(1, occlusionMap0SRV);
+	commandList->SetPipelineState(m_PSOs["Blur"].Get());
+	commandList->OMSetRenderTargets(1, &occlusionMap1RTV, FALSE, NULL);
+	commandList->DrawInstanced(6, 1, 0, 0);
+
+	{
+		CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_OcclusionMapBuffer0.Get(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		);
+
+		CD3DX12_RESOURCE_BARRIER occlusionMap1Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_OcclusionMapBuffer1.Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		);
+
+		CD3DX12_RESOURCE_BARRIER barriers[] = {
+			occlusionMap0Barrier,
+			occlusionMap1Barrier
+		};
+
+		commandList->ResourceBarrier(_countof(barriers), barriers);
+	}
+
+	commandList->SetGraphicsRoot32BitConstant(3, true, 12);
+	commandList->SetGraphicsRootDescriptorTable(1, occlusionMap1SRV);
+	commandList->SetPipelineState(m_PSOs["Blur"].Get());
+	commandList->OMSetRenderTargets(1, &occlusionMap0RTV, FALSE, NULL);
+	commandList->DrawInstanced(6, 1, 0, 0);
+
+	{
+		CD3DX12_RESOURCE_BARRIER occlusionMap1Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_OcclusionMapBuffer1.Get(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		);
+
+		CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_OcclusionMapBuffer0.Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		);
+
+		CD3DX12_RESOURCE_BARRIER barriers[] = {
+			occlusionMap0Barrier,
+			occlusionMap1Barrier
+		};
+
+		commandList->ResourceBarrier(_countof(barriers), barriers);
+	}
+
+	commandList->SetGraphicsRoot32BitConstant(3, false, 12);
+	commandList->SetGraphicsRootDescriptorTable(1, occlusionMap0SRV);
+	commandList->SetPipelineState(m_PSOs["Blur"].Get());
+	commandList->OMSetRenderTargets(1, &occlusionMap1RTV, FALSE, NULL);
+	commandList->DrawInstanced(6, 1, 0, 0);
+
+	{
+		CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_OcclusionMapBuffer0.Get(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		);
+
+		CD3DX12_RESOURCE_BARRIER occlusionMap1Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_OcclusionMapBuffer1.Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		);
+
+		CD3DX12_RESOURCE_BARRIER barriers[] = {
+			occlusionMap0Barrier,
+			occlusionMap1Barrier
+		};
+
+		commandList->ResourceBarrier(_countof(barriers), barriers);
+	}
+
+	commandList->SetGraphicsRoot32BitConstant(3, true, 12);
+	commandList->SetGraphicsRootDescriptorTable(1, occlusionMap1SRV);
+	commandList->SetPipelineState(m_PSOs["Blur"].Get());
+	commandList->OMSetRenderTargets(1, &occlusionMap0RTV, FALSE, NULL);
+	commandList->DrawInstanced(6, 1, 0, 0);
+
+	// return ds buffer in write state
+	{
+		CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_OcclusionMapBuffer0.Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		);
+
+		CD3DX12_RESOURCE_BARRIER dsMapBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_DSBuffer.Get(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_DEPTH_WRITE
+		);
+
+
+		CD3DX12_RESOURCE_BARRIER mainRTVBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_BackBuffers[m_CurrentBackBufferIndex].Get(),
+			D3D12_RESOURCE_STATE_PRESENT,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		);
+
+		CD3DX12_RESOURCE_BARRIER barriers[] = {
+			occlusionMap0Barrier,
+			dsMapBarrier,
+			mainRTVBarrier
+		};
+
+		commandList->ResourceBarrier(_countof(barriers), barriers);
+	}
+
 }
 
 void ModelsApp::RenderGeometry(
@@ -538,7 +686,7 @@ void ModelsApp::RenderGeometry(
 void ModelsApp::OnResize() {
 	BaseApp::OnResize();
 	UpdateSobelFrameTexture();
-	UpdateSSAOFrameTexture();
+	UpdateSSAOBuffersAndViews();
 }
 
 void ModelsApp::OnKeyPressed(WPARAM wParam) {
@@ -561,7 +709,7 @@ void ModelsApp::OnKeyPressed(WPARAM wParam) {
 
 		m_DirectCommandQueue->Flush();
 		ResizeDSBuffer();
-		UpdateSSAOFrameTexture();
+		UpdateSSAOBuffersAndViews();
 		break;
 	case '3':
 		m_IsSobelFilter = !m_IsSobelFilter;
@@ -1247,42 +1395,55 @@ void ModelsApp::BuildSobelPipelineStateObject() {
 	m_PSOs["Sobel"] = sobelPSO;
 }
 
-void ModelsApp::UpdateSSAOFrameTexture() {
-	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R16G16B16A16_FLOAT, m_ClientWidth, m_ClientHeight);
-	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+void ModelsApp::UpdateSSAOBuffersAndViews() {
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(
+		m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_SSAO_RTV_StartIndex,
+		m_CBV_SRV_UAVDescSize
+	);
 
-	FLOAT color[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	CD3DX12_CLEAR_VALUE clearValue{ DXGI_FORMAT_R16G16B16A16_FLOAT , color };
+	CD3DX12_CPU_DESCRIPTOR_HANDLE srvDescHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(
+		m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_SSAO_SRV_StartIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	// create normal map buffer
+	CD3DX12_RESOURCE_DESC normalMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+		DXGI_FORMAT_R16G16B16A16_FLOAT,
+		m_ClientWidth,
+		m_ClientHeight
+	);
+
+	normalMapDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+	FLOAT black[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	CD3DX12_CLEAR_VALUE normalMapClearValue{ DXGI_FORMAT_R16G16B16A16_FLOAT , black };
 
 	ThrowIfFailed(m_Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
-		&resourceDesc,
+		&normalMapDesc,
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-		&clearValue,
-		IID_PPV_ARGS(&m_SSAOFrameTextureBuffer)
+		&normalMapClearValue,
+		IID_PPV_ARGS(&m_NormalMapBuffer)
 	));
 
+	// crate RTV for normal map buffer
 	m_Device->CreateRenderTargetView(
-		m_SSAOFrameTextureBuffer.Get(),
+		m_NormalMapBuffer.Get(),
 		nullptr,
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(
-			m_FrameTexturesRTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-			m_SSAOtextureRTVIndex,
-			m_CBV_SRV_UAVDescSize
-		)
+		rtvDescHandle
 	);
 
+	// create SRV for normal map buffer
 	m_Device->CreateShaderResourceView(
-		m_SSAOFrameTextureBuffer.Get(),
+		m_NormalMapBuffer.Get(),
 		nullptr,
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(
-			m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-			m_SSAOtextureSRVIndex,
-			m_CBV_SRV_UAVDescSize
-		)
+		srvDescHandle
 	);
 
+	// create SRV for depth buffer
 	D3D12_SHADER_RESOURCE_VIEW_DESC dsViewDesc = {};
 
 	dsViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
@@ -1295,21 +1456,67 @@ void ModelsApp::UpdateSSAOFrameTexture() {
 	m_Device->CreateShaderResourceView(
 		m_DSBuffer.Get(),
 		&dsViewDesc,
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(
-			m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-			m_SSAOtextureSRVIndex + 1,
-			m_CBV_SRV_UAVDescSize
-		)
+		srvDescHandle.Offset(m_CBV_SRV_UAVDescSize)
+	);
+
+	// create SRV for random map buffer
+	m_Device->CreateShaderResourceView(
+		m_RandomMapBuffer.Get(),
+		nullptr,
+		srvDescHandle.Offset(m_CBV_SRV_UAVDescSize)
+	);
+
+	// create occlusion maps buffers
+	CD3DX12_RESOURCE_DESC occlusionMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+		DXGI_FORMAT_R16_UNORM,
+		m_ClientWidth / 2,
+		m_ClientHeight / 2
+	);
+
+	occlusionMapDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+	ThrowIfFailed(m_Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+		&occlusionMapDesc,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		NULL,
+		IID_PPV_ARGS(&m_OcclusionMapBuffer0)
+	));
+
+	ThrowIfFailed(m_Device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+		&occlusionMapDesc,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		NULL,
+		IID_PPV_ARGS(&m_OcclusionMapBuffer1)
+	));
+
+	// create RTV's for occlusion maps buffers
+	m_Device->CreateRenderTargetView(
+		m_OcclusionMapBuffer0.Get(),
+		nullptr,
+		rtvDescHandle.Offset(m_RTVDescSize)
+	);
+
+	m_Device->CreateRenderTargetView(
+		m_OcclusionMapBuffer1.Get(),
+		nullptr,
+		rtvDescHandle.Offset(m_RTVDescSize)
+	);
+
+	// create SRV's for occlusion maps buffers
+	m_Device->CreateShaderResourceView(
+		m_OcclusionMapBuffer0.Get(),
+		nullptr,
+		srvDescHandle.Offset(m_CBV_SRV_UAVDescSize)
 	);
 
 	m_Device->CreateShaderResourceView(
-		m_RandomVectorsBuffer.Get(),
+		m_OcclusionMapBuffer1.Get(),
 		nullptr,
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(
-			m_FrameTexturesSRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-			m_SSAOtextureSRVIndex + 2,
-			m_CBV_SRV_UAVDescSize
-		)
+		srvDescHandle.Offset(m_CBV_SRV_UAVDescSize)
 	);
 }
 
@@ -1379,16 +1586,21 @@ void ModelsApp::BuildSSAONormPipelineStateObject() {
 }
 
 void ModelsApp::BuildSSAORootSignature() {
-	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
 
-	CD3DX12_DESCRIPTOR_RANGE1 normalMapDepthDescRange;
-	normalMapDepthDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+	CD3DX12_DESCRIPTOR_RANGE1 normalDepthRandomMapsDescRange;
+	normalDepthRandomMapsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+	
+	CD3DX12_DESCRIPTOR_RANGE1 occlusionMapDesRange;
+	occlusionMapDesRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);
 
 	CD3DX12_DESCRIPTOR_RANGE1 passConstantsDescRange;
 	passConstantsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 
-	rootParameters[0].InitAsDescriptorTable(1, &normalMapDepthDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
-	rootParameters[1].InitAsDescriptorTable(1, &passConstantsDescRange);
+	rootParameters[0].InitAsDescriptorTable(1, &normalDepthRandomMapsDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[1].InitAsDescriptorTable(1, &occlusionMapDesRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[2].InitAsDescriptorTable(1, &passConstantsDescRange);
+	rootParameters[3].InitAsConstants(13, 1);
 
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
@@ -1485,7 +1697,7 @@ void ModelsApp::BuildSSAOPipelineStateObject() {
 
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R16_UNORM;
 	psoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
 	psoDesc.SampleDesc = { 1, 0 };
 
@@ -1494,9 +1706,29 @@ void ModelsApp::BuildSSAOPipelineStateObject() {
 	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoPSO)));
 
 	m_PSOs["SSAO"] = ssaoPSO;
+
+	// Compile shaders for blur
+	ComPtr<ID3DBlob> blurVertexShaderBlob = CompileShader(L"../../AppModels/shaders/BlurVertexShader.hlsl", "main", "vs_5_1");
+	ComPtr<ID3DBlob> blurPixelShaderBlob = CompileShader(L"../../AppModels/shaders/BlurPixelShader.hlsl", "main", "ps_5_1");
+
+	psoDesc.VS = {
+	reinterpret_cast<BYTE*>(blurVertexShaderBlob->GetBufferPointer()),
+	blurVertexShaderBlob->GetBufferSize()
+	};
+
+	psoDesc.PS = {
+		reinterpret_cast<BYTE*>(blurPixelShaderBlob->GetBufferPointer()),
+		blurPixelShaderBlob->GetBufferSize()
+	};
+
+	ComPtr<ID3D12PipelineState> blurPSO;
+
+	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&blurPSO)));
+
+	m_PSOs["Blur"] = blurPSO;
 }
 
-void ModelsApp::BuildRandomVectors(ComPtr<ID3D12GraphicsCommandList> commandList) {
+void ModelsApp::BuildRandomMapBuffer(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	// evenly distributed vectors 
 	m_PassConstants.RandomDirections[0] = XMVectorSet(-1.0f, -1.0f, -1.0f, 0.0f);
 	m_PassConstants.RandomDirections[1] = XMVectorSet(1.0f, 1.0f, 1.0f, 0.0f);
@@ -1526,7 +1758,7 @@ void ModelsApp::BuildRandomVectors(ComPtr<ID3D12GraphicsCommandList> commandList
 	const uint32_t texWidth = 256;
 	const uint32_t texHeight = 256;
 
-	PackedVector::XMCOLOR data[texWidth * texHeight];
+	PackedVector::XMCOLOR* data = new PackedVector::XMCOLOR[texWidth * texHeight];
 
 	for (uint32_t i = 0; i < texHeight; ++i) {
 		for (uint32_t j = 0; j < texWidth; ++j) {
@@ -1540,10 +1772,10 @@ void ModelsApp::BuildRandomVectors(ComPtr<ID3D12GraphicsCommandList> commandList
 		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, texWidth, texHeight, 1, 1),
 		D3D12_RESOURCE_STATE_COPY_DEST,
 		nullptr,
-		IID_PPV_ARGS(&m_RandomVectorsBuffer)
+		IID_PPV_ARGS(&m_RandomMapBuffer)
 	));
 
-	uint64_t uploadBufferSize = GetRequiredIntermediateSize(m_RandomVectorsBuffer.Get(), 0, 1);
+	uint64_t uploadBufferSize = GetRequiredIntermediateSize(m_RandomMapBuffer.Get(), 0, 1);
 
 	ThrowIfFailed(m_Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -1551,7 +1783,7 @@ void ModelsApp::BuildRandomVectors(ComPtr<ID3D12GraphicsCommandList> commandList
 		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
-		IID_PPV_ARGS(&m_RandomVectorsUploadBuffer)
+		IID_PPV_ARGS(&m_RandomMapUploadBuffer)
 	));
 
 	D3D12_SUBRESOURCE_DATA subResouceData = {};
@@ -1561,17 +1793,33 @@ void ModelsApp::BuildRandomVectors(ComPtr<ID3D12GraphicsCommandList> commandList
 
 	UpdateSubresources(
 		commandList.Get(),
-		m_RandomVectorsBuffer.Get(),
-		m_RandomVectorsUploadBuffer.Get(),
+		m_RandomMapBuffer.Get(),
+		m_RandomMapUploadBuffer.Get(),
 		0, 0, 1,
 		&subResouceData
 	);
 
 	D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		m_RandomVectorsBuffer.Get(),
+		m_RandomMapBuffer.Get(),
 		D3D12_RESOURCE_STATE_COPY_DEST,
 		D3D12_RESOURCE_STATE_GENERIC_READ
 	);
 
 	commandList->ResourceBarrier(1, &barrier);
+
+	delete[] data;
+}
+
+void ModelsApp::InitBlurWeights() {
+	// weights for Gaussian blur with sigma = 1
+	float weightsSum = 0.0f;
+
+	for (int i = -m_BlurRadius; i < m_BlurRadius; ++i) {
+		m_BlurWeights[m_BlurRadius + i] = std::exp(-std::pow(i, 2.0f) / 2.0f);
+		weightsSum += m_BlurWeights[m_BlurRadius + i];
+	}
+
+	for (int i = -m_BlurRadius; i < m_BlurRadius; ++i) {
+		m_BlurWeights[m_BlurRadius + i] /= weightsSum;
+	}
 }

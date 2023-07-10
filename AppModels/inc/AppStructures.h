@@ -41,9 +41,12 @@ struct PassConstants {
 
 	XMVECTOR RandomDirections[14];
 	float OcclusionRadius = 0.2f;
-	float OcclusionFadeStart = 0.2f;
-	float OcclusionFadeEnd = 1.0f;
-	float OcclusionEpsilon = 0.05;;
+	float OcclusionFadeStart = 0.1f;
+	float OcclusionFadeEnd = 0.5f;
+	float OcclusionEpsilon = 0.01;
+
+	float OcclusionMapWidthInv;
+	float OcclusionMapHeightInv;
 };
 
 struct MaterialConstants {

@@ -35,6 +35,9 @@
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAOVertexShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\BlurVertexShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FXCompile>
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\GeoPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
@@ -45,6 +48,9 @@
       <Filter>Shaders</Filter>
     </FXCompile>
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAOPixelShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FXCompile>
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\BlurPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
   </ItemGroup>

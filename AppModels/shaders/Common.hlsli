@@ -28,6 +28,9 @@ struct PassConstants
     float OcclusionFadeStart;
     float OcclusionFadeEnd;
     float OcclusionEpsilon;
+    
+    float OcclusionMapWidthInv;
+    float OcclusionMapHeightInv;
 };
 
 struct MaterialConstants

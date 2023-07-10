@@ -66,11 +66,12 @@ private:
 	void BuildSobelPipelineStateObject();
 
 	// for SSAO
-	void UpdateSSAOFrameTexture();
+	void UpdateSSAOBuffersAndViews();
 	void BuildSSAONormPipelineStateObject();
 	void BuildSSAORootSignature();
 	void BuildSSAOPipelineStateObject();
-	void BuildRandomVectors(ComPtr<ID3D12GraphicsCommandList> commandList);
+	void BuildRandomMapBuffer(ComPtr<ID3D12GraphicsCommandList> commandList);
+	void InitBlurWeights();
 
 private:
 	FLOAT m_BackGroundColor[4] = { 0.4f, 0.6f, 0.9f, 1.0f };
@@ -114,9 +115,14 @@ private:
 
 	// for SSAO
 	bool m_IsSSAO = false;
-	ComPtr<ID3D12Resource> m_SSAOFrameTextureBuffer;
-	uint32_t m_SSAOtextureRTVIndex;
-	uint32_t m_SSAOtextureSRVIndex;
-	ComPtr<ID3D12Resource> m_RandomVectorsBuffer;
-	ComPtr<ID3D12Resource> m_RandomVectorsUploadBuffer;
+	ComPtr<ID3D12Resource> m_NormalMapBuffer;
+	ComPtr<ID3D12Resource> m_OcclusionMapBuffer0;
+	ComPtr<ID3D12Resource> m_OcclusionMapBuffer1;
+	ComPtr<ID3D12Resource> m_RandomMapBuffer;
+	ComPtr<ID3D12Resource> m_RandomMapUploadBuffer;
+	uint32_t m_SSAO_RTV_StartIndex;
+	uint32_t m_SSAO_SRV_StartIndex;
+
+	static const int m_BlurRadius = 5;
+	float m_BlurWeights[2 * m_BlurRadius - 1];
 };

@@ -26,7 +26,7 @@ float4 main(VertexOut pin) : SV_Target
     float3 p = pin.PosV * pz / pin.PosV.z;
     
     float3 n = NormalsMap.SampleLevel(PointClampSampler, pin.TexC, 0.0f).xyz;
-    float3 randVec = 2 * RandomMap.SampleLevel(LinearWrapSampler, pin.TexC, 0.0f).xyz - 1.0f; 
+    float3 randVec = 2 * RandomMap.SampleLevel(LinearWrapSampler, pin.TexC * 4.0f, 0.0f).xyz - 1.0f; 
     float sumOcclusion = 0.0f;
     
     for (int i = 0; i < 10; ++i) {
@@ -43,19 +43,24 @@ float4 main(VertexOut pin) : SV_Target
         rz = PassConstantsCB.Proj[2][3] / (rz - PassConstantsCB.Proj[2][2]);
         float3 r = q * rz / q.z;
         
+        // count occlusion by depth difference and angle with normal
         float distZ = p.z - r.z;
         float dp = max(dot(n, normalize(r - p)), 0.0f);
         float curOcclusion = 0.0f;
         
+        // if to close then points probably in the same surface
         if (distZ > PassConstantsCB.OcclusionEpsilon) {
+            // fade lineary from fade start to fade end
             curOcclusion = saturate((PassConstantsCB.OcclusionFadeEnd - distZ) / (PassConstantsCB.OcclusionFadeEnd - PassConstantsCB.OcclusionFadeStart));
         }
         
+        // if (r - p) orthogonal to n then probably they are in the same surface
         curOcclusion *= dp;
+        
         sumOcclusion += curOcclusion;
     }
     
-    sumOcclusion /= 14;
+    sumOcclusion /= 10;
     
     return saturate(pow(1 - sumOcclusion, 2.0f));
 }
