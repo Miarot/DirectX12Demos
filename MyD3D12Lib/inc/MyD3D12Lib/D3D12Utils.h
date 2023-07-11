@@ -13,7 +13,8 @@ using Microsoft::WRL::ComPtr;
 ComPtr<ID3DBlob> CompileShader(
 	const std::wstring& filename,
 	const std::string& entrypoint,
-	const std::string& target
+	const std::string& target,
+	const D3D_SHADER_MACRO* defines = NULL
 );
 
 // texture loading
@@ -54,13 +55,14 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 	HWND windowHandle,
 	uint32_t numBackBuffers,
 	uint32_t width, uint32_t height,
+	DXGI_FORMAT format,
 	bool allowTearing
 );
 
 ComPtr<ID3D12Resource> CreateDepthStencilBuffer(
 	ComPtr<ID3D12Device2> device,
 	uint32_t width, uint32_t height,
-	DXGI_FORMAT format,
+	DXGI_FORMAT bufferFormat, DXGI_FORMAT viewFormat,
 	float depthClearValue,
 	uint8_t stencilClearValue
 );

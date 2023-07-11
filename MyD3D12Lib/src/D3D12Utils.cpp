@@ -13,7 +13,8 @@ using namespace DirectX;
 ComPtr<ID3DBlob> CompileShader(
 	const std::wstring& filename,
 	const std::string& entrypoint,
-	const std::string& target)
+	const std::string& target,
+	const D3D_SHADER_MACRO * defines)
 {
 	ComPtr<ID3DBlob> shaderBlob;
 	ComPtr<ID3DBlob> error;
@@ -25,7 +26,7 @@ ComPtr<ID3DBlob> CompileShader(
 
 	hr = D3DCompileFromFile(
 		filename.c_str(),
-		NULL,
+		defines,
 		D3D_COMPILE_STANDARD_FILE_INCLUDE,
 		entrypoint.c_str(),
 		target.c_str(),
@@ -155,31 +156,33 @@ XMMATRIX GetProjectionMatrix(
 	float nearPlain, 
 	float farPlain) 
 {
-	float focalLengh = 1 / tan(XMConvertToRadians(fov) / 2);
+	// fov --- horizontal field of view
+	// aspect ratio --- screen width / height
+	// d --- projection plane distance from camera
+	float d = 1 / tan(XMConvertToRadians(fov) / 2);
 
-	float n = nearPlain;
-	float f = farPlain;
-
-	float l = -n / focalLengh;
-	float r = n / focalLengh;
-	float b = -aspectRatio * n / focalLengh;
-	float t = aspectRatio * n / focalLengh;
-
-	float alpha = 0.0f;
-	float beta = 1.0f;
+	// coefficients for z projection z' = A + B/z after perspective division
+	float A;
+	float B;
 
 	if (isInverseDepht) {
-		alpha = 1.0f;
-		beta = 0.0f;
+		// map z from 1 to 0
+		A = -nearPlain / (farPlain - nearPlain);
+		B = nearPlain * farPlain / (farPlain - nearPlain);
+	}
+	else {
+		// map z from 0 to 1
+		A = farPlain / (farPlain - nearPlain);
+		B = -nearPlain * farPlain / (farPlain - nearPlain);
 	}
 
-	XMVECTOR xProj = { 2 * n / (r - l), 0.0f, (r + l) / (r - l), 0.0f };
-	XMVECTOR yProj = { 0.0f, 2 * n / (t - b), (t + b) / (t - b), 0.0f };
-	XMVECTOR zProj = { 0.0f, 0.0f, -(alpha * n - beta * f) / (f - n), (alpha - beta) * n * f / (f - n) };
-	XMVECTOR wProj = { 0.0f, 0.0f, 1.0f, 0.0f };
-	XMMATRIX projectionMatrix = { xProj, yProj, zProj, wProj };
-	projectionMatrix = XMMatrixTranspose(projectionMatrix);
-
+	XMMATRIX projectionMatrix = { 
+		d, 0,				0, 0,
+		0, d * aspectRatio, 0, 0,
+		0, 0,				A, 1,
+		0, 0,				B, 0
+	};
+	
 	return projectionMatrix;
 }
 
@@ -312,6 +315,7 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 	HWND windowHandle,
 	uint32_t numBackBuffers,
 	uint32_t width, uint32_t height,
+	DXGI_FORMAT format,
 	bool allowTearing)
 {
 	ComPtr<IDXGISwapChain1> swapChain1;
@@ -328,7 +332,7 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 
 	swapChainDesc.Width = width;
 	swapChainDesc.Height = height;
-	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.Format = format;
 	swapChainDesc.Stereo = FALSE;
 	swapChainDesc.SampleDesc = DXGI_SAMPLE_DESC{ 1, 0 };
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -356,14 +360,14 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 ComPtr<ID3D12Resource> CreateDepthStencilBuffer(
 	ComPtr<ID3D12Device2> device,
 	uint32_t width, uint32_t height, 
-	DXGI_FORMAT format, 
+	DXGI_FORMAT bufferFormat, DXGI_FORMAT viewFormat, 
 	float depthClearValue, 
 	uint8_t stencilClearValue)
 {
 	ComPtr<ID3D12Resource> depthStencilBuffer;
 
 	D3D12_RESOURCE_DESC dsBufferDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-		format,
+		bufferFormat,
 		width, height,
 		1, 0, 1, 0,
 		D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
@@ -372,7 +376,7 @@ ComPtr<ID3D12Resource> CreateDepthStencilBuffer(
 	);
 
 	D3D12_CLEAR_VALUE dsClearValue{};
-	dsClearValue.Format = format;
+	dsClearValue.Format = viewFormat;
 	dsClearValue.DepthStencil = { depthClearValue, stencilClearValue };
 
 	ThrowIfFailed(device->CreateCommittedResource(

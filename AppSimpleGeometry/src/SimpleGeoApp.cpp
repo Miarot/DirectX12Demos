@@ -92,7 +92,7 @@ void SimpleGeoApp::OnUpdate() {
 	m_PassConstants.Proj = GetProjectionMatrix(
 		m_IsInverseDepth,
 		m_Camera.GetFoV(),
-		m_ClientHeight / static_cast<float>(m_ClientWidth)
+		m_ClientWidth / static_cast<float>(m_ClientHeight)
 	);
 
 	if (m_IsShakeEffect) {
@@ -151,7 +151,7 @@ void SimpleGeoApp::OnRender() {
 	auto frameTextureBuffer = m_FrameTexturesBuffers;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE mainRTV(
-		m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_RTVDescHeap->GetCPUDescriptorHandleForHeapStart(),
 		m_CurrentBackBufferIndex, m_RTVDescSize
 	);
 
@@ -1126,7 +1126,7 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	psoDesc.DSVFormat = m_DepthSencilFormat;
+	psoDesc.DSVFormat = m_DepthSencilViewFormat;
 	psoDesc.SampleDesc = { 1, 0 };
 
 	ComPtr<ID3D12PipelineState> straightDepthPSO;

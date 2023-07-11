@@ -140,10 +140,11 @@ bool BaseApp::Initialize() {
 		m_WindowHandle, 
 		m_NumBackBuffers,
 		m_ClientWidth, m_ClientHeight,
+		m_BackBuffersFormat,
 		m_AllowTearing
 	);
 
-	m_BackBuffersDescHeap = CreateDescriptorHeap(
+	m_RTVDescHeap = CreateDescriptorHeap(
 		m_Device,
 		m_NumBackBuffers, 
 		D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 
@@ -164,7 +165,7 @@ bool BaseApp::Initialize() {
 	m_DSBuffer = CreateDepthStencilBuffer(
 		m_Device, 
 		m_ClientWidth, m_ClientHeight, 
-		m_DepthSencilFormat,
+		m_DepthSencilBufferFormat, m_DepthSencilViewFormat,
 		m_DepthClearValue,
 		m_SteniclClearValue
 	);
@@ -311,7 +312,7 @@ void BaseApp::FullScreen(bool fullScreen) {
 
 void BaseApp::UpdateBackBuffersView()
 {
-	CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorHandle(m_BackBuffersDescHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorHandle(m_RTVDescHeap->GetCPUDescriptorHandleForHeapStart());
 	ComPtr<ID3D12Resource> currentResource;
 
 	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
@@ -325,7 +326,7 @@ void BaseApp::UpdateBackBuffersView()
 void BaseApp::UpdateDSView() {
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 
-	dsvDesc.Format = m_DepthSencilFormat;
+	dsvDesc.Format = m_DepthSencilViewFormat;
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Texture2D.MipSlice = 0;
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
@@ -339,7 +340,7 @@ void BaseApp::ResizeDSBuffer() {
 	m_DSBuffer = CreateDepthStencilBuffer(
 		m_Device,
 		m_ClientWidth, m_ClientHeight,
-		m_DepthSencilFormat,
+		m_DepthSencilBufferFormat, m_DepthSencilViewFormat,
 		m_DepthClearValue,
 		m_SteniclClearValue
 	);

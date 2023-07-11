@@ -380,7 +380,16 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</EnableDebuggingInformation>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">-Qembed_debug</AdditionalOptions>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SobelVertexShader.hlsl">
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAOVertexShader.hlsl">
+      <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableDebuggingInformation>
+      <ShaderType>Vertex</ShaderType>
+      <ShaderModel>6.0</ShaderModel>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">-Qembed_debug</AdditionalOptions>
+      <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DisableOptimizations>
+      <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</EnableDebuggingInformation>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">-Qembed_debug</AdditionalOptions>
+    </FXCompile>
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\FullScreenQuadVS.hlsl">
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableDebuggingInformation>
       <ShaderType>Vertex</ShaderType>
       <ShaderModel>6.0</ShaderModel>
@@ -398,7 +407,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</EnableDebuggingInformation>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">-Qembed_debug</AdditionalOptions>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\NormPixelShader.hlsl">
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SobelPixelShader.hlsl">
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableDebuggingInformation>
       <ShaderType>Pixel</ShaderType>
       <ShaderModel>6.0</ShaderModel>
@@ -407,7 +416,16 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</EnableDebuggingInformation>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">-Qembed_debug</AdditionalOptions>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SobelPixelShader.hlsl">
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAOPixelShader.hlsl">
+      <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableDebuggingInformation>
+      <ShaderType>Pixel</ShaderType>
+      <ShaderModel>6.0</ShaderModel>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">-Qembed_debug</AdditionalOptions>
+      <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DisableOptimizations>
+      <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</EnableDebuggingInformation>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">-Qembed_debug</AdditionalOptions>
+    </FXCompile>
+    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\BlurPixelShader.hlsl">
       <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableDebuggingInformation>
       <ShaderType>Pixel</ShaderType>
       <ShaderModel>6.0</ShaderModel>
@@ -419,6 +437,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <None Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\GeoUtils.hlsli">
     </None>
     <None Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\LightUtils.hlsli">
+    </None>
+    <None Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\Common.hlsli">
     </None>
   </ItemGroup>
   <ItemGroup>
