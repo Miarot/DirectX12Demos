@@ -80,16 +80,18 @@ bool ModelsApp::Initialize() {
 	// for Sobel filter
 	m_SobelTextureRTVIndex = m_NumBackBuffers;
 	m_SobelTextureSRVIndex = m_NextCBV_SRVDescHeapIndex;
+	m_NextCBV_SRVDescHeapIndex += m_NumSobelSRV;
 	UpdateSobelFrameTexture();
 	BuildSobelRootSignature();
 	BuildSobelPipelineStateObject();
 
 	// for SSAO
 	m_SSAO_RTV_StartIndex = m_SobelTextureRTVIndex + m_NumSobelRTV;
-	m_SSAO_SRV_StartIndex = m_SobelTextureSRVIndex + m_NumSobelSRV;
+	m_SSAO_SRV_StartIndex = m_NextCBV_SRVDescHeapIndex;
+	m_NextCBV_SRVDescHeapIndex += m_NumSSAO_SRV;
 	BuildSSAORootSignature();
 	BuildSSAOPipelineStateObject();
-	BuildRandomMapBuffer(commandList);
+	BuildRandomMapBufferAndDirections(commandList);
 	UpdateSSAOBuffersAndViews();
 	InitBlurWeights();
 
@@ -97,7 +99,7 @@ bool ModelsApp::Initialize() {
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
 	m_DirectCommandQueue->WaitForFenceValue(fenceValue);
 
-	// release upload heaps after vertex, index and textures loading
+	// release upload heaps after vertexes, indexes, textures and random vectors loading
 	for (auto& it : m_Geometries) {
 		it.second->DisposeUploaders();
 	}
@@ -116,7 +118,7 @@ void ModelsApp::OnUpdate() {
 
 	m_Timer.Tick();
 
-	// log fps
+	// log fps and camera position
 	if (m_Timer.GetMeasuredTime() >= 1.0) {
 		char buffer[500];
 		auto fps = m_Timer.GetMeasuredTicks() / m_Timer.GetMeasuredTime();
@@ -131,7 +133,12 @@ void ModelsApp::OnUpdate() {
 		m_Timer.StartMeasurement();
 	}
 	
-	// update pass constants
+	UpdatePassConstants();
+	UpdateMaterialsConstants();
+	UpdateObjectsConstants();
+}
+
+void ModelsApp::UpdatePassConstants() {
 	m_PassConstants.View = m_Camera.GetViewMatrix();
 
 	m_PassConstants.Proj = GetProjectionMatrix(
@@ -153,7 +160,7 @@ void ModelsApp::OnUpdate() {
 	);
 
 	m_PassConstants.ProjTex = XMMatrixMultiply(
-		m_PassConstants.Proj, 
+		m_PassConstants.Proj,
 		XMMATRIX(
 			0.5f, 0.0f, 0.0f, 0.0f,
 			0.0f, -0.5f, 0.0f, 0.0f,
@@ -174,8 +181,9 @@ void ModelsApp::OnUpdate() {
 	m_PassConstants.OcclusionMapHeightInv = 2.0f / static_cast<float>(m_ClientHeight);
 
 	m_CurrentFrameResources->m_PassConstantsBuffer->CopyData(0, m_PassConstants);
+}
 
-	// update materials if necessary
+void ModelsApp::UpdateMaterialsConstants() {
 	for (auto& it : m_Materials) {
 		if (it->NumDirtyFrames > 0) {
 			m_CurrentFrameResources->m_MaterialsConstantsBuffer->CopyData(
@@ -190,13 +198,14 @@ void ModelsApp::OnUpdate() {
 			--it->NumDirtyFrames;
 		}
 	}
+}
 
-	// update object constants if necessary
-	for (auto& it: m_RenderItems) {
+void ModelsApp::UpdateObjectsConstants() {
+	for (auto& it : m_RenderItems) {
 		if (it->m_NumDirtyFramse > 0) {
 			m_CurrentFrameResources->m_ObjectsConstantsBuffer->CopyData(
-				it->m_CBIndex, 
-				{ 
+				it->m_CBIndex,
+				{
 					it->m_ModelMatrix,
 					it->m_ModelMatrixInvTrans
 				}
@@ -205,7 +214,6 @@ void ModelsApp::OnUpdate() {
 			--it->m_NumDirtyFramse;
 		}
 	}
-
 }
 
 void ModelsApp::OnRender() {
@@ -239,13 +247,13 @@ void ModelsApp::OnRender() {
 		switch (m_DrawingType)
 		{
 			case DrawingType::Ordinar:
-				pso = m_IsInverseDepth ? m_PSOs["inverseDepth"] : m_PSOs["straightDepth"];
+				pso = m_IsInverseDepth ? m_PSOs["geoInverseDepth"] : m_PSOs["geoStraightDepth"];
 				break;
 			case DrawingType::Normals:
-				pso = m_IsInverseDepth ? m_PSOs["normInverseDepth"] : m_PSOs["normStraightDepth"];
+				pso = m_IsInverseDepth ? m_PSOs["geoNormInverseDepth"] : m_PSOs["geoNormStraightDepth"];
 				break;
 			case DrawingType::SSAO:
-				pso = m_IsOnlySSAO ? m_PSOs["SSAOonly"] : m_PSOs["geoWithSSAO"];
+				pso = m_IsOnlySSAO ? m_PSOs["geoSSAOonly"] : m_PSOs["geoSSAO"];
 				break;
 		}
 
@@ -257,7 +265,7 @@ void ModelsApp::OnRender() {
 			);
 
 			RenderGeometry(
-				commandList, pso, 
+				commandList, pso,
 				m_SobelFrameTextureBuffer.Get(), sobelTexRTV, 
 				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 				m_BackGroundColor
@@ -715,6 +723,9 @@ void ModelsApp::OnMouseMove(WPARAM wParam, int x, int y) {
 
 void ModelsApp::InitSceneState() {
 	m_DrawingType = DrawingType::Ordinar;
+	m_IsOnlySSAO = false;
+	m_IsShakeEffect = false;
+	m_IsSobelFilter = false;
 
 	m_Camera = Camera(
 		45.0f,
@@ -733,7 +744,9 @@ void ModelsApp::InitSceneState() {
 
 void ModelsApp::BuildLights() {
 	m_PassConstants.AmbientLight = XMVectorSet(0.4f, 0.4f, 0.4f, 1.0f);
+
 	uint32_t curLight = 0;
+
 	// directional light 1 
 	{
 		m_PassConstants.Lights[curLight].Strength = { 0.0f, 0.0f, 0.0f };
@@ -1173,7 +1186,7 @@ void ModelsApp::BuildPipelineStateObject() {
 	psoDesc.InputLayout = inpuitLayout;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.RTVFormats[0] = m_BackBuffersFormat;
 	psoDesc.DSVFormat = m_DepthSencilViewFormat;
 	psoDesc.SampleDesc = { 1, 0 };
 
@@ -1198,12 +1211,12 @@ void ModelsApp::BuildPipelineStateObject() {
 		};
 
 		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
-		m_PSOs["straightDepth"] = straightDepthPSO;
+		m_PSOs["geoStraightDepth"] = straightDepthPSO;
 
 		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 
 		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
-		m_PSOs["inverseDepth"] = inverseDepthPSO;
+		m_PSOs["geoInverseDepth"] = inverseDepthPSO;
 	}
 
 	// for normals rendering
@@ -1220,12 +1233,12 @@ void ModelsApp::BuildPipelineStateObject() {
 		};
 
 		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normInverseDepthPSO)));
-		m_PSOs["normInverseDepth"] = normInverseDepthPSO;
+		m_PSOs["geoNormInverseDepth"] = normInverseDepthPSO;
 
 		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
 		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
-		m_PSOs["normStraightDepth"] = normStraightDepthPSO;
+		m_PSOs["geoNormStraightDepth"] = normStraightDepthPSO;
 	}
 
 	// for SSAO rendering
@@ -1243,7 +1256,7 @@ void ModelsApp::BuildPipelineStateObject() {
 		};
 
 		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoPSO)));
-		m_PSOs["geoWithSSAO"] = ssaoPSO;
+		m_PSOs["geoSSAO"] = ssaoPSO;
 	}
 
 	// for SSAO only rendering
@@ -1259,7 +1272,7 @@ void ModelsApp::BuildPipelineStateObject() {
 		};
 
 		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoOnlyPSO)));
-		m_PSOs["SSAOonly"] = ssaoOnlyPSO;
+		m_PSOs["geoSSAOonly"] = ssaoOnlyPSO;
 	}
 
 	// for normals for SSAO drawing
@@ -1289,10 +1302,10 @@ void ModelsApp::BuildPipelineStateObject() {
 }
 
 void ModelsApp::UpdateSobelFrameTexture() {
-	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, m_ClientWidth, m_ClientHeight);
+	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(m_BackBuffersFormat, m_ClientWidth, m_ClientHeight);
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-	CD3DX12_CLEAR_VALUE clearValue{ DXGI_FORMAT_R8G8B8A8_UNORM , m_BackGroundColor.data() };
+	CD3DX12_CLEAR_VALUE clearValue{ m_BackBuffersFormat , m_BackGroundColor.data() };
 
 	ThrowIfFailed(m_Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -1394,7 +1407,7 @@ void ModelsApp::BuildSobelPipelineStateObject() {
 
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.RTVFormats[0] = m_BackBuffersFormat;
 	psoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
 	psoDesc.SampleDesc = { 1, 0 };
 
@@ -1672,7 +1685,7 @@ void ModelsApp::BuildSSAOPipelineStateObject() {
 	m_PSOs["Blur"] = blurPSO;
 }
 
-void ModelsApp::BuildRandomMapBuffer(ComPtr<ID3D12GraphicsCommandList> commandList) {
+void ModelsApp::BuildRandomMapBufferAndDirections(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	// evenly distributed vectors 
 	m_PassConstants.RandomDirections[0] = XMVectorSet(-1.0f, -1.0f, -1.0f, 0.0f);
 	m_PassConstants.RandomDirections[1] = XMVectorSet(1.0f, 1.0f, 1.0f, 0.0f);
@@ -1695,10 +1708,12 @@ void ModelsApp::BuildRandomMapBuffer(ComPtr<ID3D12GraphicsCommandList> commandLi
 	m_PassConstants.RandomDirections[12] = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 	m_PassConstants.RandomDirections[13] = XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f);
 
+	// make directions random length
 	for (uint32_t i = 0; i < 14; ++i) {
 		m_PassConstants.RandomDirections[i] = randFloat(0.25f, 1.0f) * XMVector3Normalize(m_PassConstants.RandomDirections[i]);
 	}
 
+	// crate random vectors in CPU memory
 	const uint32_t texWidth = 256;
 	const uint32_t texHeight = 256;
 
@@ -1710,6 +1725,7 @@ void ModelsApp::BuildRandomMapBuffer(ComPtr<ID3D12GraphicsCommandList> commandLi
 		}
 	}
 
+	// crate random vectors buffer and upload buffer
 	ThrowIfFailed(m_Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
@@ -1730,6 +1746,7 @@ void ModelsApp::BuildRandomMapBuffer(ComPtr<ID3D12GraphicsCommandList> commandLi
 		IID_PPV_ARGS(&m_RandomMapUploadBuffer)
 	));
 
+	// load random vectors from CPU to GPU
 	D3D12_SUBRESOURCE_DATA subResouceData = {};
 	subResouceData.pData = data;
 	subResouceData.RowPitch = texWidth * sizeof(PackedVector::XMCOLOR);

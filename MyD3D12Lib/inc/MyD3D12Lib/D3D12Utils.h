@@ -55,6 +55,7 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 	HWND windowHandle,
 	uint32_t numBackBuffers,
 	uint32_t width, uint32_t height,
+	DXGI_FORMAT format,
 	bool allowTearing
 );
 

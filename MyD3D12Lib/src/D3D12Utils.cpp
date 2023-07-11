@@ -315,6 +315,7 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 	HWND windowHandle,
 	uint32_t numBackBuffers,
 	uint32_t width, uint32_t height,
+	DXGI_FORMAT format,
 	bool allowTearing)
 {
 	ComPtr<IDXGISwapChain1> swapChain1;
@@ -331,7 +332,7 @@ ComPtr<IDXGISwapChain4> CreateSwapChain(
 
 	swapChainDesc.Width = width;
 	swapChainDesc.Height = height;
-	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.Format = format;
 	swapChainDesc.Stereo = FALSE;
 	swapChainDesc.SampleDesc = DXGI_SAMPLE_DESC{ 1, 0 };
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;

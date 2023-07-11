@@ -69,6 +69,7 @@ protected:
 	bool m_FullScreen = false;
 	uint32_t m_ClientWidth = 1280;
 	uint32_t m_ClientHeight = 720;
+	DXGI_FORMAT m_BackBuffersFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	DXGI_FORMAT m_DepthSencilBufferFormat = DXGI_FORMAT_R32_TYPELESS;
 	DXGI_FORMAT m_DepthSencilViewFormat = DXGI_FORMAT_D32_FLOAT;
 	float m_DepthClearValue = 1.0f;
@@ -79,13 +80,13 @@ protected:
 	std::shared_ptr<CommandQueue> m_DirectCommandQueue;
 	ComPtr<IDXGISwapChain4> m_SwapChain;
 	ComPtr<ID3D12Resource> m_BackBuffers[m_NumBackBuffers];
+	ComPtr<ID3D12Resource> m_DSBuffer;
+	ComPtr<ID3D12DescriptorHeap> m_RTVDescHeap;
+	ComPtr<ID3D12DescriptorHeap> m_DSVDescHeap;
 	uint32_t m_BackBuffersFenceValues[m_NumBackBuffers];
 	uint32_t m_CurrentBackBufferIndex;
-	ComPtr<ID3D12DescriptorHeap> m_RTVDescHeap;
 	uint32_t m_RTVDescSize;
 	uint32_t m_CBV_SRV_UAVDescSize;
-	ComPtr<ID3D12Resource> m_DSBuffer;
-	ComPtr<ID3D12DescriptorHeap> m_DSVDescHeap;
 
 	RECT m_WindowRect;
 	D3D12_RECT m_ScissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);

@@ -25,7 +25,6 @@ set( VERTEX_SHADER_FILES
 set( PIXEL_SHADER_FILES
 	shaders/GeoPixelShader.hlsl	
 	shaders/SobelPixelShader.hlsl
-	shaders/SSAONormVPixelShader.hlsl
 	shaders/SSAOPixelShader.hlsl
 	shaders/BlurPixelShader.hlsl
 )

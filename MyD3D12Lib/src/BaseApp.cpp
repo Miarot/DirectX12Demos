@@ -140,6 +140,7 @@ bool BaseApp::Initialize() {
 		m_WindowHandle, 
 		m_NumBackBuffers,
 		m_ClientWidth, m_ClientHeight,
+		m_BackBuffersFormat,
 		m_AllowTearing
 	);
 

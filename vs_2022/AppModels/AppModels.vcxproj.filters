@@ -41,9 +41,6 @@
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SobelPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>
-    <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAONormVPixelShader.hlsl">
-      <Filter>Shaders</Filter>
-    </FXCompile>
     <FXCompile Include="C:\Users\Daniil\work\DirectX12Demos\AppModels\shaders\SSAOPixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FXCompile>

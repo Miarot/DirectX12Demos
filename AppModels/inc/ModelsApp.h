@@ -38,11 +38,9 @@ private:
 	virtual void OnMouseUp(WPARAM wParam, int x, int y) override;
 	virtual void OnMouseMove(WPARAM wParam, int x, int y) override;
 
-	void RenderSobelFilter(
-		ComPtr<ID3D12GraphicsCommandList> commandList,
-		ID3D12Resource* rtBuffer,
-		D3D12_CPU_DESCRIPTOR_HANDLE rtv
-	);
+	void UpdatePassConstants();
+	void UpdateMaterialsConstants();
+	void UpdateObjectsConstants();
 
 	void RenderGeometry(
 		ComPtr<ID3D12GraphicsCommandList> commandList,
@@ -51,6 +49,12 @@ private:
 		D3D12_CPU_DESCRIPTOR_HANDLE rtv,
 		D3D12_RESOURCE_STATES rtBufferPrevState,
 		std::array<FLOAT, 4> rtClearValue
+	);
+
+	void RenderSobelFilter(
+		ComPtr<ID3D12GraphicsCommandList> commandList,
+		ID3D12Resource* rtBuffer,
+		D3D12_CPU_DESCRIPTOR_HANDLE rtv
 	);
 
 	void RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList);
@@ -86,7 +90,7 @@ private:
 	void UpdateSSAOBuffersAndViews();
 	void BuildSSAORootSignature();
 	void BuildSSAOPipelineStateObject();
-	void BuildRandomMapBuffer(ComPtr<ID3D12GraphicsCommandList> commandList);
+	void BuildRandomMapBufferAndDirections(ComPtr<ID3D12GraphicsCommandList> commandList);
 	void InitBlurWeights();
 
 private:
