@@ -15,6 +15,8 @@ Demo to learn and explore DirectX 12 and different rendering technics.
 - 2 to toggle reverce-Z
 - 3 to toggle Sobel filter
 - 4 to toggle normals view
+- 5 to toggle screan space ambient occlusion (only in AppModels)
+- 6 to tuggle occlusion only view (then SSAO on, only in AppModels)
 
 ## Sources
 - https://github.com/jpvanoosten/LearningDirectX12
