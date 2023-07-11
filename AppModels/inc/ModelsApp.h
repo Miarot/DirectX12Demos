@@ -146,6 +146,8 @@ private:
 	uint32_t m_SSAO_RTV_StartIndex;
 	uint32_t m_SSAO_SRV_StartIndex;
 	std::array<FLOAT, 4> m_NormalMapBufferClearValue = { 0.0f, 0.0f, 0.0f, 0.0f };
+	uint32_t m_OcclusionMapWidth;
+	uint32_t m_OcclusionMapHeight;
 
 	static const int m_BlurRadius = 5;
 	float m_BlurWeights[2 * m_BlurRadius + 1];

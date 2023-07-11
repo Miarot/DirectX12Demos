@@ -44,7 +44,7 @@ float4 main(VertexOut pin) : SV_Target
     
     // get occlusion, normal and depth for central pixel
     float occlusion = blurWeights[BlurConstantsCB.Radius] * OcclusionMap.SampleLevel(LinearWrapSampler, pin.TexC, 0.0f).r;
-    float3 centerNormal = NormalMap.SampleLevel(LinearWrapSampler, pin.TexC, 0.0f).xyz;
+    float3 centerNormal = NormalMap.SampleLevel(PointClampSampler, pin.TexC, 0.0f).xyz;
     float centerDepth = DepthMap.SampleLevel(DepthSampler, pin.TexC, 0.0f).r;
     centerDepth = PassConstantsCB.Proj[2][3] / (centerDepth - PassConstantsCB.Proj[2][2]);
     
@@ -65,7 +65,7 @@ float4 main(VertexOut pin) : SV_Target
         
         // get normal and depth for nearby pixel
         float2 nearTexC = pin.TexC + i * texOffset;
-        float3 nearNormal = NormalMap.SampleLevel(LinearWrapSampler, nearTexC, 0.0f).xyz;
+        float3 nearNormal = NormalMap.SampleLevel(PointClampSampler, nearTexC, 0.0f).xyz;
         float nearDepth = DepthMap.SampleLevel(DepthSampler, nearTexC, 0.0f).r;
         nearDepth = PassConstantsCB.Proj[2][3] / (nearDepth - PassConstantsCB.Proj[2][2]);
         

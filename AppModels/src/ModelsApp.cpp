@@ -548,8 +548,8 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 
 		// set Rasterizer Stage
 		D3D12_VIEWPORT curViewPort = m_ViewPort;
-		curViewPort.Width /= 2;
-		curViewPort.Height /= 2;
+		curViewPort.Width = m_OcclusionMapWidth;
+		curViewPort.Height = m_OcclusionMapHeight;
 
 		commandList->RSSetScissorRects(1, &m_ScissorRect);
 		commandList->RSSetViewports(1, &curViewPort);
@@ -1489,10 +1489,13 @@ void ModelsApp::UpdateSSAOBuffersAndViews() {
 	);
 
 	// create occlusion maps buffers
+	m_OcclusionMapWidth = m_ClientWidth / 2;
+	m_OcclusionMapHeight = m_ClientHeight / 2;
+
 	CD3DX12_RESOURCE_DESC occlusionMapDesc = CD3DX12_RESOURCE_DESC::Tex2D(
 		DXGI_FORMAT_R16_UNORM,
-		m_ClientWidth / 2,
-		m_ClientHeight / 2
+		m_OcclusionMapWidth,
+		m_OcclusionMapHeight
 	);
 
 	occlusionMapDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
