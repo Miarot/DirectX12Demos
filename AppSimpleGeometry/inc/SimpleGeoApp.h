@@ -34,6 +34,8 @@ private:
 	virtual void OnMouseUp(WPARAM wParam, int x, int y) override;
 	virtual void OnMouseMove(WPARAM wParam, int x, int y) override;
 
+	void SimpleGeoApp::RenderRenderItem(ComPtr<ID3D12GraphicsCommandList> commandList, RenderItem* renderItem);
+
 	void InitSceneState();
 	void BuildLights();
 	void BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList);
@@ -66,7 +68,9 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Texture>> m_Textures;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;
 	std::unordered_map <std::string, std::unique_ptr<Material>> m_Materials;
-	std::vector<std::unique_ptr<RenderItem>> m_RenderItems;
+	std::vector<std::unique_ptr<RenderItem>> m_AllRenderItems;
+	std::vector<RenderItem *> m_OpaqueRenderItems;
+	std::vector<RenderItem *> m_TransparentRenderItems;
 	std::vector<std::unique_ptr<FrameResources>> m_FramesResources;
 	FrameResources* m_CurrentFrameResources;
 

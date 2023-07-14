@@ -55,10 +55,21 @@ set_source_files_properties( ${PIXEL_SHADER_FILES}
         VS_SHADER_TYPE Pixel
 )
 
+set( TEXTURE_FILES 
+	textures/default.dds
+	textures/bricks.dds
+	textures/WoodCrate01.dds
+	textures/water1.dds
+	textures/ice.dds
+)
+
+source_group( "Textures" FILES ${TEXTURE_FILES} )
+
 add_executable( ${TARGET_NAME} WIN32
 	${HEADER_FILES}
 	${SRC_FILES}
 	${SHADER_FILES}
+	${TEXTURE_FILES}
 )
 
 target_include_directories( ${TARGET_NAME} 

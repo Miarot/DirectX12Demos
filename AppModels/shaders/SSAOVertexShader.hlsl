@@ -25,6 +25,7 @@ VertexOut main(uint vertexId : SV_VertexID)
     vout.TexC = gTexCoords[vertexId];
     vout.PosH = float4(2.0f * vout.TexC.x - 1.0f, 1.0f - 2.0f * vout.TexC.y, 0.0f, 1.0f);
     
+    // from NDC to coordinates on near plane (or far plane if reversed depth)
     float4 posV = mul(PassConstantsCB.ProjInv, vout.PosH);
     vout.PosV = posV.xyz / posV.w;
     

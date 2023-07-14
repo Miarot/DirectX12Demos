@@ -25,7 +25,7 @@ bool SimpleGeoApp::Initialize() {
 
 	m_CBV_SRVDescHeap = CreateDescriptorHeap(
 		m_Device,
-		m_Textures.size() + (m_RenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
+		m_Textures.size() + (m_AllRenderItems.size() + 1 + m_Materials.size()) * m_NumBackBuffers,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
@@ -124,14 +124,14 @@ void SimpleGeoApp::OnUpdate() {
 	}
 
 	// rotate box
-	auto boxRenderItem = m_RenderItems[2].get();
+	auto boxRenderItem = m_AllRenderItems[2].get();
 	float angle = static_cast<float>(m_Timer.GetTotalTime() * 90.0);
 	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
 	boxRenderItem->m_ModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
 	boxRenderItem->m_NumDirtyFramse = 3;
 
 	// update object constants if necessary
-	for (auto& it: m_RenderItems) {
+	for (auto& it: m_AllRenderItems) {
 		if (it->m_NumDirtyFramse > 0) {
 			m_CurrentFrameResources->m_ObjectsConstantsBuffer->CopyData(
 				it->m_CBIndex, 
@@ -219,75 +219,46 @@ void SimpleGeoApp::OnRender() {
 			)
 		);
 
-		// set PSO
-		// chose pso depending on z-buffer type and drawing type
-		ComPtr<ID3D12PipelineState> pso;
-
-		if (m_IsInverseDepth) {
-			if (m_IsDrawNorm) {
-				pso = m_PSOs["normInverseDepth"];
-			} else {
-				pso = m_PSOs["inverseDepth"];
-			}
-		} else {
-			if (m_IsDrawNorm) {
-				pso = m_PSOs["normStraightDepth"];
-			}
-			else {
-				pso = m_PSOs["straightDepth"];
-			}
-		}
-
-		commandList->SetPipelineState(pso.Get());
-
 		// set Rasterizer Stage
 		commandList->RSSetScissorRects(1, &m_ScissorRect);
 		commandList->RSSetViewports(1, &m_ViewPort);
 
 		// set Output Mergere Stage
 		commandList->OMSetRenderTargets(1, &geometryRTV, FALSE, &m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart());
-		
-		// draw render items
-		for (uint32_t i = 0; i < m_RenderItems.size(); ++i) {
-			auto renderItem = m_RenderItems[i].get();
-			auto mat = renderItem->m_Material;
 
-			// set Input-Assembler state
-			commandList->IASetVertexBuffers(0, 1, &renderItem->m_MeshGeo->VertexBufferView());
-			commandList->IASetIndexBuffer(&renderItem->m_MeshGeo->IndexBufferView());
-			commandList->IASetPrimitiveTopology(renderItem->m_PrivitiveType);
+		// set PSO
+		ComPtr<ID3D12PipelineState> pso;
 
-			// set object and material constants and texture
-			CD3DX12_GPU_DESCRIPTOR_HANDLE objCBDescHandle(
-				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_ObjectConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_RenderItems.size() + renderItem->m_CBIndex,
-				m_CBV_SRV_UAVDescSize
-			);
+		// if drawing normals then all render items same
+		if (m_IsDrawNorm) {
+			// chose pso depending on z-buffer type and drawing type
+			pso = m_IsInverseDepth ? m_PSOs["normInverseDepth"] : m_PSOs["normStraightDepth"];
 
-			CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
-				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_MaterialConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_Materials.size() + mat->MaterialCBIndex,
-				m_CBV_SRV_UAVDescSize
-			);
+			commandList->SetPipelineState(pso.Get());
 
-			CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
-				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-				m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
-				m_CBV_SRV_UAVDescSize
-			);
+			for (uint32_t i = 0; i < m_AllRenderItems.size(); ++i) {
+				RenderRenderItem(commandList, m_AllRenderItems[i].get());
+			}
+		} else {
+			// chose pso for opaque objects
+			pso = m_IsInverseDepth ? m_PSOs["inverseDepth"] : m_PSOs["straightDepth"];
 
-			commandList->SetGraphicsRootDescriptorTable(0, objCBDescHandle);
-			commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
-			commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
+			commandList->SetPipelineState(pso.Get());
 
-			// draw
-			commandList->DrawIndexedInstanced(
-				renderItem->m_IndexCount,
-				1,
-				renderItem->m_StartIndexLocation,
-				renderItem->m_BaseVertexLocation,
-				0
-			);
+			// draw opaque render items
+			for (uint32_t i = 0; i < m_OpaqueRenderItems.size(); ++i) {
+				RenderRenderItem(commandList, m_OpaqueRenderItems[i]);
+			}
+
+			// chose pso for transparent objects
+			pso = m_IsInverseDepth ? m_PSOs["transInverseDepth"] : m_PSOs["transStraightDepth"];
+
+			commandList->SetPipelineState(pso.Get());
+
+			// draw opaque render items
+			for (uint32_t i = 0; i < m_TransparentRenderItems.size(); ++i) {
+				RenderRenderItem(commandList, m_TransparentRenderItems[i]);
+			}
 		}
 	}
 
@@ -348,6 +319,48 @@ void SimpleGeoApp::OnRender() {
 		m_CurrentBackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
 		m_DirectCommandQueue->WaitForFenceValue(m_BackBuffersFenceValues[m_CurrentBackBufferIndex]);
 	}
+}
+
+void SimpleGeoApp::RenderRenderItem(ComPtr<ID3D12GraphicsCommandList> commandList, RenderItem* renderItem)
+{
+	auto mat = renderItem->m_Material;
+
+	// set Input-Assembler state
+	commandList->IASetVertexBuffers(0, 1, &renderItem->m_MeshGeo->VertexBufferView());
+	commandList->IASetIndexBuffer(&renderItem->m_MeshGeo->IndexBufferView());
+	commandList->IASetPrimitiveTopology(renderItem->m_PrivitiveType);
+
+	// set object and material constants and texture
+	CD3DX12_GPU_DESCRIPTOR_HANDLE objCBDescHandle(
+		m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+		m_ObjectConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_AllRenderItems.size() + renderItem->m_CBIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
+		m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+		m_MaterialConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_Materials.size() + mat->MaterialCBIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
+		m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+		m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	commandList->SetGraphicsRootDescriptorTable(0, objCBDescHandle);
+	commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
+	commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
+
+	// draw
+	commandList->DrawIndexedInstanced(
+		renderItem->m_IndexCount,
+		1,
+		renderItem->m_StartIndexLocation,
+		renderItem->m_BaseVertexLocation,
+		0
+	);
 }
 
 void SimpleGeoApp::OnResize() {
@@ -511,6 +524,24 @@ void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) 
 
 		brickTex->Name = "bricks";
 		brickTex->FileName = L"../../AppSimpleGeometry/textures/bricks.dds";
+
+		CreateDDSTextureFromFile(
+			m_Device,
+			commandList,
+			brickTex->FileName,
+			brickTex->Resource,
+			brickTex->UploadResource
+		);
+
+		m_Textures[brickTex->Name] = std::move(brickTex);
+	}
+
+	// load water texture
+	{
+		auto brickTex = std::make_unique<Texture>();
+
+		brickTex->Name = "water";
+		brickTex->FileName = L"../../AppSimpleGeometry/textures/water1.dds";
 
 		CreateDDSTextureFromFile(
 			m_Device,
@@ -757,6 +788,20 @@ void SimpleGeoApp::BuildMaterials() {
 		m_Materials[crate->Name] = std::move(crate);
 	}
 
+	// water texture material
+	{
+		auto crate = std::make_unique<Material>();
+
+		crate->Name = "waterTex";
+		crate->MaterialCBIndex = m_Materials.size();
+		crate->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.8f);
+		crate->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+		crate->Roughness = 0.5f;
+		crate->TextureName = "water";
+
+		m_Materials[crate->Name] = std::move(crate);
+	}
+
 	// light material 1
 	{
 		auto light = std::make_unique<Material>();
@@ -811,9 +856,10 @@ void SimpleGeoApp::BuildRenderItems() {
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
 		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
-		piramid->m_CBIndex = m_RenderItems.size();
+		piramid->m_CBIndex = m_AllRenderItems.size();
 
-		m_RenderItems.push_back(std::move(piramid));
+		m_OpaqueRenderItems.push_back(piramid.get());
+		m_AllRenderItems.push_back(std::move(piramid));
 	}
 
 	// whater piramid
@@ -826,9 +872,10 @@ void SimpleGeoApp::BuildRenderItems() {
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
 		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
-		piramid->m_CBIndex = m_RenderItems.size();
+		piramid->m_CBIndex = m_AllRenderItems.size();
 
-		m_RenderItems.push_back(std::move(piramid));
+		m_OpaqueRenderItems.push_back(piramid.get());
+		m_AllRenderItems.push_back(std::move(piramid));
 	}
 
 	// rotating crate box
@@ -841,9 +888,10 @@ void SimpleGeoApp::BuildRenderItems() {
 		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
 		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
 		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
-		box->m_CBIndex = m_RenderItems.size();
+		box->m_CBIndex = m_AllRenderItems.size();
 
-		m_RenderItems.push_back(std::move(box));
+		m_OpaqueRenderItems.push_back(box.get());
+		m_AllRenderItems.push_back(std::move(box));
 	}
 
 	// still bricks box
@@ -856,9 +904,10 @@ void SimpleGeoApp::BuildRenderItems() {
 		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
 		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
 		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
-		box->m_CBIndex = m_RenderItems.size();
+		box->m_CBIndex = m_AllRenderItems.size();
 
-		m_RenderItems.push_back(std::move(box));
+		m_OpaqueRenderItems.push_back(box.get());
+		m_AllRenderItems.push_back(std::move(box));
 	}
 
 	// point light piramid 1
@@ -877,9 +926,10 @@ void SimpleGeoApp::BuildRenderItems() {
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
 		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
-		piramid->m_CBIndex = m_RenderItems.size();
+		piramid->m_CBIndex = m_AllRenderItems.size();
 
-		m_RenderItems.push_back(std::move(piramid));
+		m_OpaqueRenderItems.push_back(piramid.get());
+		m_AllRenderItems.push_back(std::move(piramid));
 	}
 
 	// spot light piramid 1
@@ -898,11 +948,27 @@ void SimpleGeoApp::BuildRenderItems() {
 		piramid->m_IndexCount = curGeo->DrawArgs["Piramid"].IndexCount;
 		piramid->m_StartIndexLocation = curGeo->DrawArgs["Piramid"].StartIndexLocation;
 		piramid->m_BaseVertexLocation = curGeo->DrawArgs["Piramid"].BaseVertexLocation;
-		piramid->m_CBIndex = m_RenderItems.size();
-
-		m_RenderItems.push_back(std::move(piramid));
+		piramid->m_CBIndex = m_AllRenderItems.size();
+		
+		m_OpaqueRenderItems.push_back(piramid.get());
+		m_AllRenderItems.push_back(std::move(piramid));
 	}
 
+	// transparent water box
+	{
+		auto box = std::make_unique<RenderItem>();
+
+		box->m_ModelMatrix = XMMatrixTranslation(0, 0, 4);
+		box->m_MeshGeo = curGeo;
+		box->m_Material = m_Materials["waterTex"].get();
+		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
+		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
+		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
+		box->m_CBIndex = m_AllRenderItems.size();
+
+		m_TransparentRenderItems.push_back(box.get());
+		m_AllRenderItems.push_back(std::move(box));
+	}
 }
 
 void SimpleGeoApp::BuildFrameResources() {
@@ -912,7 +978,7 @@ void SimpleGeoApp::BuildFrameResources() {
 		m_FramesResources.push_back(std::make_unique<FrameResources>(
 			m_Device,
 			1, 
-			m_RenderItems.size(),
+			m_AllRenderItems.size(),
 			m_Materials.size()
 		));
 	}
@@ -960,7 +1026,7 @@ void SimpleGeoApp::BuildCBViews() {
 		auto objectsConstantsBuffer = m_FramesResources[i]->m_ObjectsConstantsBuffer->Get();
 		D3D12_GPU_VIRTUAL_ADDRESS objectConstantsBufferGPUAdress = objectsConstantsBuffer->GetGPUVirtualAddress();
 
-		for (uint32_t j = 0; j < m_RenderItems.size(); ++j) {
+		for (uint32_t j = 0; j < m_AllRenderItems.size(); ++j) {
 			D3D12_CONSTANT_BUFFER_VIEW_DESC CBViewDesc;
 
 			CBViewDesc.BufferLocation = objectConstantsBufferGPUAdress;
@@ -976,7 +1042,7 @@ void SimpleGeoApp::BuildCBViews() {
 		}
 	}
 
-	m_PassConstantsViewsStartIndex = m_ObjectConstantsViewsStartIndex + m_NumBackBuffers * m_RenderItems.size();
+	m_PassConstantsViewsStartIndex = m_ObjectConstantsViewsStartIndex + m_NumBackBuffers * m_AllRenderItems.size();
 	uint32_t passConstansElementByteSize = m_FramesResources[0]->m_PassConstantsBuffer->GetElementByteSize();
 
 	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
@@ -1083,11 +1149,6 @@ void SimpleGeoApp::BuildRootSignature() {
 }
 
 void SimpleGeoApp::BuildPipelineStateObject() {
-	// Compile shaders	
-	ComPtr<ID3DBlob> geoVertexShaderBlob = CompileShader(L"../../AppSimpleGeometry/shaders/GeoVertexShader.hlsl", "main", "vs_5_1");
-	ComPtr<ID3DBlob> geoPixelShaderBlob = CompileShader(L"../../AppSimpleGeometry/shaders/GeoPixelShader.hlsl", "main", "ps_5_1");
-	ComPtr<ID3DBlob> normPixelShaderBlob = CompileShader(L"../../AppSimpleGeometry/shaders/NormPixelShader.hlsl", "main", "ps_5_1");
-
 	// Create rasterizer state description
 	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
 	//rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
@@ -1107,17 +1168,6 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
 	psoDesc.pRootSignature = m_RootSignatures["Geometry"].Get();
-
-	psoDesc.VS = {
-		reinterpret_cast<BYTE*>(geoVertexShaderBlob->GetBufferPointer()),
-		geoVertexShaderBlob->GetBufferSize()
-	};
-
-	psoDesc.PS = {
-		reinterpret_cast<BYTE*>(geoPixelShaderBlob->GetBufferPointer()),
-		geoPixelShaderBlob->GetBufferSize()
-	};
-
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.RasterizerState = rasterizerDesc;
@@ -1129,32 +1179,88 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 	psoDesc.DSVFormat = m_DepthSencilViewFormat;
 	psoDesc.SampleDesc = { 1, 0 };
 
-	ComPtr<ID3D12PipelineState> straightDepthPSO;
-	ComPtr<ID3D12PipelineState> inverseDepthPSO;
-	ComPtr<ID3D12PipelineState> normStraightDepthPSO;
-	ComPtr<ID3D12PipelineState> normInverseDepthPSO;
+	ComPtr<ID3DBlob> geoVertexShaderBlob = CompileShader(L"../../AppSimpleGeometry/shaders/GeoVertexShader.hlsl", "main", "vs_5_1");
 
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
-
-	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
-
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
-
-	psoDesc.PS = {
-		reinterpret_cast<BYTE*>(normPixelShaderBlob->GetBufferPointer()),
-		normPixelShaderBlob->GetBufferSize()
+	psoDesc.VS = {
+		reinterpret_cast<BYTE*>(geoVertexShaderBlob->GetBufferPointer()),
+		geoVertexShaderBlob->GetBufferSize()
 	};
 
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normInverseDepthPSO)));
-	
-	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	ComPtr<ID3DBlob> geoPixelShaderBlob = CompileShader(L"../../AppSimpleGeometry/shaders/GeoPixelShader.hlsl", "main", "ps_5_1");
 
-	ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
+	psoDesc.PS = {
+		reinterpret_cast<BYTE*>(geoPixelShaderBlob->GetBufferPointer()),
+		geoPixelShaderBlob->GetBufferSize()
+	};
 
-	m_PSOs["straightDepth"] = straightDepthPSO;
-	m_PSOs["inverseDepth"] = inverseDepthPSO;	
-	m_PSOs["normStraightDepth"] = normStraightDepthPSO;
-	m_PSOs["normInverseDepth"] = normInverseDepthPSO;
+	// for ordinar geometry drawing
+	{
+		ComPtr<ID3D12PipelineState> straightDepthPSO;
+		ComPtr<ID3D12PipelineState> inverseDepthPSO;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
+
+		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
+
+		m_PSOs["straightDepth"] = straightDepthPSO;
+		m_PSOs["inverseDepth"] = inverseDepthPSO;
+	}
+
+	// for transparent geometry drawing
+	{
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPSODesc = psoDesc;
+
+		ComPtr<ID3D12PipelineState> transparentStraightDepthPSO;
+		ComPtr<ID3D12PipelineState> transparentInverseDepthPSO;
+
+		D3D12_RENDER_TARGET_BLEND_DESC transparentBlendDesc;
+
+		transparentBlendDesc.BlendEnable = true;
+		transparentBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+		transparentBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		transparentBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		transparentBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		transparentBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+		transparentBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+		transparentBlendDesc.LogicOpEnable = FALSE;
+		transparentBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+		transparentBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+		transparentPSODesc.BlendState.RenderTarget[0] = transparentBlendDesc;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&transparentPSODesc, IID_PPV_ARGS(&transparentInverseDepthPSO)));
+
+		transparentPSODesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&transparentPSODesc, IID_PPV_ARGS(&transparentStraightDepthPSO)));
+
+		m_PSOs["transStraightDepth"] = transparentStraightDepthPSO;
+		m_PSOs["transInverseDepth"] = transparentInverseDepthPSO;
+	}
+
+	// for normals view 
+	{
+		ComPtr<ID3D12PipelineState> normStraightDepthPSO;
+		ComPtr<ID3D12PipelineState> normInverseDepthPSO;
+
+		ComPtr<ID3DBlob> normPixelShaderBlob = CompileShader(L"../../AppSimpleGeometry/shaders/NormPixelShader.hlsl", "main", "ps_5_1");
+
+		psoDesc.PS = {
+			reinterpret_cast<BYTE*>(normPixelShaderBlob->GetBufferPointer()),
+			normPixelShaderBlob->GetBufferSize()
+		};
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normInverseDepthPSO)));
+
+		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
+
+		m_PSOs["normStraightDepth"] = normStraightDepthPSO;
+		m_PSOs["normInverseDepth"] = normInverseDepthPSO;
+	}
 }
 
 void SimpleGeoApp::UpdateFramesTextures() {
