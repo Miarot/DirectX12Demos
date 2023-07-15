@@ -553,6 +553,24 @@ void SimpleGeoApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) 
 
 		m_Textures[brickTex->Name] = std::move(brickTex);
 	}
+
+	// load tile texture
+	{
+		auto brickTex = std::make_unique<Texture>();
+
+		brickTex->Name = "tile";
+		brickTex->FileName = L"../../AppSimpleGeometry/textures/tile.dds";
+
+		CreateDDSTextureFromFile(
+			m_Device,
+			commandList,
+			brickTex->FileName,
+			brickTex->Resource,
+			brickTex->UploadResource
+		);
+
+		m_Textures[brickTex->Name] = std::move(brickTex);
+	}
 }
 
 void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
@@ -560,8 +578,9 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 
 	const uint32_t numBoxVertexes = 24;
 	const uint32_t numPiramidVertexes = 16;
+	const uint32_t numPlaneVertexes = 4;
 
-	std::array<Vertex, numBoxVertexes + numPiramidVertexes> vertexes = {
+	std::array<Vertex, numBoxVertexes + numPiramidVertexes + numPiramidVertexes> vertexes = {
 		// box
 		// front face
 		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(), XMFLOAT2(0.0f, 1.0f) }), // 0, 0
@@ -625,12 +644,19 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 		Vertex({ XMFLOAT3(0.5f, 1.0f, 0.5f) }), // 4, 13
 		Vertex({ XMFLOAT3(1.0f, 0.0f, 1.0f) }), // 2, 14
 		Vertex({ XMFLOAT3(1.0f, 0.0f, 0.0f) }), // 1, 15
+
+		// for plane
+		Vertex({ XMFLOAT3(-1.0f, 0.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 10.0f) }),
+		Vertex({ XMFLOAT3(-1.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) }),
+		Vertex({ XMFLOAT3(1.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(10.0f, 0.0f) }),
+		Vertex({ XMFLOAT3(1.0f, 0.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(10.0f, 10.0f) }),
 	};
 
 	const uint32_t numBoxIndexes = 36;
 	const uint32_t numPiramidIndexes = 18;
+	const uint32_t numPlaneIndexes = 6;
 
-	std::array<uint16_t, numBoxIndexes + numPiramidIndexes> indexes =
+	std::array<uint16_t, numBoxIndexes + numPiramidIndexes + numPlaneIndexes> indexes =
 	{
 		// box
 		0, 1, 2, 0, 2, 3, // front face
@@ -644,13 +670,16 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 		4, 5, 6, // front face
 		7, 8, 9, // back face
 		10, 11, 12, // left face
-		13, 14, 15 // right face
+		13, 14, 15, // right face
+		// plane
+		0, 1, 2,
+		0, 2, 3
 	};
 
 	// computer norms for each vertex
-	std::array<XMVECTOR, vertexes.size()> vertexesNorm;
+	std::array<XMVECTOR, numBoxVertexes + numPiramidVertexes> vertexesNorm;
 
-	for (uint32_t i = 0; i < vertexes.size(); ++i) {
+	for (uint32_t i = 0; i < vertexesNorm.size(); ++i) {
 		vertexesNorm[i] = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 	}
 	
@@ -672,7 +701,7 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 	}
 
 	// for piramid
-	for (uint32_t i = numBoxIndexes; i < indexes.size(); i += 3) {
+	for (uint32_t i = numBoxIndexes; i < numBoxIndexes + numPiramidIndexes; i += 3) {
 		uint16_t i0 = indexes[i] + numBoxVertexes;
 		uint16_t i1 = indexes[i + 1] + numBoxVertexes;
 		uint16_t i2 = indexes[i + 2] + numBoxVertexes;
@@ -688,7 +717,7 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 		vertexesNorm[i2] += triangleNorm;
 	}
 
-	for (uint32_t i = 0; i < vertexes.size(); ++i) {
+	for (uint32_t i = 0; i < vertexesNorm.size(); ++i) {
 		XMStoreFloat3(&vertexes[i].Norm, XMVector3Normalize(vertexesNorm[i]));
 	}
 
@@ -727,8 +756,14 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 	piramidSubmesh.BaseVertexLocation = numBoxVertexes;
 	piramidSubmesh.StartIndexLocation = numBoxIndexes;
 
+	SubmeshGeometry planeSubmesh;
+	planeSubmesh.IndexCount = numPlaneIndexes;
+	planeSubmesh.BaseVertexLocation = numBoxVertexes + numPiramidVertexes;
+	planeSubmesh.StartIndexLocation = numBoxIndexes + numPiramidIndexes;
+
 	boxAndPiramidGeo->DrawArgs["Box"] = boxSubmesh;
 	boxAndPiramidGeo->DrawArgs["Piramid"] = piramidSubmesh;
+	boxAndPiramidGeo->DrawArgs["Plane"] = planeSubmesh;
 
 	m_Geometries[boxAndPiramidGeo->name] = std::move(boxAndPiramidGeo);
 }
@@ -800,6 +835,20 @@ void SimpleGeoApp::BuildMaterials() {
 		crate->TextureName = "water";
 
 		m_Materials[crate->Name] = std::move(crate);
+	}
+
+	// tile material
+	{
+		auto tile = std::make_unique<Material>();
+
+		tile->Name = "tile";
+		tile->MaterialCBIndex = m_Materials.size();
+		tile->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		tile->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+		tile->Roughness = 0.2f;
+		tile->TextureName = "tile";
+
+		m_Materials[tile->Name] = std::move(tile);
 	}
 
 	// light material 1
@@ -968,6 +1017,22 @@ void SimpleGeoApp::BuildRenderItems() {
 
 		m_TransparentRenderItems.push_back(box.get());
 		m_AllRenderItems.push_back(std::move(box));
+	}
+
+	// transparent water box
+	{
+		auto plane = std::make_unique<RenderItem>();
+
+		plane->m_ModelMatrix = XMMatrixScaling(10.0f, 1.0f, 10.0f) * XMMatrixTranslation(4.0f, -1.5f, 4.0f);
+		plane->m_MeshGeo = curGeo;
+		plane->m_Material = m_Materials["tile"].get();
+		plane->m_IndexCount = curGeo->DrawArgs["Plane"].IndexCount;
+		plane->m_StartIndexLocation = curGeo->DrawArgs["Plane"].StartIndexLocation;
+		plane->m_BaseVertexLocation = curGeo->DrawArgs["Plane"].BaseVertexLocation;
+		plane->m_CBIndex = m_AllRenderItems.size();
+
+		m_OpaqueRenderItems.push_back(plane.get());
+		m_AllRenderItems.push_back(std::move(plane));
 	}
 }
 

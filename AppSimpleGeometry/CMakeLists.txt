@@ -61,6 +61,7 @@ set( TEXTURE_FILES
 	textures/WoodCrate01.dds
 	textures/water1.dds
 	textures/ice.dds
+	textures/tile.dds
 )
 
 source_group( "Textures" FILES ${TEXTURE_FILES} )
