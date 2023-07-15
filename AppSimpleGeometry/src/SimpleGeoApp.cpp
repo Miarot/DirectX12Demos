@@ -13,6 +13,11 @@ SimpleGeoApp::SimpleGeoApp(HINSTANCE hInstance) : BaseApp(hInstance) {
 SimpleGeoApp::~SimpleGeoApp() {};
 
 bool SimpleGeoApp::Initialize() {
+	// set d/s format and recreate buffer and view
+	m_DepthSencilBufferFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+	m_DepthSencilViewFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+	ResizeDSBuffer();
+
 	ComPtr<ID3D12GraphicsCommandList> commandList = m_DirectCommandQueue->GetCommandList();
 
 	InitSceneState();
@@ -128,7 +133,7 @@ void SimpleGeoApp::OnUpdate() {
 	auto boxRenderItem = m_AllRenderItems[2].get();
 	float angle = static_cast<float>(m_Timer.GetTotalTime() * 90.0);
 	const XMVECTOR rotationAxis = XMVectorSet(0, 1, 1, 0);
-	boxRenderItem->m_ModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
+	boxRenderItem->m_ModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle)) * XMMatrixTranslation(3, 1, -2);
 	boxRenderItem->m_NumDirtyFramse = 3;
 
 	auto boxShadowRenderItem = m_ShadowsRenderItems[boxRenderItem->m_ShadowRenderItemIndex];
@@ -198,7 +203,7 @@ void SimpleGeoApp::OnRender() {
 
 		commandList->ClearDepthStencilView(
 			m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart(),
-			D3D12_CLEAR_FLAG_DEPTH,
+			D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL,
 			m_DepthClearValue, 
 			m_SteniclClearValue,
 			0, NULL
@@ -251,13 +256,26 @@ void SimpleGeoApp::OnRender() {
 				RenderRenderItem(commandList, m_TransparentRenderItems[i]);
 			}
 		} else {
-			// chose pso for opaque objects
-			pso = m_IsInverseDepth ? m_PSOs["inverseDepth"] : m_PSOs["straightDepth"];
-
+			// set pso for ground plane objects
+			pso = m_IsInverseDepth ? m_PSOs["groundInverseDepth"] : m_PSOs["groundStraightDepth"];
 			commandList->SetPipelineState(pso.Get());
+			// set ref value to fill plane
+			commandList->OMSetStencilRef(1);
 
 			// draw ground plane
 			RenderRenderItem(commandList, m_GroundRenderItem);
+
+			// set pso for shadows
+			commandList->SetPipelineState(m_PSOs["shadows"].Get());
+
+			// draw shadows
+			for (uint32_t i = 0; i < m_ShadowsRenderItems.size(); ++i) {
+				RenderRenderItem(commandList, m_ShadowsRenderItems[i]);
+			}
+
+			// set pso for opaque objects
+			pso = m_IsInverseDepth ? m_PSOs["inverseDepth"] : m_PSOs["straightDepth"];
+			commandList->SetPipelineState(pso.Get());
 
 			// draw opaque render items
 			for (uint32_t i = 0; i < m_OpaqueRenderItems.size(); ++i) {
@@ -269,10 +287,6 @@ void SimpleGeoApp::OnRender() {
 
 			commandList->SetPipelineState(pso.Get());
 
-			// draw shadows
-			for (uint32_t i = 0; i < m_ShadowsRenderItems.size(); ++i) {
-				RenderRenderItem(commandList, m_ShadowsRenderItems[i]);
-			}
 
 			// draw opaque render items
 			for (uint32_t i = 0; i < m_TransparentRenderItems.size(); ++i) {
@@ -1008,11 +1022,11 @@ void SimpleGeoApp::BuildRenderItems() {
 	}
 
 	// ground plane
-	float d = 1.5;
+	float d = 1.5f;
 	{
 		auto plane = std::make_unique<RenderItem>();
 
-		plane->m_ModelMatrix = XMMatrixScaling(6.0f, 1.0f, 6.0f) * XMMatrixTranslation(4.0f, -d, 4.0f);
+		plane->m_ModelMatrix = XMMatrixScaling(8.0f, 1.0f, 8.0f) * XMMatrixTranslation(4.0f, -d, 2.0f);
 		plane->m_MeshGeo = curGeo;
 		plane->m_Material = m_Materials["tile"].get();
 		plane->m_IndexCount = curGeo->DrawArgs["Plane"].IndexCount;
@@ -1028,7 +1042,7 @@ void SimpleGeoApp::BuildRenderItems() {
 	{
 		XMVECTOR plane = XMVectorSet(0.0f, 1.0f, 0.0f, d);
 		XMVECTOR lightDirection = -XMLoadFloat3(&m_PassConstants.Lights[0].Direction);
-		m_GroundProjectiveMatrix = XMMatrixShadow(plane, lightDirection) * XMMatrixTranslation(0.0f, 0.001f, 0.0f);
+		m_GroundProjectiveMatrix = XMMatrixShadow(plane, lightDirection);
 
 		size_t numOccluders = m_AllRenderItems.size() - 1;
 		for (size_t i = 0; i < numOccluders; ++i) {
@@ -1321,46 +1335,104 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 
 	// for ordinar geometry drawing
 	{
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC ordinarPSODesc = psoDesc;
 		ComPtr<ID3D12PipelineState> straightDepthPSO;
 		ComPtr<ID3D12PipelineState> inverseDepthPSO;
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&ordinarPSODesc, IID_PPV_ARGS(&straightDepthPSO)));
 
-		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
+		ordinarPSODesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&ordinarPSODesc, IID_PPV_ARGS(&inverseDepthPSO)));
 
 		m_PSOs["straightDepth"] = straightDepthPSO;
 		m_PSOs["inverseDepth"] = inverseDepthPSO;
 	}
 
+	// for ground plane drawing
+	{
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC groundPSODesc = psoDesc;
+		D3D12_DEPTH_STENCIL_DESC groundDSDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+
+		groundDSDesc.StencilEnable = true;
+		groundDSDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+		groundDSDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+		groundDSDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+		groundDSDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+		groundDSDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+		groundDSDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+		groundDSDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+		groundDSDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+		groundPSODesc.DepthStencilState = groundDSDesc;
+		
+		ComPtr<ID3D12PipelineState> groundStraightDepthPSO;
+		ComPtr<ID3D12PipelineState> groundInverseDepthPSO;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&groundPSODesc, IID_PPV_ARGS(&groundStraightDepthPSO)));
+
+		groundPSODesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&groundPSODesc, IID_PPV_ARGS(&groundInverseDepthPSO)));
+
+		m_PSOs["groundStraightDepth"] = groundStraightDepthPSO;
+		m_PSOs["groundInverseDepth"] = groundInverseDepthPSO;
+	}
+
+	// for pso's with transparency
+	D3D12_RENDER_TARGET_BLEND_DESC transparentBlendDesc;
+
+	transparentBlendDesc.BlendEnable = true;
+	transparentBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	transparentBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	transparentBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	transparentBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	transparentBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	transparentBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+	transparentBlendDesc.LogicOpEnable = FALSE;
+	transparentBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+	transparentBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	// for shadows drawing
+	{
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowsPSODesc = psoDesc;
+		D3D12_DEPTH_STENCIL_DESC shadowsDSDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+
+		shadowsDSDesc.DepthEnable = false;
+		shadowsDSDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+		shadowsDSDesc.StencilEnable = true;
+		shadowsDSDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+		shadowsDSDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+		shadowsDSDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_INCR_SAT;
+		shadowsDSDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+		shadowsDSDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+		shadowsDSDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+		shadowsDSDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+		shadowsDSDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+		shadowsPSODesc.DepthStencilState = shadowsDSDesc;
+		shadowsPSODesc.BlendState.RenderTarget[0] = transparentBlendDesc;
+
+		ComPtr<ID3D12PipelineState> shadowsPSO;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&shadowsPSODesc, IID_PPV_ARGS(&shadowsPSO)));
+
+		m_PSOs["shadows"] = shadowsPSO;
+	}
+
 	// for transparent geometry drawing
 	{
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPSODesc = psoDesc;
-
 		ComPtr<ID3D12PipelineState> transparentStraightDepthPSO;
 		ComPtr<ID3D12PipelineState> transparentInverseDepthPSO;
 
-		D3D12_RENDER_TARGET_BLEND_DESC transparentBlendDesc;
-
-		transparentBlendDesc.BlendEnable = true;
-		transparentBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
-		transparentBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
-		transparentBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-		transparentBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
-		transparentBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
-		transparentBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
-		transparentBlendDesc.LogicOpEnable = FALSE;
-		transparentBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
-		transparentBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
 		transparentPSODesc.BlendState.RenderTarget[0] = transparentBlendDesc;
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&transparentPSODesc, IID_PPV_ARGS(&transparentInverseDepthPSO)));
-
-		transparentPSODesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-
 		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&transparentPSODesc, IID_PPV_ARGS(&transparentStraightDepthPSO)));
+
+		transparentPSODesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&transparentPSODesc, IID_PPV_ARGS(&transparentInverseDepthPSO)));
 
 		m_PSOs["transStraightDepth"] = transparentStraightDepthPSO;
 		m_PSOs["transInverseDepth"] = transparentInverseDepthPSO;
@@ -1368,21 +1440,22 @@ void SimpleGeoApp::BuildPipelineStateObject() {
 
 	// for normals view 
 	{
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC normalPSODesc = psoDesc;
 		ComPtr<ID3D12PipelineState> normStraightDepthPSO;
 		ComPtr<ID3D12PipelineState> normInverseDepthPSO;
 
 		ComPtr<ID3DBlob> normPixelShaderBlob = CompileShader(L"../../AppSimpleGeometry/shaders/NormPixelShader.hlsl", "main", "ps_5_1");
 
-		psoDesc.PS = {
+		normalPSODesc.PS = {
 			reinterpret_cast<BYTE*>(normPixelShaderBlob->GetBufferPointer()),
 			normPixelShaderBlob->GetBufferSize()
 		};
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normInverseDepthPSO)));
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&normalPSODesc, IID_PPV_ARGS(&normStraightDepthPSO)));
 
-		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+		normalPSODesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&normalPSODesc, IID_PPV_ARGS(&normInverseDepthPSO)));
 
 		m_PSOs["normStraightDepth"] = normStraightDepthPSO;
 		m_PSOs["normInverseDepth"] = normInverseDepthPSO;
