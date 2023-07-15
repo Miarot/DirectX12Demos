@@ -72,6 +72,7 @@ struct RenderItem {
 	D3D12_PRIMITIVE_TOPOLOGY m_PrivitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	uint32_t m_CBIndex = -1;
+	uint32_t m_ShadowRenderItemIndex = -1;
 };
 
 struct Texture {

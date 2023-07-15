@@ -2,6 +2,7 @@
 #include <MyD3D12Lib/D3D12Utils.h>
 
 #include <d3dx12.h>
+using namespace DirectX;
 
 #include <array>
 
@@ -130,6 +131,10 @@ void SimpleGeoApp::OnUpdate() {
 	boxRenderItem->m_ModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
 	boxRenderItem->m_NumDirtyFramse = 3;
 
+	auto boxShadowRenderItem = m_ShadowsRenderItems[boxRenderItem->m_ShadowRenderItemIndex];
+	boxShadowRenderItem->m_ModelMatrix = boxRenderItem->m_ModelMatrix * m_GroundProjectiveMatrix;
+	boxShadowRenderItem->m_NumDirtyFramse = 3;
+
 	// update object constants if necessary
 	for (auto& it: m_AllRenderItems) {
 		if (it->m_NumDirtyFramse > 0) {
@@ -236,14 +241,23 @@ void SimpleGeoApp::OnRender() {
 
 			commandList->SetPipelineState(pso.Get());
 
-			for (uint32_t i = 0; i < m_AllRenderItems.size(); ++i) {
-				RenderRenderItem(commandList, m_AllRenderItems[i].get());
+			RenderRenderItem(commandList, m_GroundRenderItem);
+
+			for (uint32_t i = 0; i < m_OpaqueRenderItems.size(); ++i) {
+				RenderRenderItem(commandList, m_OpaqueRenderItems[i]);
+			}
+
+			for (uint32_t i = 0; i < m_TransparentRenderItems.size(); ++i) {
+				RenderRenderItem(commandList, m_TransparentRenderItems[i]);
 			}
 		} else {
 			// chose pso for opaque objects
 			pso = m_IsInverseDepth ? m_PSOs["inverseDepth"] : m_PSOs["straightDepth"];
 
 			commandList->SetPipelineState(pso.Get());
+
+			// draw ground plane
+			RenderRenderItem(commandList, m_GroundRenderItem);
 
 			// draw opaque render items
 			for (uint32_t i = 0; i < m_OpaqueRenderItems.size(); ++i) {
@@ -254,6 +268,11 @@ void SimpleGeoApp::OnRender() {
 			pso = m_IsInverseDepth ? m_PSOs["transInverseDepth"] : m_PSOs["transStraightDepth"];
 
 			commandList->SetPipelineState(pso.Get());
+
+			// draw shadows
+			for (uint32_t i = 0; i < m_ShadowsRenderItems.size(); ++i) {
+				RenderRenderItem(commandList, m_ShadowsRenderItems[i]);
+			}
 
 			// draw opaque render items
 			for (uint32_t i = 0; i < m_TransparentRenderItems.size(); ++i) {
@@ -851,6 +870,19 @@ void SimpleGeoApp::BuildMaterials() {
 		m_Materials[tile->Name] = std::move(tile);
 	}
 
+	// shadows material
+	{
+		auto shadow = std::make_unique<Material>();
+
+		shadow->Name = "shadow";
+		shadow->MaterialCBIndex = m_Materials.size();
+		shadow->DiffuseAlbedo = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f);
+		shadow->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+		shadow->Roughness = 0.99f;
+
+		m_Materials[shadow->Name] = std::move(shadow);
+	}
+
 	// light material 1
 	{
 		auto light = std::make_unique<Material>();
@@ -959,6 +991,65 @@ void SimpleGeoApp::BuildRenderItems() {
 		m_AllRenderItems.push_back(std::move(box));
 	}
 
+	// transparent water box
+	{
+		auto box = std::make_unique<RenderItem>();
+
+		box->m_ModelMatrix = XMMatrixTranslation(0, 0, 4);
+		box->m_MeshGeo = curGeo;
+		box->m_Material = m_Materials["waterTex"].get();
+		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
+		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
+		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
+		box->m_CBIndex = m_AllRenderItems.size();
+
+		m_TransparentRenderItems.push_back(box.get());
+		m_AllRenderItems.push_back(std::move(box));
+	}
+
+	// ground plane
+	float d = 1.5;
+	{
+		auto plane = std::make_unique<RenderItem>();
+
+		plane->m_ModelMatrix = XMMatrixScaling(6.0f, 1.0f, 6.0f) * XMMatrixTranslation(4.0f, -d, 4.0f);
+		plane->m_MeshGeo = curGeo;
+		plane->m_Material = m_Materials["tile"].get();
+		plane->m_IndexCount = curGeo->DrawArgs["Plane"].IndexCount;
+		plane->m_StartIndexLocation = curGeo->DrawArgs["Plane"].StartIndexLocation;
+		plane->m_BaseVertexLocation = curGeo->DrawArgs["Plane"].BaseVertexLocation;
+		plane->m_CBIndex = m_AllRenderItems.size();
+
+		m_GroundRenderItem = plane.get();
+		m_AllRenderItems.push_back(std::move(plane));
+	}
+
+	// shadows
+	{
+		XMVECTOR plane = XMVectorSet(0.0f, 1.0f, 0.0f, d);
+		XMVECTOR lightDirection = -XMLoadFloat3(&m_PassConstants.Lights[0].Direction);
+		m_GroundProjectiveMatrix = XMMatrixShadow(plane, lightDirection) * XMMatrixTranslation(0.0f, 0.001f, 0.0f);
+
+		size_t numOccluders = m_AllRenderItems.size() - 1;
+		for (size_t i = 0; i < numOccluders; ++i) {
+			auto curRI = m_AllRenderItems[i].get();
+			auto shadowRI = std::make_unique<RenderItem>();
+
+			shadowRI->m_ModelMatrix = curRI->m_ModelMatrix * m_GroundProjectiveMatrix;
+			shadowRI->m_MeshGeo = curRI->m_MeshGeo;
+			shadowRI->m_Material = m_Materials["shadow"].get();
+			shadowRI->m_IndexCount = curRI->m_IndexCount;
+			shadowRI->m_StartIndexLocation = curRI->m_StartIndexLocation;
+			shadowRI->m_BaseVertexLocation = curRI->m_BaseVertexLocation;
+			shadowRI->m_CBIndex = m_AllRenderItems.size();
+
+			curRI->m_ShadowRenderItemIndex = m_ShadowsRenderItems.size();
+
+			m_ShadowsRenderItems.push_back(shadowRI.get());
+			m_AllRenderItems.push_back(std::move(shadowRI));
+		}
+	}
+
 	// point light piramid 1
 	{
 		auto piramid = std::make_unique<RenderItem>();
@@ -1003,37 +1094,7 @@ void SimpleGeoApp::BuildRenderItems() {
 		m_AllRenderItems.push_back(std::move(piramid));
 	}
 
-	// transparent water box
-	{
-		auto box = std::make_unique<RenderItem>();
 
-		box->m_ModelMatrix = XMMatrixTranslation(0, 0, 4);
-		box->m_MeshGeo = curGeo;
-		box->m_Material = m_Materials["waterTex"].get();
-		box->m_IndexCount = curGeo->DrawArgs["Box"].IndexCount;
-		box->m_StartIndexLocation = curGeo->DrawArgs["Box"].StartIndexLocation;
-		box->m_BaseVertexLocation = curGeo->DrawArgs["Box"].BaseVertexLocation;
-		box->m_CBIndex = m_AllRenderItems.size();
-
-		m_TransparentRenderItems.push_back(box.get());
-		m_AllRenderItems.push_back(std::move(box));
-	}
-
-	// transparent water box
-	{
-		auto plane = std::make_unique<RenderItem>();
-
-		plane->m_ModelMatrix = XMMatrixScaling(10.0f, 1.0f, 10.0f) * XMMatrixTranslation(4.0f, -1.5f, 4.0f);
-		plane->m_MeshGeo = curGeo;
-		plane->m_Material = m_Materials["tile"].get();
-		plane->m_IndexCount = curGeo->DrawArgs["Plane"].IndexCount;
-		plane->m_StartIndexLocation = curGeo->DrawArgs["Plane"].StartIndexLocation;
-		plane->m_BaseVertexLocation = curGeo->DrawArgs["Plane"].BaseVertexLocation;
-		plane->m_CBIndex = m_AllRenderItems.size();
-
-		m_OpaqueRenderItems.push_back(plane.get());
-		m_AllRenderItems.push_back(std::move(plane));
-	}
 }
 
 void SimpleGeoApp::BuildFrameResources() {

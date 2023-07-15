@@ -10,7 +10,6 @@
 #include <MyD3D12Lib/UploadBuffer.h>
 
 #include <DirectXMath.h>
-using namespace DirectX;
 
 #include <map>
 
@@ -71,6 +70,9 @@ private:
 	std::vector<std::unique_ptr<RenderItem>> m_AllRenderItems;
 	std::vector<RenderItem *> m_OpaqueRenderItems;
 	std::vector<RenderItem *> m_TransparentRenderItems;
+	RenderItem* m_GroundRenderItem;
+	DirectX::XMMATRIX m_GroundProjectiveMatrix = DirectX::XMMatrixIdentity();
+	std::vector<RenderItem *> m_ShadowsRenderItems;
 	std::vector<std::unique_ptr<FrameResources>> m_FramesResources;
 	FrameResources* m_CurrentFrameResources;
 
