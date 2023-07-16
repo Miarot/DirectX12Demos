@@ -636,8 +636,10 @@ void ModelsApp::RenderBlur(
 
 void ModelsApp::OnResize() {
 	BaseApp::OnResize();
+
 	UpdateSobelFrameTexture();
 	UpdateSSAOBuffersAndViews();
+	UpdateShadowMaps();
 }
 
 void ModelsApp::OnKeyPressed(WPARAM wParam) {
@@ -1792,6 +1794,12 @@ void ModelsApp::InitBlurWeights() {
 	}
 }
 
+void ModelsApp::UpdateShadowMaps() {
+	for (uint32_t i = 0; i < m_NumShadowMaps; ++i) {
+		m_ShadowMaps[i]->OnResize(m_ClientWidth, m_ClientHeight);
+	}
+}
+
 void ModelsApp::BuildShadowMaps() {
 	// recreate dsv heap for shadows maps
 	m_DSVDescHeap = CreateDescriptorHeap(m_Device, 1 + m_NumShadowMaps, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
@@ -1823,5 +1831,4 @@ void ModelsApp::BuildShadowMaps() {
 		srvCpuDescHandle.Offset(m_CBV_SRV_UAVDescSize);
 		srvGpuDescHandle.Offset(m_CBV_SRV_UAVDescSize);
 	}
-
 }
