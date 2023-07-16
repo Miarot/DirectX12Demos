@@ -8,12 +8,14 @@ set( HEADER_FILES
 	inc/AppStructures.h
 	inc/FrameResources.h
 	inc/ModelsApp.h
+	inc/ShadowMap.h
 )
 
 set( SRC_FILES
 	src/main.cpp
 	src/FrameResources.cpp
 	src/ModelsApp.cpp
+	src/ShadowMap.cpp
 )
 
 set( VERTEX_SHADER_FILES

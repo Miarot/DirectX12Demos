@@ -878,7 +878,7 @@ void SimpleGeoApp::BuildMaterials() {
 		tile->MaterialCBIndex = m_Materials.size();
 		tile->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		tile->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-		tile->Roughness = 0.2f;
+		tile->Roughness = 0.99f;
 		tile->TextureName = "tile";
 
 		m_Materials[tile->Name] = std::move(tile);

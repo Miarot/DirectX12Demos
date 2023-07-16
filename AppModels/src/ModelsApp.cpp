@@ -749,7 +749,7 @@ void ModelsApp::BuildLights() {
 
 	// directional light 1 
 	{
-		m_PassConstants.Lights[curLight].Strength = { 0.0f, 0.0f, 0.0f };
+		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
 		m_PassConstants.Lights[curLight].Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
 		++curLight;
 	}
