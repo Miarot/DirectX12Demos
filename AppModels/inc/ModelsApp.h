@@ -2,6 +2,7 @@
 
 #include <AppStructures.h>
 #include <FrameResources.h>
+#include <ShadowMap.h>
 #include <MyD3D12Lib/BaseApp.h>
 #include <MyD3D12Lib/Camera.h>
 #include <MyD3D12Lib/MeshGeometry.h>
@@ -93,6 +94,9 @@ private:
 	void BuildRandomMapBufferAndDirections(ComPtr<ID3D12GraphicsCommandList> commandList);
 	void InitBlurWeights();
 
+	// for Shadow maps
+	void BuildShadowMaps();
+
 private:
 	std::array<FLOAT, 4> m_BackGroundColor = { 0.4f, 0.6f, 0.9f, 1.0f };
 
@@ -151,4 +155,8 @@ private:
 
 	static const int m_BlurRadius = 5;
 	float m_BlurWeights[2 * m_BlurRadius + 1];
+
+	// for Shadow maps
+	const uint32_t m_NumShadowMaps = 1;
+	std::vector<std::unique_ptr<ShadowMap>> m_ShadowMaps;
 };

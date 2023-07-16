@@ -60,7 +60,7 @@ bool ModelsApp::Initialize() {
 
 	m_CBV_SRVDescHeap = CreateDescriptorHeap(
 		m_Device,
-		numCBVandSRVforRenderItems + m_NumSobelSRV + m_NumSSAO_SRV,
+		numCBVandSRVforRenderItems + m_NumSobelSRV + m_NumSSAO_SRV + m_NumShadowMaps,
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
@@ -94,6 +94,9 @@ bool ModelsApp::Initialize() {
 	BuildRandomMapBufferAndDirections(commandList);
 	UpdateSSAOBuffersAndViews();
 	InitBlurWeights();
+
+	// for Shadow maps
+	BuildShadowMaps();
 
 	// wait while all data loaded
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
@@ -1787,4 +1790,38 @@ void ModelsApp::InitBlurWeights() {
 	for (int i = -m_BlurRadius; i < m_BlurRadius; ++i) {
 		m_BlurWeights[m_BlurRadius + i] /= weightsSum;
 	}
+}
+
+void ModelsApp::BuildShadowMaps() {
+	// recreate dsv heap for shadows maps
+	m_DSVDescHeap = CreateDescriptorHeap(m_Device, 1 + m_NumShadowMaps, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+	UpdateDSView();
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvDescHandle(
+		m_DSVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		1,
+		m_DSVDescSize
+	);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE srvCpuDescHandle(
+		m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_NextCBV_SRVDescHeapIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE srvGpuDescHandle(
+		m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+		m_NextCBV_SRVDescHeapIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	for (uint32_t i = 0; i < m_NumShadowMaps; ++i) {
+		m_ShadowMaps.push_back(std::make_unique<ShadowMap>(m_Device.Get(), 2048, 2048));
+		m_ShadowMaps[i]->BuildDescriptors(dsvDescHandle, srvCpuDescHandle, srvGpuDescHandle);
+
+		dsvDescHandle.Offset(m_DSVDescSize);
+		srvCpuDescHandle.Offset(m_CBV_SRV_UAVDescSize);
+		srvGpuDescHandle.Offset(m_CBV_SRV_UAVDescSize);
+	}
+
 }

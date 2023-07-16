@@ -160,6 +160,7 @@ bool BaseApp::Initialize() {
 	// init descriptors size
 	m_RTVDescSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	m_CBV_SRV_UAVDescSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	m_DSVDescSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 	// create ds buffer and init it`s objects
 	m_DSBuffer = CreateDepthStencilBuffer(
