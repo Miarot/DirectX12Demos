@@ -98,6 +98,19 @@ bool ModelsApp::Initialize() {
 	// for Shadow maps
 	BuildShadowMaps();
 
+	XMVECTOR lightViewPos = XMVectorSet(3.0f, 17.0f, 3.0f, 1.0f);
+	XMVECTOR lightViewFocus = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+	XMVECTOR lightViewUpDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	XMMATRIX lightView = XMMatrixLookAtLH(lightViewPos, lightViewFocus, lightViewUpDirection);
+
+	XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(
+		-15.0f, 15.0f,
+		-15.f, 15.0f,
+		1.0f, 20.0f
+	);
+
+	m_PassConstants.LightViewProj = lightView * lightProj;
+
 	// wait while all data loaded
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
 	m_DirectCommandQueue->WaitForFenceValue(fenceValue);
@@ -237,6 +250,9 @@ void ModelsApp::OnRender() {
 		0, NULL
 	);
 
+	// render shadow maps
+	RenderShadowMaps(commandList);
+
 	if (m_DrawingType == DrawingType::SSAO) {
 		// render occlusion map 
 		RenderSSAO(commandList);
@@ -367,46 +383,49 @@ void ModelsApp::RenderGeometry(
 
 	// draw render items
 	for (uint32_t i = 0; i < m_RenderItems.size(); ++i) {
-		auto renderItem = m_RenderItems[i].get();
-		auto mat = renderItem->m_Material;
-
-		// set Input-Assembler state
-		commandList->IASetVertexBuffers(0, 1, &renderItem->m_MeshGeo->VertexBufferView());
-		commandList->IASetIndexBuffer(&renderItem->m_MeshGeo->IndexBufferView());
-		commandList->IASetPrimitiveTopology(renderItem->m_PrivitiveType);
-
-		// set object and material constants and texture
-		CD3DX12_GPU_DESCRIPTOR_HANDLE objCBDescHandle(
-			m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-			m_ObjectConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_RenderItems.size() + renderItem->m_CBIndex,
-			m_CBV_SRV_UAVDescSize
-		);
-
-		CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
-			m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-			m_MaterialConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_Materials.size() + mat->CBIndex,
-			m_CBV_SRV_UAVDescSize
-		);
-
-		CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
-			m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-			m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
-			m_CBV_SRV_UAVDescSize
-		);
-
-		commandList->SetGraphicsRootDescriptorTable(0, objCBDescHandle);
-		commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
-		commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
-
-		// draw
-		commandList->DrawIndexedInstanced(
-			renderItem->m_IndexCount,
-			1,
-			renderItem->m_StartIndexLocation,
-			renderItem->m_BaseVertexLocation,
-			0
-		);
+		RenderRenderItem(commandList, m_RenderItems[i].get());
 	}
+}
+
+void ModelsApp::RenderRenderItem(ComPtr<ID3D12GraphicsCommandList> commandList, RenderItem* ri) {
+	auto mat = ri->m_Material;
+
+	// set Input-Assembler state
+	commandList->IASetVertexBuffers(0, 1, &ri->m_MeshGeo->VertexBufferView());
+	commandList->IASetIndexBuffer(&ri->m_MeshGeo->IndexBufferView());
+	commandList->IASetPrimitiveTopology(ri->m_PrivitiveType);
+
+	// set object and material constants and texture
+	CD3DX12_GPU_DESCRIPTOR_HANDLE objCBDescHandle(
+		m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+		m_ObjectConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_RenderItems.size() + ri->m_CBIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE matCBDescHandle(
+		m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+		m_MaterialConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_Materials.size() + mat->CBIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
+		m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+		m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	commandList->SetGraphicsRootDescriptorTable(0, objCBDescHandle);
+	commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
+	commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
+
+	// draw
+	commandList->DrawIndexedInstanced(
+		ri->m_IndexCount,
+		1,
+		ri->m_StartIndexLocation,
+		ri->m_BaseVertexLocation,
+		0
+	);
 }
 
 void ModelsApp::RenderSobelFilter(
@@ -632,6 +651,61 @@ void ModelsApp::RenderBlur(
 	commandList->SetPipelineState(m_PSOs["Blur"].Get());
 	commandList->OMSetRenderTargets(1, &rtv, FALSE, NULL);
 	commandList->DrawInstanced(6, 1, 0, 0);
+}
+
+void ModelsApp::RenderShadowMaps(ComPtr<ID3D12GraphicsCommandList> commandList) {
+	for (uint32_t i = 0; i < m_ShadowMaps.size(); ++i) {
+		auto shadowMap = m_ShadowMaps[i].get();
+
+		CD3DX12_RESOURCE_BARRIER rtBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			shadowMap->GetResource(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_DEPTH_WRITE
+		);
+
+		commandList->ResourceBarrier(1, &rtBarrier);
+
+		commandList->ClearDepthStencilView(
+			m_ShadowMaps[i]->GetDsv(),
+			D3D12_CLEAR_FLAG_DEPTH,
+			1.0f,
+			0,
+			0, NULL
+		);
+
+		commandList->SetGraphicsRootSignature(m_RootSignatures["Geometry"].Get());
+		ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBV_SRVDescHeap.Get() };
+		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+		commandList->SetGraphicsRootDescriptorTable(
+			1,
+			CD3DX12_GPU_DESCRIPTOR_HANDLE(
+				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+				m_PassConstantsViewsStartIndex + m_CurrentBackBufferIndex,
+				m_CBV_SRV_UAVDescSize
+			)
+		);
+
+		commandList->RSSetViewports(1, &shadowMap->GetViewPort());
+		commandList->RSSetScissorRects(1, &shadowMap->GetScissorRect());
+
+		commandList->OMSetRenderTargets(0, NULL, false, &shadowMap->GetDsv());
+
+		commandList->SetPipelineState(m_PSOs["shadowMaps"].Get());
+
+		// draw render items
+		for (uint32_t i = 0; i < m_RenderItems.size(); ++i) {
+			RenderRenderItem(commandList, m_RenderItems[i].get());
+		}
+
+		rtBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			shadowMap->GetResource(),
+			D3D12_RESOURCE_STATE_DEPTH_WRITE,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		);
+
+		commandList->ResourceBarrier(1, &rtBarrier);
+	}
 }
 
 void ModelsApp::OnResize() {
@@ -1204,105 +1278,140 @@ void ModelsApp::BuildPipelineStateObject() {
 
 	// for ordinar rendering
 	{
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC ordinarPsoDesc = psoDesc;
 		ComPtr<ID3D12PipelineState> straightDepthPSO;
 		ComPtr<ID3D12PipelineState> inverseDepthPSO;
 
 		D3D_SHADER_MACRO geoDefines[] = { "ALPHA_TEST", "1", NULL, NULL };
 		ComPtr<ID3DBlob> geoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", geoDefines);
 
-		psoDesc.PS = {
+		ordinarPsoDesc.PS = {
 			reinterpret_cast<BYTE*>(geoPixelShaderBlob->GetBufferPointer()),
 			geoPixelShaderBlob->GetBufferSize()
 		};
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&straightDepthPSO)));
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&ordinarPsoDesc, IID_PPV_ARGS(&straightDepthPSO)));
 		m_PSOs["geoStraightDepth"] = straightDepthPSO;
 
-		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+		ordinarPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&ordinarPsoDesc, IID_PPV_ARGS(&inverseDepthPSO)));
 		m_PSOs["geoInverseDepth"] = inverseDepthPSO;
 	}
 
 	// for normals rendering
 	{
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC normalsPsoDesc = psoDesc;
 		ComPtr<ID3D12PipelineState> normStraightDepthPSO;
 		ComPtr<ID3D12PipelineState> normInverseDepthPSO;
 
 		D3D_SHADER_MACRO normDefines[] = { "ALPHA_TEST", "1", "DRAW_NORMS", "1", NULL, NULL };
 		ComPtr<ID3DBlob> normPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", normDefines);
 
-		psoDesc.PS = {
+		normalsPsoDesc.PS = {
 			reinterpret_cast<BYTE*>(normPixelShaderBlob->GetBufferPointer()),
 			normPixelShaderBlob->GetBufferSize()
 		};
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normInverseDepthPSO)));
-		m_PSOs["geoNormInverseDepth"] = normInverseDepthPSO;
-
-		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&normalsPsoDesc, IID_PPV_ARGS(&normStraightDepthPSO)));
 		m_PSOs["geoNormStraightDepth"] = normStraightDepthPSO;
+
+		normalsPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&normalsPsoDesc, IID_PPV_ARGS(&normInverseDepthPSO)));
+		m_PSOs["geoNormInverseDepth"] = normInverseDepthPSO;
+		
 	}
 
 	// for SSAO rendering
 	{
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC ssaoPsoDesc = psoDesc;
 		ComPtr<ID3D12PipelineState> ssaoPSO;
 
 		D3D_SHADER_MACRO ssaoDefines[] = { "ALPHA_TEST", "1", "SSAO", "1", NULL, NULL };
 		ComPtr<ID3DBlob> ssaoPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", ssaoDefines);
 
-		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_EQUAL;
+		ssaoPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_EQUAL;
 
-		psoDesc.PS = {
+		ssaoPsoDesc.PS = {
 			reinterpret_cast<BYTE*>(ssaoPixelShaderBlob->GetBufferPointer()),
 			ssaoPixelShaderBlob->GetBufferSize()
 		};
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoPSO)));
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&ssaoPsoDesc, IID_PPV_ARGS(&ssaoPSO)));
 		m_PSOs["geoSSAO"] = ssaoPSO;
 	}
 
 	// for SSAO only rendering
 	{
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC ssaoOnlyPsoDesc = psoDesc;
 		ComPtr<ID3D12PipelineState> ssaoOnlyPSO;
 
 		D3D_SHADER_MACRO ssaoOnlyDefines[] = { "ALPHA_TEST", "1", "SSAO", "1", "SSAO_ONLY", "1", NULL, NULL };
 		ComPtr<ID3DBlob> ssaoOnlyPixelShaderBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", ssaoOnlyDefines);
 
-		psoDesc.PS = {
+		ssaoOnlyPsoDesc.PS = {
 			reinterpret_cast<BYTE*>(ssaoOnlyPixelShaderBlob->GetBufferPointer()),
 			ssaoOnlyPixelShaderBlob->GetBufferSize()
 		};
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoOnlyPSO)));
+		ssaoOnlyPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&ssaoOnlyPsoDesc, IID_PPV_ARGS(&ssaoOnlyPSO)));
 		m_PSOs["geoSSAOonly"] = ssaoOnlyPSO;
 	}
 
 	// for normals for SSAO drawing
 	{
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC ssaoNormalsPsoDesc = psoDesc;
 		ComPtr<ID3D12PipelineState> ssaoNormalsStraightPSO;
 		ComPtr<ID3D12PipelineState> ssaoNormalsInversePSO;
 
 		D3D_SHADER_MACRO ssaoNormalsDefines[] = { "ALPHA_TEST", "1", "DRAW_NORMS", "1", "SSAO", "1", NULL, NULL };
 		ComPtr<ID3DBlob> ssaoNormalsPSBlob = CompileShader(L"../../AppModels/shaders/GeoPixelShader.hlsl", "main", "ps_5_1", ssaoNormalsDefines);
 
-		psoDesc.PS = {
+		ssaoNormalsPsoDesc.PS = {
 			reinterpret_cast<BYTE*>(ssaoNormalsPSBlob->GetBufferPointer()),
 			ssaoNormalsPSBlob->GetBufferSize()
 		};
 
-		psoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		ssaoNormalsPsoDesc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		ssaoNormalsPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoNormalsStraightPSO)));
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&ssaoNormalsPsoDesc, IID_PPV_ARGS(&ssaoNormalsStraightPSO)));
 		m_PSOs["ssaoNormStraightDepth"] = ssaoNormalsStraightPSO;
 
-		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+		ssaoNormalsPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&ssaoNormalsInversePSO)));
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&ssaoNormalsPsoDesc, IID_PPV_ARGS(&ssaoNormalsInversePSO)));
 		m_PSOs["ssaoNormInverseDepth"] = ssaoNormalsInversePSO;
+	}
+
+	// for shadow maps
+	{
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC ssaoNormalsPsoDesc = psoDesc;
+		ComPtr<ID3D12PipelineState> shadowMapsPSO;
+
+		D3D_SHADER_MACRO shadowMapsDefines[] = { "ALPHA_TEST", "1", NULL, NULL};
+		ComPtr<ID3DBlob> shadowMapsPSBlob = CompileShader(L"../../AppModels/shaders/ShadowPS.hlsl", "main", "ps_5_1", shadowMapsDefines);
+		ComPtr<ID3DBlob> shadowMapsVSBlob = CompileShader(L"../../AppModels/shaders/ShadowVS.hlsl", "main", "vs_5_1", shadowMapsDefines);
+
+		ssaoNormalsPsoDesc.PS = {
+			reinterpret_cast<BYTE*>(shadowMapsPSBlob->GetBufferPointer()),
+			shadowMapsPSBlob->GetBufferSize()
+		};
+
+		ssaoNormalsPsoDesc.VS = {
+			reinterpret_cast<BYTE*>(shadowMapsVSBlob->GetBufferPointer()),
+			shadowMapsVSBlob->GetBufferSize()
+		};
+
+		ssaoNormalsPsoDesc.NumRenderTargets = 0;
+		ssaoNormalsPsoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+		ssaoNormalsPsoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&ssaoNormalsPsoDesc, IID_PPV_ARGS(&shadowMapsPSO)));
+		m_PSOs["shadowMaps"] = shadowMapsPSO;
 	}
 }
 

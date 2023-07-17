@@ -52,6 +52,8 @@ private:
 		std::array<FLOAT, 4> rtClearValue
 	);
 
+	void RenderRenderItem(ComPtr<ID3D12GraphicsCommandList> commandList, RenderItem* ri);
+
 	void RenderSobelFilter(
 		ComPtr<ID3D12GraphicsCommandList> commandList,
 		ID3D12Resource* rtBuffer,
@@ -68,6 +70,8 @@ private:
 		D3D12_GPU_DESCRIPTOR_HANDLE srv,
 		bool isHorizontal
 	);
+
+	void RenderShadowMaps(ComPtr<ID3D12GraphicsCommandList> commandList);
 
 	void InitSceneState();
 	void BuildLights();

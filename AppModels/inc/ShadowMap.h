@@ -15,8 +15,13 @@ public:
 
 	~ShadowMap() = default;
 
+	ID3D12Resource* GetResource() const;
+
 	D3D12_CPU_DESCRIPTOR_HANDLE GetDsv() const;
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSrv() const;
+
+	D3D12_VIEWPORT GetViewPort() const;
+	D3D12_RECT GetScissorRect() const;
 
 	void BuildDescriptors(
 		D3D12_CPU_DESCRIPTOR_HANDLE cpuDsv,

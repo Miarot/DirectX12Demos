@@ -24,6 +24,8 @@ struct PassConstants
     // last NUM_SPOT_LIGHTS --- spot lights
     Light Lights[MaxLights];
     
+    matrix LightViewProj;
+    
     float4 RandomDirections[14];
     float OcclusionRadius;
     float OcclusionFadeStart;

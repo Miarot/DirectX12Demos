@@ -94,20 +94,23 @@ float4 ComputeLighting(Light lights[MaxLights], Material mat, float3 norm, float
     int i = 0;
     
     #if (NUM_DIR_LIGHTS > 0)
+        [unroll]
         for (i = 0; i < NUM_DIR_LIGHTS; ++i) {
             res += ComputeDirectionalLight(lights[i], mat, norm, toEye);
         }
     #endif
 
     #if (NUM_POINT_LIGHTS > 0)
+        [unroll]
         for (i = NUM_DIR_LIGHTS; i < NUM_DIR_LIGHTS + NUM_POINT_LIGHTS; ++i) {
             res += ComputePointLight(lights[i], mat, norm, toEye, pos);
         }
     #endif
     
     #if (NUM_SPOT_LIGHTS > 0)
-    for (i = NUM_POINT_LIGHTS + NUM_DIR_LIGHTS; i < NUM_SPOT_LIGHTS + NUM_DIR_LIGHTS + NUM_POINT_LIGHTS; ++i)
-    {
+        [unroll]
+        for (i = NUM_POINT_LIGHTS + NUM_DIR_LIGHTS; i < NUM_SPOT_LIGHTS + NUM_DIR_LIGHTS + NUM_POINT_LIGHTS; ++i)
+        {
             res += ComputeSpotLight(lights[i], mat, norm, toEye, pos);
         }
     #endif

@@ -67,12 +67,24 @@ void ShadowMap::BuildDescriptors() {
 	m_Device->CreateShaderResourceView(m_Resource.Get(), &srvViewDesc, m_CpuSrv);
 }
 
+ID3D12Resource* ShadowMap::GetResource() const {
+	return m_Resource.Get();
+}
+
 D3D12_CPU_DESCRIPTOR_HANDLE ShadowMap::GetDsv() const {
 	return m_CpuDsv;
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE ShadowMap::GetSrv() const {
 	return m_GpuSrv;
+}
+
+D3D12_VIEWPORT ShadowMap::GetViewPort() const {
+	return m_ViewPort;
+}
+
+D3D12_RECT ShadowMap::GetScissorRect() const {
+	return m_ScissorRect;
 }
 
 void ShadowMap::OnResize(uint32_t width, uint32_t height) {

@@ -22,6 +22,7 @@ set( VERTEX_SHADER_FILES
     shaders/GeoVertexShader.hlsl
 	shaders/SSAOVertexShader.hlsl
 	shaders/FullScreenQuadVS.hlsl
+	shaders/ShadowVS.hlsl
 )
 
 set( PIXEL_SHADER_FILES
@@ -29,6 +30,7 @@ set( PIXEL_SHADER_FILES
 	shaders/SobelPixelShader.hlsl
 	shaders/SSAOPixelShader.hlsl
 	shaders/BlurPixelShader.hlsl
+	shaders/ShadowPS.hlsl
 )
 
 set( SHADER_HEADER_FILES
