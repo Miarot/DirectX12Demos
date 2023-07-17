@@ -28,7 +28,7 @@ float CalcShadowFactor(float3 posW) {
     projTexC /= projTexC.w;
     
     float depthCur = projTexC.z;
-    float depthMap = ShadowMap.SampleLevel(PointClumpSampler, projTexC.xy, 0.0f);
+    float depthMap = ShadowMap.SampleLevel(PointClumpSampler, projTexC.xy, 0.0f).r;
     
     if (depthCur > depthMap) {
         return 0.0f;

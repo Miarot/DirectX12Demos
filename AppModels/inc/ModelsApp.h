@@ -99,7 +99,6 @@ private:
 	void InitBlurWeights();
 
 	// for Shadow maps
-	void UpdateShadowMaps();
 	void BuildShadowMaps();
 
 private:

@@ -98,27 +98,6 @@ bool ModelsApp::Initialize() {
 	// for Shadow maps
 	BuildShadowMaps();
 
-	XMVECTOR lightViewPos = XMVectorSet(3.0f, 17.0f, 3.0f, 1.0f);
-	XMVECTOR lightViewFocus = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-	XMVECTOR lightViewUpDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	XMMATRIX lightView = XMMatrixLookAtLH(lightViewPos, lightViewFocus, lightViewUpDirection);
-
-	XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(
-		-15.0f, 15.0f,
-		-15.f, 15.0f,
-		1.0f, 20.0f
-	);
-
-	XMMATRIX tex(
-		0.5f, 0.0f, 0.0f, 0.0f,
-		0.0f, -0.5f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.5f, 0.5f, 0.0f, 1.0f
-	);
-
-	m_PassConstants.LightViewProj = lightView * lightProj;
-	m_PassConstants.LightViewProjTex = m_PassConstants.LightViewProj * tex;
-
 	// wait while all data loaded
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
 	m_DirectCommandQueue->WaitForFenceValue(fenceValue);
@@ -727,7 +706,6 @@ void ModelsApp::OnResize() {
 
 	UpdateSobelFrameTexture();
 	UpdateSSAOBuffersAndViews();
-	UpdateShadowMaps();
 }
 
 void ModelsApp::OnKeyPressed(WPARAM wParam) {
@@ -842,8 +820,28 @@ void ModelsApp::BuildLights() {
 
 	// directional light 1 
 	{
+		XMVECTOR lightViewPos = XMVectorSet(3.0f, 17.0f, 3.0f, 1.0f);
+		XMVECTOR lightViewFocus = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+		XMVECTOR lightViewUpDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMMATRIX lightView = XMMatrixLookAtLH(lightViewPos, lightViewFocus, lightViewUpDirection);
+
+		XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(
+			-15.0f, 15.0f,
+			-15.f, 15.0f,
+			1.0f, 20.0f
+		);
+
+		XMMATRIX tex(
+			0.5f, 0.0f, 0.0f, 0.0f,
+			0.0f, -0.5f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.5f, 0.5f, 0.0f, 1.0f
+		);
+
+		m_PassConstants.LightViewProj = lightView * lightProj;
+		m_PassConstants.LightViewProjTex = m_PassConstants.LightViewProj * tex;
 		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
-		m_PassConstants.Lights[curLight].Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
 		++curLight;
 	}
 
@@ -1420,28 +1418,32 @@ void ModelsApp::BuildPipelineStateObject() {
 
 	// for shadow maps
 	{
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC ssaoNormalsPsoDesc = psoDesc;
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowMapPsoDesc = psoDesc;
 		ComPtr<ID3D12PipelineState> shadowMapsPSO;
 
 		D3D_SHADER_MACRO shadowMapsDefines[] = { "ALPHA_TEST", "1", NULL, NULL};
 		ComPtr<ID3DBlob> shadowMapsPSBlob = CompileShader(L"../../AppModels/shaders/ShadowPS.hlsl", "main", "ps_5_1", shadowMapsDefines);
 		ComPtr<ID3DBlob> shadowMapsVSBlob = CompileShader(L"../../AppModels/shaders/ShadowVS.hlsl", "main", "vs_5_1", shadowMapsDefines);
 
-		ssaoNormalsPsoDesc.PS = {
+		shadowMapPsoDesc.PS = {
 			reinterpret_cast<BYTE*>(shadowMapsPSBlob->GetBufferPointer()),
 			shadowMapsPSBlob->GetBufferSize()
 		};
 
-		ssaoNormalsPsoDesc.VS = {
+		shadowMapPsoDesc.VS = {
 			reinterpret_cast<BYTE*>(shadowMapsVSBlob->GetBufferPointer()),
 			shadowMapsVSBlob->GetBufferSize()
 		};
 
-		ssaoNormalsPsoDesc.NumRenderTargets = 0;
-		ssaoNormalsPsoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
-		ssaoNormalsPsoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		shadowMapPsoDesc.NumRenderTargets = 0;
+		shadowMapPsoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+		shadowMapPsoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&ssaoNormalsPsoDesc, IID_PPV_ARGS(&shadowMapsPSO)));
+		shadowMapPsoDesc.RasterizerState.DepthBias = 10000;
+		shadowMapPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
+		shadowMapPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
+
+		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&shadowMapPsoDesc, IID_PPV_ARGS(&shadowMapsPSO)));
 		m_PSOs["shadowMaps"] = shadowMapsPSO;
 	}
 }
@@ -1931,12 +1933,6 @@ void ModelsApp::InitBlurWeights() {
 
 	for (int i = -m_BlurRadius; i < m_BlurRadius; ++i) {
 		m_BlurWeights[m_BlurRadius + i] /= weightsSum;
-	}
-}
-
-void ModelsApp::UpdateShadowMaps() {
-	for (uint32_t i = 0; i < m_NumShadowMaps; ++i) {
-		m_ShadowMaps[i]->OnResize(m_ClientWidth, m_ClientHeight);
 	}
 }
 
