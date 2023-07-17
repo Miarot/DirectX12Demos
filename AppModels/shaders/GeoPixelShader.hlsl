@@ -21,20 +21,34 @@ Texture2D OcclusionMap : register(t1);
 Texture2D ShadowMap : register(t2);
 
 SamplerState LinearWrapSampler : register(s0);
-SamplerState PointClumpSampler : register(s1);
+SamplerComparisonState PointClumpSampler : register(s1);
 
 float CalcShadowFactor(float3 posW) {
     float4 projTexC = mul(PassConstantsCB.LightViewProjTex, float4(posW, 1.0f));
     projTexC /= projTexC.w;
     
     float depthCur = projTexC.z;
-    float depthMap = ShadowMap.SampleLevel(PointClumpSampler, projTexC.xy, 0.0f).r;
     
-    if (depthCur > depthMap) {
-        return 0.0f;
-    } else {
-        return 1.0f;
+    uint width, height, numMips;
+    ShadowMap.GetDimensions(0, width, height, numMips);
+    
+    float dx = 1.0f / float(width);
+    
+    const float2 offsets[9] = {
+        float2(-dx, -dx), float2(0.0f, -dx), float2(0.0f, dx),
+        float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(0.0f, dx),
+        float2(-dx, dx), float2(0.0f, dx), float2(dx, dx)
+    };
+    
+    float shadowFactor = 0.0f;
+    
+    for (int i = 0; i < 9; ++i) {
+        shadowFactor += ShadowMap.SampleCmpLevelZero(PointClumpSampler, projTexC.xy + offsets[i], depthCur).r;
     }
+    
+    shadowFactor /= 9.0f;
+    
+    return shadowFactor;
 }
 
 float4 main(VertexOut pin) : SV_Target

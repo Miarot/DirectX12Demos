@@ -1232,9 +1232,9 @@ void ModelsApp::BuildRootSignature() {
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP
 	);
 
-	CD3DX12_STATIC_SAMPLER_DESC pointBorderSampler(
+	CD3DX12_STATIC_SAMPLER_DESC pointBorderCompSampler(
 		1,
-		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
+		D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
@@ -1243,7 +1243,7 @@ void ModelsApp::BuildRootSignature() {
 		D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK
 	);
 
-	D3D12_STATIC_SAMPLER_DESC samplers[] = { linearWrapSampler, pointBorderSampler };
+	D3D12_STATIC_SAMPLER_DESC samplers[] = { linearWrapSampler, pointBorderCompSampler };
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
 	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, _countof(samplers), samplers, rootSignatureFlags);
@@ -1441,7 +1441,7 @@ void ModelsApp::BuildPipelineStateObject() {
 
 		shadowMapPsoDesc.RasterizerState.DepthBias = 10000;
 		shadowMapPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
-		shadowMapPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
+		shadowMapPsoDesc.RasterizerState.SlopeScaledDepthBias = 4.0f;
 
 		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&shadowMapPsoDesc, IID_PPV_ARGS(&shadowMapsPSO)));
 		m_PSOs["shadowMaps"] = shadowMapsPSO;
