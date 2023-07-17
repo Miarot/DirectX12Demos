@@ -89,14 +89,14 @@ float3 ComputeSpotLight(Light L, Material mat, float3 norm, float3 toEye, float3
     return BlinnPhong(lightStrength, lightVec, norm, toEye, mat);
 }
 
-float4 ComputeLighting(Light lights[MaxLights], Material mat, float3 norm, float3 toEye, float3 pos) {
+float4 ComputeLighting(Light lights[MaxLights], Material mat, float3 norm, float3 toEye, float3 pos, float shadowFactor) {
     float3 res = 0.0f;
     int i = 0;
     
     #if (NUM_DIR_LIGHTS > 0)
         [unroll]
         for (i = 0; i < NUM_DIR_LIGHTS; ++i) {
-            res += ComputeDirectionalLight(lights[i], mat, norm, toEye);
+            res += shadowFactor * ComputeDirectionalLight(lights[i], mat, norm, toEye);
         }
     #endif
 

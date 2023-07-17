@@ -18,8 +18,24 @@ ConstantBuffer<MaterialConstants> MaterilaConstantsCB : register(b2);
 
 Texture2D Texture : register(t0);
 Texture2D OcclusionMap : register(t1);
+Texture2D ShadowMap : register(t2);
 
 SamplerState LinearWrapSampler : register(s0);
+SamplerState PointClumpSampler : register(s1);
+
+float CalcShadowFactor(float3 posW) {
+    float4 projTexC = mul(PassConstantsCB.LightViewProjTex, float4(posW, 1.0f));
+    projTexC /= projTexC.w;
+    
+    float depthCur = projTexC.z;
+    float depthMap = ShadowMap.SampleLevel(PointClumpSampler, projTexC.xy, 0.0f);
+    
+    if (depthCur > depthMap) {
+        return 0.0f;
+    } else {
+        return 1.0f;
+    }
+}
 
 float4 main(VertexOut pin) : SV_Target
 {
@@ -61,9 +77,11 @@ float4 main(VertexOut pin) : SV_Target
     
     inderectLight *= mat.DiffuseAlbedo * PassConstantsCB.AmbientLight;
     float3 toEye = normalize(PassConstantsCB.EyePos - pin.PosW);
+    
+    float shadowFactor = CalcShadowFactor(pin.PosW);
 
-    float4 directLight = ComputeLighting(PassConstantsCB.Lights, mat, norm, toEye, pin.PosW);
-        
+    float4 directLight = ComputeLighting(PassConstantsCB.Lights, mat, norm, toEye, pin.PosW, shadowFactor);
+    
     float4 color = inderectLight + directLight;
         
     // It is said that it is common convention to take alpha from diffuse material

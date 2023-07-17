@@ -109,7 +109,15 @@ bool ModelsApp::Initialize() {
 		1.0f, 20.0f
 	);
 
+	XMMATRIX tex(
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, -0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f
+	);
+
 	m_PassConstants.LightViewProj = lightView * lightProj;
+	m_PassConstants.LightViewProjTex = m_PassConstants.LightViewProj * tex;
 
 	// wait while all data loaded
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
@@ -370,6 +378,12 @@ void ModelsApp::RenderGeometry(
 			m_PassConstantsViewsStartIndex + m_CurrentBackBufferIndex,
 			m_CBV_SRV_UAVDescSize
 		)
+	);
+
+	// set shadow maps
+	commandList->SetGraphicsRootDescriptorTable(
+		5,
+		m_ShadowMaps[0]->GetSrv()
 	);
 
 	commandList->SetPipelineState(pso.Get());
@@ -1177,7 +1191,7 @@ void ModelsApp::BuildCBViews() {
 
 void ModelsApp::BuildRootSignature() {
 	// init parameters
-	CD3DX12_ROOT_PARAMETER1 rootParameters[5];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[6];
 
 	CD3DX12_DESCRIPTOR_RANGE1 objConstsDescRange;
 	objConstsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
@@ -1194,11 +1208,15 @@ void ModelsApp::BuildRootSignature() {
 	CD3DX12_DESCRIPTOR_RANGE1 occlusionMapDescRange;
 	occlusionMapDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
 
+	CD3DX12_DESCRIPTOR_RANGE1 shadowMapsDescRange;
+	shadowMapsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, m_NumShadowMaps, 2);
+
 	rootParameters[0].InitAsDescriptorTable(1, &objConstsDescRange);
 	rootParameters[1].InitAsDescriptorTable(1, &passConstsDescRange);
 	rootParameters[2].InitAsDescriptorTable(1, &matConstsDescRange);
 	rootParameters[3].InitAsDescriptorTable(1, &texDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameters[4].InitAsDescriptorTable(1, &occlusionMapDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[5].InitAsDescriptorTable(1, &shadowMapsDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	// set access flags
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
@@ -1208,7 +1226,7 @@ void ModelsApp::BuildRootSignature() {
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
 	// create sampler
-	CD3DX12_STATIC_SAMPLER_DESC samplerDesc(
+	CD3DX12_STATIC_SAMPLER_DESC linearWrapSampler(
 		0,
 		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
@@ -1216,8 +1234,21 @@ void ModelsApp::BuildRootSignature() {
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP
 	);
 
+	CD3DX12_STATIC_SAMPLER_DESC pointBorderSampler(
+		1,
+		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+		0.0f, 16,
+		D3D12_COMPARISON_FUNC_LESS,
+		D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK
+	);
+
+	D3D12_STATIC_SAMPLER_DESC samplers[] = { linearWrapSampler, pointBorderSampler };
+
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 1, &samplerDesc, rootSignatureFlags);
+	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, _countof(samplers), samplers, rootSignatureFlags);
 
 	ComPtr<ID3DBlob> rootSignatureBlob;
 	ComPtr<ID3DBlob> errorBlob;

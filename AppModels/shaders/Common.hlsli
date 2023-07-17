@@ -25,6 +25,7 @@ struct PassConstants
     Light Lights[MaxLights];
     
     matrix LightViewProj;
+    matrix LightViewProjTex;
     
     float4 RandomDirections[14];
     float OcclusionRadius;

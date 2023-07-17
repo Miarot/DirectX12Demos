@@ -41,6 +41,8 @@ struct PassConstants {
 	Light Lights[16];
 
 	XMMATRIX LightViewProj = XMMatrixIdentity();
+	XMMATRIX LightViewProjTex = XMMatrixIdentity();
+
 
 	XMVECTOR RandomDirections[14];
 	float OcclusionRadius = 0.2f;
