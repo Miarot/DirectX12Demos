@@ -1,7 +1,6 @@
 #include "Common.hlsli"
 #include "GeoUtils.hlsli"
 
-ConstantBuffer<PassConstants> PassConstantsCB : register(b1);
 ConstantBuffer<MaterialConstants> MaterialConstantsCB : register(b2);
 
 Texture2D Texture : register(t0);

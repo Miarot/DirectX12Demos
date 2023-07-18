@@ -6,6 +6,8 @@
 #include <DirectXMath.h>
 using namespace DirectX;
 
+
+
 struct Vertex {
 	XMFLOAT3 Position;
 	XMFLOAT3 Norm;
@@ -24,6 +26,9 @@ struct Light {
 	float FalloffEnd;
 	XMFLOAT3 Position;
 	float SpotPower;
+
+	XMMATRIX LightViewProj = XMMatrixIdentity();
+	XMMATRIX LightViewProjTex = XMMatrixIdentity();
 };
 
 struct PassConstants {
@@ -39,10 +44,6 @@ struct PassConstants {
 
 	XMVECTOR AmbientLight;
 	Light Lights[16];
-
-	XMMATRIX LightViewProj = XMMatrixIdentity();
-	XMMATRIX LightViewProjTex = XMMatrixIdentity();
-
 
 	XMVECTOR RandomDirections[14];
 	float OcclusionRadius = 0.2f;
@@ -98,5 +99,5 @@ struct Texture {
 
 	ComPtr<ID3D12Resource> Resource;
 	ComPtr<ID3D12Resource> UploadResource;
-	uint32_t SRVHeapIndex;
+	uint32_t SRVHeapIndex = -1;
 };

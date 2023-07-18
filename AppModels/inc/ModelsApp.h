@@ -100,6 +100,7 @@ private:
 
 	// for Shadow maps
 	void BuildShadowMaps();
+	void BuildShadowMapsRootSignature();
 
 private:
 	std::array<FLOAT, 4> m_BackGroundColor = { 0.4f, 0.6f, 0.9f, 1.0f };
@@ -116,6 +117,7 @@ private:
 	Shaker m_Shaker;
 	std::filesystem::path m_SceneFolder;
 	const aiScene* m_Scene;
+	const uint32_t m_NumDirectionalAndSpotLights = 4;
 
 	std::unordered_map<std::string, std::unique_ptr<Texture>> m_Textures;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;
@@ -161,6 +163,6 @@ private:
 	float m_BlurWeights[2 * m_BlurRadius + 1];
 
 	// for Shadow maps
-	const uint32_t m_NumShadowMaps = 1;
+	const uint32_t m_NumShadowMaps = m_NumDirectionalAndSpotLights;
 	std::vector<std::unique_ptr<ShadowMap>> m_ShadowMaps;
 };

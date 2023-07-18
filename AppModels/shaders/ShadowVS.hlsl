@@ -4,6 +4,11 @@
 ConstantBuffer<ObjectConstants> ObjectConstantsCB : register(b0);
 ConstantBuffer<PassConstants> PassConstantsCB : register(b1);
 
+cbuffer LightConstants : register(b3)
+{
+    int LightIndex;
+};
+
 VertexOut main(VertexIn vin) {
     VertexOut vout;
     
@@ -11,7 +16,7 @@ VertexOut main(VertexIn vin) {
     vout.Norm = vin.Norm;
     float4 posW = mul(ObjectConstantsCB.ModelMatrix, float4(vin.Pos, 1.0f));
     vout.PosW = posW.xyz;
-    vout.PosH = mul(PassConstantsCB.LightViewProj, posW);
+    vout.PosH = mul(PassConstantsCB.Lights[LightIndex].LightViewProj, posW);
     
     return vout;
 }

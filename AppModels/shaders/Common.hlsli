@@ -20,12 +20,9 @@ struct PassConstants
     
     float4 AmbientLight;
     // first NUM_DIR_LIGHTS --- directional lights
-    // next NUM_POINT_LIGHTS --- point lights
-    // last NUM_SPOT_LIGHTS --- spot lights
+    // next NUM_SPOT_LIGHTS --- spot lights
+    // last NUM_POINT_LIGHTS --- point lights
     Light Lights[MaxLights];
-    
-    matrix LightViewProj;
-    matrix LightViewProjTex;
     
     float4 RandomDirections[14];
     float OcclusionRadius;

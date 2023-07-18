@@ -47,6 +47,10 @@ bool ModelsApp::Initialize() {
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildRootSignature();
+
+	// for shadow maps
+	BuildShadowMapsRootSignature();
+
 	BuildPipelineStateObject();
 
 	// count size for CBV and SRV descriptor heap
@@ -97,6 +101,7 @@ bool ModelsApp::Initialize() {
 
 	// for Shadow maps
 	BuildShadowMaps();
+	
 
 	// wait while all data loaded
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
@@ -251,6 +256,9 @@ void ModelsApp::OnRender() {
 		m_SteniclClearValue,
 		0, NULL
 	);
+
+	// render shadow maps
+	//RenderShadowMaps(commandList);
 
 	if (m_DrawingType == DrawingType::SSAO) {
 		// render occlusion map 
@@ -678,7 +686,7 @@ void ModelsApp::RenderShadowMaps(ComPtr<ID3D12GraphicsCommandList> commandList) 
 			0, NULL
 		);
 
-		commandList->SetGraphicsRootSignature(m_RootSignatures["Geometry"].Get());
+		commandList->SetGraphicsRootSignature(m_RootSignatures["ShadowMap"].Get());
 		ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBV_SRVDescHeap.Get() };
 		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
@@ -690,6 +698,8 @@ void ModelsApp::RenderShadowMaps(ComPtr<ID3D12GraphicsCommandList> commandList) 
 				m_CBV_SRV_UAVDescSize
 			)
 		);
+
+		commandList->SetGraphicsRoot32BitConstant(4, i, 0);
 
 		commandList->RSSetViewports(1, &shadowMap->GetViewPort());
 		commandList->RSSetScissorRects(1, &shadowMap->GetScissorRect());
@@ -830,6 +840,13 @@ void ModelsApp::BuildLights() {
 
 	uint32_t curLight = 0;
 
+	XMMATRIX tex(
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, -0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f
+	);
+
 	// directional light 1 
 	{
 		XMVECTOR lightViewPos = XMVectorSet(3.0f, 17.0f, 3.0f, 1.0f);
@@ -843,17 +860,76 @@ void ModelsApp::BuildLights() {
 			1.0f, 20.0f
 		);
 
-		XMMATRIX tex(
-			0.5f, 0.0f, 0.0f, 0.0f,
-			0.0f, -0.5f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			0.5f, 0.5f, 0.0f, 1.0f
-		);
-
-		m_PassConstants.LightViewProj = lightView * lightProj;
-		m_PassConstants.LightViewProjTex = m_PassConstants.LightViewProj * tex;
+		m_PassConstants.Lights[curLight].LightViewProj = lightView * lightProj;
+		m_PassConstants.Lights[curLight].LightViewProjTex = m_PassConstants.Lights[curLight].LightViewProj * tex;
 		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
+		++curLight;
+	}
+
+	// spot light 1
+	{
+		XMVECTOR lightViewPos = XMVectorSet(4.0f, 5.0f, 0.0f, 1.0f);
+		XMVECTOR lightViewFocus = XMVectorSet(4.0f, 0.0f, 2.0f, 1.0f);
+		XMVECTOR lightViewUpDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMMATRIX lightView = XMMatrixLookAtLH(lightViewPos, lightViewFocus, lightViewUpDirection);
+
+		XMMATRIX lightProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), 1, 0.1f, 20.0f);
+
+		m_PassConstants.Lights[curLight].LightViewProj = lightView * lightProj;
+		m_PassConstants.Lights[curLight].LightViewProjTex = m_PassConstants.Lights[curLight].LightViewProj * tex;
+
+		m_PassConstants.Lights[curLight].Strength = { 0.0f, 1.0f, 0.0f };
+		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 20.0f;
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
+		
+		++curLight;
+	}
+
+	// spot light 2
+	{
+		XMVECTOR lightViewPos = XMVectorSet(0.0f, 5.0f, 0.0f, 1.0f);
+		XMVECTOR lightViewFocus = XMVectorSet(0.0f, 0.0f, 2.0f, 1.0f);
+		XMVECTOR lightViewUpDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMMATRIX lightView = XMMatrixLookAtLH(lightViewPos, lightViewFocus, lightViewUpDirection);
+
+		XMMATRIX lightProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), 1, 0.1f, 20.0f);
+
+		m_PassConstants.Lights[curLight].LightViewProj = lightView * lightProj;
+		m_PassConstants.Lights[curLight].LightViewProjTex = m_PassConstants.Lights[curLight].LightViewProj * tex;
+
+		m_PassConstants.Lights[curLight].Strength = { 0.0f, 0.0f, 1.0f };
+		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 20.0f;
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
+
+		++curLight;
+	}
+
+	// spot light 3
+	{
+		XMVECTOR lightViewPos = XMVectorSet(-5.0f, 5.0f, 0.0f, 1.0f);
+		XMVECTOR lightViewFocus = XMVectorSet(-5.0f, 0.0f, 2.0f, 1.0f);
+		XMVECTOR lightViewUpDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMMATRIX lightView = XMMatrixLookAtLH(lightViewPos, lightViewFocus, lightViewUpDirection);
+
+		XMMATRIX lightProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), 1, 0.1f, 20.0f);
+
+		m_PassConstants.Lights[curLight].LightViewProj = lightView * lightProj;
+		m_PassConstants.Lights[curLight].LightViewProjTex = m_PassConstants.Lights[curLight].LightViewProj * tex;
+
+		m_PassConstants.Lights[curLight].Strength = { 1.0f, 0.0f, 0.0f };
+		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 20.0f;
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
+
 		++curLight;
 	}
 
@@ -863,39 +939,6 @@ void ModelsApp::BuildLights() {
 		m_PassConstants.Lights[curLight].Position = XMFLOAT3(0.0f, 10.0f, 0.0f);
 		m_PassConstants.Lights[curLight].FalloffStart = 5.0f;
 		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
-		++curLight;
-	}
-
-	// spot light 1
-	{
-		m_PassConstants.Lights[curLight].Strength = { 0.0f, 1.0f, 0.0f };
-		m_PassConstants.Lights[curLight].Position = { 4.0f, 8.0f, 0.0f };
-		m_PassConstants.Lights[curLight].FalloffStart = 4.0f;
-		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
-		m_PassConstants.Lights[curLight].Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
-		m_PassConstants.Lights[curLight].SpotPower = 12.0f;
-		++curLight;
-	}
-
-	// spot light 2
-	{
-		m_PassConstants.Lights[curLight].Strength = { 1.0f, 0.0f, 0.0f };
-		m_PassConstants.Lights[curLight].Position = { 0.0f, 8.0f, 0.0f };
-		m_PassConstants.Lights[curLight].FalloffStart = 4.0f;
-		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
-		m_PassConstants.Lights[curLight].Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
-		m_PassConstants.Lights[curLight].SpotPower = 12.0f;
-		++curLight;
-	}
-
-	// spot light 3
-	{
-		m_PassConstants.Lights[curLight].Strength = { 0.0f, 0.0f, 1.0f };
-		m_PassConstants.Lights[curLight].Position = { -4.0f, 8.0f, 0.0f };
-		m_PassConstants.Lights[curLight].FalloffStart = 4.0f;
-		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
-		m_PassConstants.Lights[curLight].Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
-		m_PassConstants.Lights[curLight].SpotPower = 12.0f;
 		++curLight;
 	}
 }
@@ -1455,6 +1498,8 @@ void ModelsApp::BuildPipelineStateObject() {
 		shadowMapPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
 		shadowMapPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
 
+		shadowMapPsoDesc.pRootSignature = m_RootSignatures["ShadowMap"].Get();
+
 		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&shadowMapPsoDesc, IID_PPV_ARGS(&shadowMapsPSO)));
 		m_PSOs["shadowMaps"] = shadowMapsPSO;
 	}
@@ -1979,4 +2024,69 @@ void ModelsApp::BuildShadowMaps() {
 		srvCpuDescHandle.Offset(m_CBV_SRV_UAVDescSize);
 		srvGpuDescHandle.Offset(m_CBV_SRV_UAVDescSize);
 	}
+}
+
+void ModelsApp::BuildShadowMapsRootSignature() {
+	// init parameters
+	CD3DX12_ROOT_PARAMETER1 rootParameters[5];
+
+	CD3DX12_DESCRIPTOR_RANGE1 objConstsDescRange;
+	objConstsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE1 passConstsDescRange;
+	passConstsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+
+	CD3DX12_DESCRIPTOR_RANGE1 matConstsDescRange;
+	matConstsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
+
+	CD3DX12_DESCRIPTOR_RANGE1 texDescRange;
+	texDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	rootParameters[0].InitAsDescriptorTable(1, &objConstsDescRange);
+	rootParameters[1].InitAsDescriptorTable(1, &passConstsDescRange);
+	rootParameters[2].InitAsDescriptorTable(1, &matConstsDescRange);
+	rootParameters[3].InitAsDescriptorTable(1, &texDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[4].InitAsConstants(1, 3);
+
+	// set access flags
+	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+
+	// create sampler
+	CD3DX12_STATIC_SAMPLER_DESC linearWrapSampler(
+		0,
+		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP
+	);
+
+	D3D12_STATIC_SAMPLER_DESC samplers[] = { linearWrapSampler };
+
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, _countof(samplers), samplers, rootSignatureFlags);
+
+	ComPtr<ID3DBlob> rootSignatureBlob;
+	ComPtr<ID3DBlob> errorBlob;
+
+	ThrowIfFailed(D3DX12SerializeVersionedRootSignature(
+		&rootSignatureDesc,
+		GetRootSignatureVersion(m_Device),
+		&rootSignatureBlob,
+		&errorBlob
+	));
+
+	ComPtr<ID3D12RootSignature> rootSignature;
+
+	ThrowIfFailed(m_Device->CreateRootSignature(
+		0,
+		rootSignatureBlob->GetBufferPointer(),
+		rootSignatureBlob->GetBufferSize(),
+		IID_PPV_ARGS(&rootSignature)
+	));
+
+	m_RootSignatures["ShadowMap"] = rootSignature;
 }
