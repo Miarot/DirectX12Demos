@@ -29,24 +29,25 @@ float CalcShadowFactor(float3 posW) {
     
     float depthCur = projTexC.z;
     
-    uint width, height, numMips;
-    ShadowMap.GetDimensions(0, width, height, numMips);
+    uint width, height, mipMaps;
+    ShadowMap.GetDimensions(0, width, height, mipMaps);
     
-    float dx = 1.0f / float(width);
+    float dx = 1 / (float) width;
+    float dy = 1 / (float) height;
     
-    const float2 offsets[9] = {
-        float2(-dx, -dx), float2(0.0f, -dx), float2(0.0f, dx),
-        float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(0.0f, dx),
-        float2(-dx, dx), float2(0.0f, dx), float2(dx, dx)
+    const int numSamples = 4;
+    const float2 offsets[] = {
+        float2(0.0f, 0.0f), float2(dx, 0.0f),
+        float2(0.0f, dy), float2(dx, dy)
     };
     
     float shadowFactor = 0.0f;
     
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < numSamples; ++i) {
         shadowFactor += ShadowMap.SampleCmpLevelZero(PointClumpSampler, projTexC.xy + offsets[i], depthCur).r;
     }
     
-    shadowFactor /= 9.0f;
+    shadowFactor /= (float)numSamples;
     
     return shadowFactor;
 }

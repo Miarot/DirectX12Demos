@@ -113,6 +113,21 @@ bool ModelsApp::Initialize() {
 
 	m_RandomMapUploadBuffer = nullptr;
 
+	// load data for all frames
+
+	for (uint32_t i = 0; i < m_NumBackBuffers; ++i) {
+		m_CurrentFrameResources = m_FramesResources[i].get();
+
+		UpdatePassConstants();
+		UpdateMaterialsConstants();
+		UpdateObjectsConstants();
+	}
+
+	// render shadow maps since they don't changes throw time
+	commandList = m_DirectCommandQueue->GetCommandList();
+	RenderShadowMaps(commandList);
+	m_DirectCommandQueue->ExecuteCommandList(commandList);
+
 	return true;
 }
 
@@ -236,9 +251,6 @@ void ModelsApp::OnRender() {
 		m_SteniclClearValue,
 		0, NULL
 	);
-
-	// render shadow maps
-	RenderShadowMaps(commandList);
 
 	if (m_DrawingType == DrawingType::SSAO) {
 		// render occlusion map 
@@ -1441,7 +1453,7 @@ void ModelsApp::BuildPipelineStateObject() {
 
 		shadowMapPsoDesc.RasterizerState.DepthBias = 10000;
 		shadowMapPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
-		shadowMapPsoDesc.RasterizerState.SlopeScaledDepthBias = 4.0f;
+		shadowMapPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
 
 		ThrowIfFailed(m_Device->CreateGraphicsPipelineState(&shadowMapPsoDesc, IID_PPV_ARGS(&shadowMapsPSO)));
 		m_PSOs["shadowMaps"] = shadowMapsPSO;
