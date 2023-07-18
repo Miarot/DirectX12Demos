@@ -101,7 +101,6 @@ bool ModelsApp::Initialize() {
 
 	// for Shadow maps
 	BuildShadowMaps();
-	
 
 	// wait while all data loaded
 	uint32_t fenceValue = m_DirectCommandQueue->ExecuteCommandList(commandList);
@@ -128,7 +127,7 @@ bool ModelsApp::Initialize() {
 		UpdateObjectsConstants();
 	}
 
-	// render shadow maps since they don't changes throw time
+	// render shadow maps since they don't changes throught time
 	commandList = m_DirectCommandQueue->GetCommandList();
 	RenderShadowMaps(commandList);
 	m_DirectCommandQueue->ExecuteCommandList(commandList);

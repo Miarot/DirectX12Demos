@@ -21,7 +21,7 @@ Texture2D OcclusionMap : register(t1);
 Texture2D ShadowMap[NUM_DIR_LIGHTS + NUM_POINT_LIGHTS] : register(t2);
 
 SamplerState LinearWrapSampler : register(s0);
-SamplerComparisonState PointClumpSampler : register(s1);
+SamplerComparisonState ShadowMapSampler : register(s1);
 
 float CalcShadowFactor(float3 posW, int index) {
     float4 projTexC = mul(PassConstantsCB.Lights[index].LightViewProjTex, float4(posW, 1.0f));
@@ -44,7 +44,7 @@ float CalcShadowFactor(float3 posW, int index) {
     float shadowFactor = 0.0f;
     
     for (int i = 0; i < numSamples; ++i) {
-        shadowFactor += ShadowMap[index].SampleCmpLevelZero(PointClumpSampler, projTexC.xy + offsets[i], depthCur).r;
+        shadowFactor += ShadowMap[index].SampleCmpLevelZero(ShadowMapSampler, projTexC.xy + offsets[i], depthCur).r;
     }
     
     shadowFactor /= (float)numSamples;
