@@ -27,6 +27,9 @@ struct Light
     float FalloffEnd;
     float3 Position;
     float SpotPower;
+        
+    matrix LightViewProj;
+    matrix LightViewProjTex;
 };
 
 float CalcAttenuation(float falloffStart, float falloffEnd, float d) {
@@ -89,28 +92,31 @@ float3 ComputeSpotLight(Light L, Material mat, float3 norm, float3 toEye, float3
     return BlinnPhong(lightStrength, lightVec, norm, toEye, mat);
 }
 
-float4 ComputeLighting(Light lights[MaxLights], Material mat, float3 norm, float3 toEye, float3 pos) {
+float4 ComputeLighting(Light lights[MaxLights], Material mat, float3 norm, float3 toEye, float3 pos, float shadowFactors[MaxLights]) {
     float3 res = 0.0f;
     int i = 0;
     
     #if (NUM_DIR_LIGHTS > 0)
+        [unroll]
         for (i = 0; i < NUM_DIR_LIGHTS; ++i) {
-            res += ComputeDirectionalLight(lights[i], mat, norm, toEye);
+            res += shadowFactors[i] * ComputeDirectionalLight(lights[i], mat, norm, toEye);
         }
     #endif
 
-    #if (NUM_POINT_LIGHTS > 0)
-        for (i = NUM_DIR_LIGHTS; i < NUM_DIR_LIGHTS + NUM_POINT_LIGHTS; ++i) {
-            res += ComputePointLight(lights[i], mat, norm, toEye, pos);
+    #if (NUM_SPOT_LIGHTS > 0)
+        [unroll]
+        for (i = NUM_DIR_LIGHTS; i < NUM_DIR_LIGHTS + NUM_SPOT_LIGHTS; ++i) {
+            res += shadowFactors[i] * ComputeSpotLight(lights[i], mat, norm, toEye, pos);
         }
     #endif
     
-    #if (NUM_SPOT_LIGHTS > 0)
-    for (i = NUM_POINT_LIGHTS + NUM_DIR_LIGHTS; i < NUM_SPOT_LIGHTS + NUM_DIR_LIGHTS + NUM_POINT_LIGHTS; ++i)
-    {
-            res += ComputeSpotLight(lights[i], mat, norm, toEye, pos);
+    #if (NUM_POINT_LIGHTS > 0)
+        [unroll]
+        for (i = NUM_DIR_LIGHTS + NUM_SPOT_LIGHTS; i < NUM_DIR_LIGHTS + NUM_SPOT_LIGHTS + NUM_POINT_LIGHTS; ++i) {
+            res += shadowFactors[i] * ComputePointLight(lights[i], mat, norm, toEye, pos);
         }
     #endif
+    
     
     return float4(res, 0.0f);
 }

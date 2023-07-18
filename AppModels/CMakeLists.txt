@@ -8,18 +8,21 @@ set( HEADER_FILES
 	inc/AppStructures.h
 	inc/FrameResources.h
 	inc/ModelsApp.h
+	inc/ShadowMap.h
 )
 
 set( SRC_FILES
 	src/main.cpp
 	src/FrameResources.cpp
 	src/ModelsApp.cpp
+	src/ShadowMap.cpp
 )
 
 set( VERTEX_SHADER_FILES
     shaders/GeoVertexShader.hlsl
 	shaders/SSAOVertexShader.hlsl
 	shaders/FullScreenQuadVS.hlsl
+	shaders/ShadowVS.hlsl
 )
 
 set( PIXEL_SHADER_FILES
@@ -27,6 +30,7 @@ set( PIXEL_SHADER_FILES
 	shaders/SobelPixelShader.hlsl
 	shaders/SSAOPixelShader.hlsl
 	shaders/BlurPixelShader.hlsl
+	shaders/ShadowPS.hlsl
 )
 
 set( SHADER_HEADER_FILES

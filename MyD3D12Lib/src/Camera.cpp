@@ -55,24 +55,25 @@ XMVECTOR Camera::GetCameraPos() const {
 
 void Camera::MoveCamera(WPARAM direction) {
 	m_CameraPos -= m_FocusPos;
+	float speed = 0.2f;
 
 	switch (direction) 
 	{
 	case 'W':
 		// Forward
-		m_FocusPos += 0.4 * m_CameraForwardDirection;
+		m_FocusPos += speed * m_CameraForwardDirection;
 		break;
 	case 'S':
 		// Backward
-		m_FocusPos -= 0.4 * m_CameraForwardDirection;
+		m_FocusPos -= speed * m_CameraForwardDirection;
 		break;
 	case 'A':
 		// Left
-		m_FocusPos += 0.4 * m_CameraRightDirection;
+		m_FocusPos += speed * m_CameraRightDirection;
 		break;
 	case 'D':
 		// Right
-		m_FocusPos -= 0.4 * m_CameraRightDirection;
+		m_FocusPos -= speed * m_CameraRightDirection;
 		break;
 	}
 

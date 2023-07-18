@@ -87,6 +87,7 @@ protected:
 	uint32_t m_CurrentBackBufferIndex;
 	uint32_t m_RTVDescSize;
 	uint32_t m_CBV_SRV_UAVDescSize;
+	uint32_t m_DSVDescSize;
 
 	RECT m_WindowRect;
 	D3D12_RECT m_ScissorRect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);

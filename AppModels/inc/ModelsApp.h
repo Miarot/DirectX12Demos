@@ -2,6 +2,7 @@
 
 #include <AppStructures.h>
 #include <FrameResources.h>
+#include <ShadowMap.h>
 #include <MyD3D12Lib/BaseApp.h>
 #include <MyD3D12Lib/Camera.h>
 #include <MyD3D12Lib/MeshGeometry.h>
@@ -51,6 +52,8 @@ private:
 		std::array<FLOAT, 4> rtClearValue
 	);
 
+	void RenderRenderItem(ComPtr<ID3D12GraphicsCommandList> commandList, RenderItem* ri);
+
 	void RenderSobelFilter(
 		ComPtr<ID3D12GraphicsCommandList> commandList,
 		ID3D12Resource* rtBuffer,
@@ -67,6 +70,8 @@ private:
 		D3D12_GPU_DESCRIPTOR_HANDLE srv,
 		bool isHorizontal
 	);
+
+	void RenderShadowMaps(ComPtr<ID3D12GraphicsCommandList> commandList);
 
 	void InitSceneState();
 	void BuildLights();
@@ -93,6 +98,10 @@ private:
 	void BuildRandomMapBufferAndDirections(ComPtr<ID3D12GraphicsCommandList> commandList);
 	void InitBlurWeights();
 
+	// for Shadow maps
+	void BuildShadowMaps();
+	void BuildShadowMapsRootSignature();
+
 private:
 	std::array<FLOAT, 4> m_BackGroundColor = { 0.4f, 0.6f, 0.9f, 1.0f };
 
@@ -108,6 +117,7 @@ private:
 	Shaker m_Shaker;
 	std::filesystem::path m_SceneFolder;
 	const aiScene* m_Scene;
+	const uint32_t m_NumDirectionalAndSpotLights = 4;
 
 	std::unordered_map<std::string, std::unique_ptr<Texture>> m_Textures;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_Geometries;
@@ -151,4 +161,8 @@ private:
 
 	static const int m_BlurRadius = 5;
 	float m_BlurWeights[2 * m_BlurRadius + 1];
+
+	// for Shadow maps
+	const uint32_t m_NumShadowMaps = m_NumDirectionalAndSpotLights;
+	std::vector<std::unique_ptr<ShadowMap>> m_ShadowMaps;
 };
