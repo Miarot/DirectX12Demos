@@ -10,6 +10,7 @@ VertexOut main(VertexIn vin)
     
     vout.Norm = normalize(mul((float3x3)ObjectConstantsCB.ModelMatrixInvTrans, vin.Norm));
     vout.TexC = vin.TexC;
+    vout.TangentU = vin.TangentU;
     
     float4 posW = mul(ObjectConstantsCB.ModelMatrix, float4(vin.Pos, 1.0f));
     vout.PosW = posW.xyz;

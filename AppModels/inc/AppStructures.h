@@ -12,6 +12,7 @@ struct Vertex {
 	XMFLOAT3 Position;
 	XMFLOAT3 Norm;
 	XMFLOAT2 TexC;
+	XMFLOAT3 TangentU;
 };
 
 struct ObjectConstants {

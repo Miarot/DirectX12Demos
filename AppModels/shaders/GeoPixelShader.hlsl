@@ -57,6 +57,7 @@ float4 main(VertexOut pin) : SV_Target
 {
     //float4 normalSampled = NormalMap.Sample(LinearWrapSampler, pin.TexC);
     //return normalSampled;
+    //return float4((pin.TangentU + 1.0f) / 2, 1.0f);
     // init material from MaterialConstants and texture
     Material mat = {
         MaterilaConstantsCB.DiffuseAlbedo * Texture.Sample(LinearWrapSampler, pin.TexC),

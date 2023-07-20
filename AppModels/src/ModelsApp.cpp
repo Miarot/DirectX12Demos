@@ -1005,12 +1005,20 @@ void ModelsApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
 			aiVector3D vertexPos = mesh->mVertices[j];
 			aiVector3D vertexTexC = mesh->mTextureCoords[0][j];
 			aiVector3D vertexNorm = mesh->mNormals[j];
+			aiVector3D vertexTangentU;
+
+			if (mesh->mTangents == NULL) {
+				vertexTangentU = { 1.0f, 0.0f, 0.0f };
+			} else {
+				vertexTangentU = mesh->mTangents[j];
+			}
 
 			vertexes.push_back({
 				XMFLOAT3(vertexPos.x, vertexPos.y, vertexPos.z),
 				XMFLOAT3(vertexNorm.x, vertexNorm.y, vertexNorm.z),
-				XMFLOAT2(vertexTexC.x, vertexTexC.y)
-				});
+				XMFLOAT2(vertexTexC.x, vertexTexC.y),
+				XMFLOAT3(vertexTangentU.x, vertexTangentU.y, vertexTangentU.z)
+			});
 		}
 
 		uint32_t numIndexes = mesh->mNumFaces * 3;
@@ -1367,7 +1375,8 @@ void ModelsApp::BuildPipelineStateObject() {
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[]{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 		{"NORM", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"TANGENTU", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
 	D3D12_INPUT_LAYOUT_DESC inpuitLayout{ inputElementDescs, _countof(inputElementDescs) };
