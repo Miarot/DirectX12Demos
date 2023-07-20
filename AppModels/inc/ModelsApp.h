@@ -76,6 +76,7 @@ private:
 	void InitSceneState();
 	void BuildLights();
 	void BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList);
+	void CreateTexture(ComPtr<ID3D12GraphicsCommandList> commandList, std::string relPath);
 	void BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList);
 	void BuildMaterials();
 	void BuildRenderItems();

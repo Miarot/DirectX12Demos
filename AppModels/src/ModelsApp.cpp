@@ -359,7 +359,7 @@ void ModelsApp::RenderGeometry(
 	if (m_DrawingType == DrawingType::SSAO) {
 		// set occlusion map
 		commandList->SetGraphicsRootDescriptorTable(
-			4,
+			5,
 			CD3DX12_GPU_DESCRIPTOR_HANDLE(
 				m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
 				m_SSAO_SRV_StartIndex + 3,
@@ -380,7 +380,7 @@ void ModelsApp::RenderGeometry(
 
 	// set shadow maps
 	commandList->SetGraphicsRootDescriptorTable(
-		5,
+		6,
 		m_ShadowMaps[0]->GetSrv()
 	);
 
@@ -422,13 +422,20 @@ void ModelsApp::RenderRenderItem(ComPtr<ID3D12GraphicsCommandList> commandList, 
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE textureDescHandle(
 		m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
-		m_TexturesViewsStartIndex + m_Textures[mat->TextureName]->SRVHeapIndex,
+		m_TexturesViewsStartIndex + m_Textures[mat->DiffuseTexName]->SRVHeapIndex,
+		m_CBV_SRV_UAVDescSize
+	);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE normalMapDescHandle(
+		m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
+		m_TexturesViewsStartIndex + m_Textures[mat->NormalMapTexName]->SRVHeapIndex,
 		m_CBV_SRV_UAVDescSize
 	);
 
 	commandList->SetGraphicsRootDescriptorTable(0, objCBDescHandle);
 	commandList->SetGraphicsRootDescriptorTable(2, matCBDescHandle);
 	commandList->SetGraphicsRootDescriptorTable(3, textureDescHandle);
+	commandList->SetGraphicsRootDescriptorTable(4, normalMapDescHandle);
 
 	// draw
 	commandList->DrawIndexedInstanced(
@@ -698,7 +705,7 @@ void ModelsApp::RenderShadowMaps(ComPtr<ID3D12GraphicsCommandList> commandList) 
 			)
 		);
 
-		commandList->SetGraphicsRoot32BitConstant(4, i, 0);
+		commandList->SetGraphicsRoot32BitConstant(5, i, 0);
 
 		commandList->RSSetViewports(1, &shadowMap->GetViewPort());
 		commandList->RSSetScissorRects(1, &shadowMap->GetScissorRect());
@@ -944,31 +951,45 @@ void ModelsApp::BuildLights() {
 
 void ModelsApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	for (uint32_t i = 0; i < m_Scene->mNumMaterials; ++i) {
-		aiString textureRelPath;
-		m_Scene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &textureRelPath);
+		// load diffuse texture
+		aiString diffuseTextureRelPath;
+		m_Scene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &diffuseTextureRelPath);
 
-		if (textureRelPath.length == 0) {
-			continue;
+		if (diffuseTextureRelPath.length != 0) {
+			CreateTexture(commandList, diffuseTextureRelPath.C_Str());
 		}
 
-		std::filesystem::path textureAbsPath = m_SceneFolder;
-		textureAbsPath += textureRelPath.C_Str();
+		// load normal map texutre
+		aiString normalMapRelPath;
+		m_Scene->mMaterials[i]->GetTexture(aiTextureType_NORMALS, 0, &normalMapRelPath);
 
-		auto tex = std::make_unique<Texture>();
-
-		tex->Name = textureRelPath.C_Str();
-		tex->FileName = textureAbsPath;
-
-		CreateWICTextureFromFile(
-			m_Device,
-			commandList,
-			tex->FileName,
-			tex->Resource,
-			tex->UploadResource
-		);
-
-		m_Textures[tex->Name] = std::move(tex);
+		if (normalMapRelPath.length != 0) {
+			CreateTexture(commandList, normalMapRelPath.C_Str());
+		}
 	}
+
+	// load blue texture for default normal map
+	CreateTexture(commandList, "normalMapDefault.png");
+}
+
+void ModelsApp::CreateTexture(ComPtr<ID3D12GraphicsCommandList> commandList, std::string relPath) {
+	std::filesystem::path absPath = m_SceneFolder;
+	absPath += relPath.c_str();
+
+	auto tex = std::make_unique<Texture>();
+
+	tex->Name = relPath.c_str();
+	tex->FileName = absPath;
+
+	CreateWICTextureFromFile(
+		m_Device,
+		commandList,
+		tex->FileName,
+		tex->Resource,
+		tex->UploadResource
+	);
+
+	m_Textures[tex->Name] = std::move(tex);
 }
 
 void ModelsApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
@@ -1048,19 +1069,32 @@ void ModelsApp::BuildMaterials() {
 	for (uint32_t i = 0; i < m_Scene->mNumMaterials; ++i) {
 		aiMaterial* aimat = m_Scene->mMaterials[i];
 		
-		aiString texturePath;
-		aimat->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
+		aiString diffuseTexPath;
+		aimat->GetTexture(aiTextureType_DIFFUSE, 0, &diffuseTexPath);
+
+		if (diffuseTexPath.length == 0) {
+			diffuseTexPath = "white.png";
+		}
+
+		aiString normalMapTexPath;
+		aimat->GetTexture(aiTextureType_NORMALS, 0, &normalMapTexPath);
+
+		if (normalMapTexPath.length == 0) {
+			normalMapTexPath = "normalMapDefault.png";
+		}
+		
 		aiColor3D diffuseColor(0.0f, 0.0f, 0.0f);
 		aimat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
-		aiColor3D specularColor(0.0f, 0.0f, 0.0f);
-		aimat->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
-		float shininess = 0.0f;
-		aimat->Get(AI_MATKEY_SHININESS, shininess);
+		aiColor3D specularColor(0.1f, 0.1f, 0.1f);
+		//aimat->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
+		float shininess = 0.2f;
+		//aimat->Get(AI_MATKEY_SHININESS, shininess);
 
 		auto mat = std::make_unique<Material>();
 		
 		mat->CBIndex = i;
-		mat->TextureName = texturePath.C_Str();
+		mat->DiffuseTexName = diffuseTexPath.C_Str();
+		mat->NormalMapTexName = normalMapTexPath.C_Str();
 		mat->DiffuseAlbedo = XMFLOAT4(diffuseColor.r, diffuseColor.g, diffuseColor.b, 1.0f);
 		mat->FresnelR0 = XMFLOAT3(specularColor.r, specularColor.g, specularColor.b);
 		mat->Roughness = 0.99f - shininess;
@@ -1243,7 +1277,7 @@ void ModelsApp::BuildCBViews() {
 
 void ModelsApp::BuildRootSignature() {
 	// init parameters
-	CD3DX12_ROOT_PARAMETER1 rootParameters[6];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[7];
 
 	CD3DX12_DESCRIPTOR_RANGE1 objConstsDescRange;
 	objConstsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
@@ -1257,18 +1291,22 @@ void ModelsApp::BuildRootSignature() {
 	CD3DX12_DESCRIPTOR_RANGE1 texDescRange;
 	texDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
+	CD3DX12_DESCRIPTOR_RANGE1 normalMapDescRange;
+	normalMapDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
 	CD3DX12_DESCRIPTOR_RANGE1 occlusionMapDescRange;
-	occlusionMapDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+	occlusionMapDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);
 
 	CD3DX12_DESCRIPTOR_RANGE1 shadowMapsDescRange;
-	shadowMapsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, m_NumShadowMaps, 2);
+	shadowMapsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, m_NumShadowMaps, 3);
 
 	rootParameters[0].InitAsDescriptorTable(1, &objConstsDescRange);
 	rootParameters[1].InitAsDescriptorTable(1, &passConstsDescRange);
 	rootParameters[2].InitAsDescriptorTable(1, &matConstsDescRange);
 	rootParameters[3].InitAsDescriptorTable(1, &texDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
-	rootParameters[4].InitAsDescriptorTable(1, &occlusionMapDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
-	rootParameters[5].InitAsDescriptorTable(1, &shadowMapsDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[4].InitAsDescriptorTable(1, &normalMapDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[5].InitAsDescriptorTable(1, &occlusionMapDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[6].InitAsDescriptorTable(1, &shadowMapsDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	// set access flags
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
@@ -2027,7 +2065,7 @@ void ModelsApp::BuildShadowMaps() {
 
 void ModelsApp::BuildShadowMapsRootSignature() {
 	// init parameters
-	CD3DX12_ROOT_PARAMETER1 rootParameters[5];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[6];
 
 	CD3DX12_DESCRIPTOR_RANGE1 objConstsDescRange;
 	objConstsDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
@@ -2041,11 +2079,15 @@ void ModelsApp::BuildShadowMapsRootSignature() {
 	CD3DX12_DESCRIPTOR_RANGE1 texDescRange;
 	texDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
+	CD3DX12_DESCRIPTOR_RANGE1 normalMapDescRange;
+	normalMapDescRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
 	rootParameters[0].InitAsDescriptorTable(1, &objConstsDescRange);
 	rootParameters[1].InitAsDescriptorTable(1, &passConstsDescRange);
 	rootParameters[2].InitAsDescriptorTable(1, &matConstsDescRange);
 	rootParameters[3].InitAsDescriptorTable(1, &texDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
-	rootParameters[4].InitAsConstants(1, 3);
+	rootParameters[4].InitAsDescriptorTable(1, &normalMapDescRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameters[5].InitAsConstants(1, 3);
 
 	// set access flags
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =

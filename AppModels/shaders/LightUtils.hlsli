@@ -38,7 +38,7 @@ float CalcAttenuation(float falloffStart, float falloffEnd, float d) {
 
 float3 ShlickFresnel(float3 R0, float3 norm, float3 lightVec) {
     float cosTheta = saturate(dot(norm, lightVec));
-    return R0 + (1 - R0) * pow((1 - cosTheta), 5);
+    return R0 + (1.0f - R0) * pow((1 - cosTheta), 5);
 }
 
 float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 norm, float3 toEye, Material mat) {

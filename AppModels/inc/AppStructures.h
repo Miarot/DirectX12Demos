@@ -67,7 +67,8 @@ struct Material {
 	uint32_t CBIndex = -1;
 	uint32_t NumDirtyFrames = m_NumBackBuffers;
 
-	std::string TextureName = "default";
+	std::string DiffuseTexName = "default";
+	std::string NormalMapTexName = "default";
 
 	XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 	XMFLOAT3 FresnelR0 = { 0.0f, 0.0f, 0.0f };
