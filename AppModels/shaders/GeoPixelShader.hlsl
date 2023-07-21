@@ -87,12 +87,12 @@ float4 main(VertexOut pin) : SV_Target
     float3x3 TBN = float3x3(tangent, bitangent, norm);
     
     float3 bumpedNormalW = mul(normalSampled, TBN);
-    
+
     // for normals view and ssao normals render
     #ifdef DRAW_NORMS
         #ifdef SSAO
             // for ssao need normals in view space
-            float3 normV = mul((float3x3)PassConstantsCB.View, norm);
+            float3 normV = mul((float3x3)PassConstantsCB.View, bumpedNormalW);
             return float4(normV, 0.0f);
         #endif
     

@@ -608,7 +608,7 @@ void ModelsApp::RenderSSAO(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	// blur occlusion map
 	{
 		commandList->SetGraphicsRoot32BitConstant(3, m_BlurRadius, 0);
-		commandList->SetGraphicsRoot32BitConstants(3, 11, m_BlurWeights, 1);
+		commandList->SetGraphicsRoot32BitConstants(3, 2 * m_MaxBlurRadius + 1, m_BlurWeights, 1);
 
 		for (int i = 0; i < 2; ++i) {
 			RenderBlur(commandList, m_OcclusionMapBuffer1, occlusionMap1RTV, m_OcclusionMapBuffer0, occlusionMap0SRV, false);
@@ -2136,7 +2136,7 @@ void ModelsApp::BuildRandomMapBufferAndDirections(ComPtr<ID3D12GraphicsCommandLi
 
 void ModelsApp::InitBlurWeights() {
 	// weights for Gaussian blur
-	float sigma = 3.0f;
+	float sigma = 4.0f;
 	float weightsSum = 0.0f;
 
 	for (int i = -m_BlurRadius; i < m_BlurRadius; ++i) {

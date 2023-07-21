@@ -161,8 +161,9 @@ private:
 	uint32_t m_OcclusionMapWidth;
 	uint32_t m_OcclusionMapHeight;
 
-	static const int m_BlurRadius = 5;
-	float m_BlurWeights[2 * m_BlurRadius + 1];
+	static const int m_MaxBlurRadius = 5;
+	static const int m_BlurRadius = 4;
+	float m_BlurWeights[2 * m_MaxBlurRadius + 1];
 
 	// for Shadow maps
 	const uint32_t m_NumShadowMaps = m_NumDirectionalLights + m_NumSpotLights;
