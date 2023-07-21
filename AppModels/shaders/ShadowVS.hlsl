@@ -9,14 +9,18 @@ cbuffer LightConstants : register(b3)
     int LightIndex;
 };
 
-VertexOut main(VertexIn vin) {
-    VertexOut vout;
+struct ShadowVertextOut {
+    float4 PosH : SV_Position;
+    float2 TexC : TEXCOORD;
+};
+
+ShadowVertextOut main(VertexIn vin)
+{
+    ShadowVertextOut vout;
     
     vout.TexC = vin.TexC;
-    vout.Norm = vin.Norm;
-    vout.TangentW = vin.TangentU;
+    
     float4 posW = mul(ObjectConstantsCB.ModelMatrix, float4(vin.Pos, 1.0f));
-    vout.PosW = posW.xyz;
     vout.PosH = mul(PassConstantsCB.Lights[LightIndex].LightViewProj, posW);
     
     return vout;

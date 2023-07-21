@@ -74,32 +74,28 @@ float4 main(VertexOut pin) : SV_Target
         clip(mat.DiffuseAlbedo.a - 0.1f);
     #endif
     
-    // normals may lose unit leght during interpolation
-    float3 normalSampled = NormalMap.Sample(LinearWrapSampler, pin.TexC).xyz;
-    //return float4(normalSampled, 1.0f);
-    normalSampled = 2.0f * normalSampled - 1.0f;
+    // compute bumped normal in word space from normal in texture space 
+    float3 normalU = NormalMap.Sample(LinearWrapSampler, pin.TexC).xyz;
+    normalU = 2.0f * normalU - 1.0f;
     
-    float3 norm = normalize(pin.Norm);
-    //return float4((norm + 1.0f) / 2.0f, 1.0f);
-    float3 tangent = normalize(pin.TangentW - dot(pin.TangentW, norm) * norm);
-    //return float4((tangent + 1.0f) / 2.0f, 1.0f);
-    float3 bitangent = cross(norm, tangent);
-    float3x3 TBN = float3x3(tangent, bitangent, norm);
+    float3 normalW = normalize(pin.NormalW);
+    float3 tangentW = normalize(pin.TangentW - dot(pin.TangentW, normalW) * normalW);
+    float3 bitangentW = normalize(pin.BitangentW - dot(pin.BitangentW, normalW) * normalW - dot(pin.BitangentW, tangentW) * tangentW);
     
-    float3 bumpedNormalW = mul(normalSampled, TBN);
+    float3x3 TBN = float3x3(tangentW, bitangentW, normalW);
+    float3 bumpedNormalW = mul(normalU, TBN);
 
     // for normals view and ssao normals render
     #ifdef DRAW_NORMS
         #ifdef SSAO
             // for ssao need normals in view space
-            float3 normV = mul((float3x3)PassConstantsCB.View, bumpedNormalW);
-            return float4(normV, 0.0f);
+            float3 bumpedNormV = mul((float3x3)PassConstantsCB.View, bumpedNormalW);
+            return float4(bumpedNormV, 0.0f);
         #endif
     
-        return float4((bumpedNormalW + 1) / 2, 1.0f);
+        return float4((bumpedNormalW + 1.0f) / 2.0f, 1.0f);
     #endif
     
-    //return float4((bumpedNormalW + 1.0f) / 2.0f, 1.0f);
     // compute inderect light
     float4 inderectLight = mat.DiffuseAlbedo * PassConstantsCB.AmbientLight;
     
@@ -124,6 +120,7 @@ float4 main(VertexOut pin) : SV_Target
     }
     
     // compute shadow factors for directional and spot lights
+    [unroll]
     for (i = 0; i < NUM_DIR_LIGHTS; ++i) {
         shadowFactors[i] = CalcShadowFactorPCF3x3(pin.PosW, i);
     }

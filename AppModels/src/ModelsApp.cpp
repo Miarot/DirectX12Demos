@@ -1116,18 +1116,23 @@ void ModelsApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
 			aiVector3D vertexTexC = mesh->mTextureCoords[0][j];
 			aiVector3D vertexNorm = mesh->mNormals[j];
 			aiVector3D vertexTangentU;
+			aiVector3D vertexBitangentU;
 
-			if (mesh->mTangents == NULL) {
+			if ((mesh->mTangents == NULL) || (mesh->mBitangents == NULL)) {
 				vertexTangentU = { 1.0f, 0.0f, 0.0f };
+				vertexBitangentU = { 0.0f, 1.0f, 0.0f };
+
 			} else {
 				vertexTangentU = mesh->mTangents[j];
+				vertexBitangentU = mesh->mBitangents[j];
 			}
 
 			vertexes.push_back({
 				XMFLOAT3(vertexPos.x, vertexPos.y, vertexPos.z),
 				XMFLOAT3(vertexNorm.x, vertexNorm.y, vertexNorm.z),
 				XMFLOAT2(vertexTexC.x, vertexTexC.y),
-				XMFLOAT3(vertexTangentU.x, vertexTangentU.y, vertexTangentU.z)
+				XMFLOAT3(vertexTangentU.x, vertexTangentU.y, vertexTangentU.z),
+				XMFLOAT3(vertexBitangentU.x, vertexBitangentU.y, vertexBitangentU.z)
 			});
 		}
 
@@ -1484,9 +1489,10 @@ void ModelsApp::BuildPipelineStateObject() {
 	// Create input layout
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[]{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"NORM", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"TANGENTU", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		{"TANGENTU", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"BITANGENTU", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
 	D3D12_INPUT_LAYOUT_DESC inpuitLayout{ inputElementDescs, _countof(inputElementDescs) };
