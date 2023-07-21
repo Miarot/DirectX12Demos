@@ -12,5 +12,5 @@ struct VertexOut
     float3 PosW : POSITION;
     float3 Norm : NORM;
     float2 TexC : TEXCOORD;
-    float3 TangentU : TANGENTU;
+    float3 TangentW : TANGENTW;
 };

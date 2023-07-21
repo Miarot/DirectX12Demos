@@ -853,7 +853,7 @@ void ModelsApp::BuildLights() {
 		0.5f, 0.5f, 0.0f, 1.0f
 	);
 
-	// directional light 1 
+	// directional light 1 sun
 	{
 		XMVECTOR lightViewPos = XMVectorSet(3.0f, 17.0f, 3.0f, 1.0f);
 		XMVECTOR lightViewFocus = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
@@ -873,7 +873,7 @@ void ModelsApp::BuildLights() {
 		++curLight;
 	}
 
-	// spot light 1
+	// spot light 1 green
 	{
 		XMVECTOR lightViewPos = XMVectorSet(4.0f, 5.0f, 0.0f, 1.0f);
 		XMVECTOR lightViewFocus = XMVectorSet(4.0f, 0.0f, 2.0f, 1.0f);
@@ -895,7 +895,7 @@ void ModelsApp::BuildLights() {
 		++curLight;
 	}
 
-	// spot light 2
+	// spot light 2 blue
 	{
 		XMVECTOR lightViewPos = XMVectorSet(0.0f, 5.0f, 0.0f, 1.0f);
 		XMVECTOR lightViewFocus = XMVectorSet(0.0f, 0.0f, 2.0f, 1.0f);
@@ -917,7 +917,7 @@ void ModelsApp::BuildLights() {
 		++curLight;
 	}
 
-	// spot light 3
+	// spot light 3 red
 	{
 		XMVECTOR lightViewPos = XMVectorSet(-5.0f, 5.0f, 0.0f, 1.0f);
 		XMVECTOR lightViewFocus = XMVectorSet(-5.0f, 0.0f, 2.0f, 1.0f);
@@ -933,6 +933,116 @@ void ModelsApp::BuildLights() {
 		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
 		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
 		m_PassConstants.Lights[curLight].SpotPower = 20.0f;
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
+
+		++curLight;
+	}
+
+	// spot light 4 on lion
+	{
+		XMVECTOR lightViewPos = XMVectorSet(6.82f, 2.53f, 0.0f, 1.0f);
+		XMVECTOR lightViewFocus = XMVectorSet(10.0f, 1.5f, 0.0f, 1.0f);
+		XMVECTOR lightViewUpDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMMATRIX lightView = XMMatrixLookAtLH(lightViewPos, lightViewFocus, lightViewUpDirection);
+
+		XMMATRIX lightProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), 1, 0.1f, 20.0f);
+
+		m_PassConstants.Lights[curLight].LightViewProj = lightView * lightProj;
+		m_PassConstants.Lights[curLight].LightViewProjTex = m_PassConstants.Lights[curLight].LightViewProj * tex;
+
+		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
+		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 20.0f;
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
+
+		++curLight;
+	}
+
+	// spot light 5 on cup
+	{
+		XMVECTOR lightViewPos = XMVectorSet(7.5f, 2.9f, 2.2f, 1.0f);
+		XMVECTOR lightViewFocus = XMVectorSet(10.0f, 0.5f, 4.5f, 1.0f);
+		XMVECTOR lightViewUpDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMMATRIX lightView = XMMatrixLookAtLH(lightViewPos, lightViewFocus, lightViewUpDirection);
+
+		XMMATRIX lightProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), 1, 0.1f, 20.0f);
+
+		m_PassConstants.Lights[curLight].LightViewProj = lightView * lightProj;
+		m_PassConstants.Lights[curLight].LightViewProjTex = m_PassConstants.Lights[curLight].LightViewProj * tex;
+
+		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
+		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 20.0f;
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
+
+		++curLight;
+	}
+
+	// spot light 6 on blue tapestry
+	{
+		XMVECTOR lightViewPos = XMVectorSet(4.63f, 3.86f, -0.74f, 1.0f);
+		XMVECTOR lightViewFocus = XMVectorSet(5.5f, 1.28f, 1.84f, 1.0f);
+		XMVECTOR lightViewUpDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMMATRIX lightView = XMMatrixLookAtLH(lightViewPos, lightViewFocus, lightViewUpDirection);
+
+		XMMATRIX lightProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), 1, 0.1f, 20.0f);
+
+		m_PassConstants.Lights[curLight].LightViewProj = lightView * lightProj;
+		m_PassConstants.Lights[curLight].LightViewProjTex = m_PassConstants.Lights[curLight].LightViewProj * tex;
+
+		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
+		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 50.0f;
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
+
+		++curLight;
+	}
+
+	// spot light 7 on sculputre right
+	{
+		XMVECTOR lightViewPos = XMVectorSet(-9.25f, 7.0f, 4.21f, 1.0f);
+		XMVECTOR lightViewFocus = XMVectorSet(-11.42f, 5.0f, 0.0f, 1.0f);
+		XMVECTOR lightViewUpDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMMATRIX lightView = XMMatrixLookAtLH(lightViewPos, lightViewFocus, lightViewUpDirection);
+
+		XMMATRIX lightProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), 1, 0.1f, 20.0f);
+
+		m_PassConstants.Lights[curLight].LightViewProj = lightView * lightProj;
+		m_PassConstants.Lights[curLight].LightViewProjTex = m_PassConstants.Lights[curLight].LightViewProj * tex;
+
+		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
+		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 50.0f;
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
+		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
+
+		++curLight;
+	}
+
+	// spot light 8 on sculputre left
+	{
+		XMVECTOR lightViewPos = XMVectorSet(-9.25f, 7.0f, -4.21f, 1.0f);
+		XMVECTOR lightViewFocus = XMVectorSet(-11.42f, 5.0f, 0.0f, 1.0f);
+		XMVECTOR lightViewUpDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMMATRIX lightView = XMMatrixLookAtLH(lightViewPos, lightViewFocus, lightViewUpDirection);
+
+		XMMATRIX lightProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), 1, 0.1f, 20.0f);
+
+		m_PassConstants.Lights[curLight].LightViewProj = lightView * lightProj;
+		m_PassConstants.Lights[curLight].LightViewProjTex = m_PassConstants.Lights[curLight].LightViewProj * tex;
+
+		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
+		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 50.0f;
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
 
@@ -1540,7 +1650,7 @@ void ModelsApp::BuildPipelineStateObject() {
 		shadowMapPsoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
 		shadowMapPsoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-		shadowMapPsoDesc.RasterizerState.DepthBias = 10000;
+		shadowMapPsoDesc.RasterizerState.DepthBias = 5000;
 		shadowMapPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
 		shadowMapPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
 
@@ -2062,7 +2172,16 @@ void ModelsApp::BuildShadowMaps() {
 		m_CBV_SRV_UAVDescSize
 	);
 
-	for (uint32_t i = 0; i < m_NumShadowMaps; ++i) {
+	for (uint32_t i = 0; i < m_NumDirectionalLights; ++i) {
+		m_ShadowMaps.push_back(std::make_unique<ShadowMap>(m_Device.Get(), 4096, 4096));
+		m_ShadowMaps[i]->BuildDescriptors(dsvDescHandle, srvCpuDescHandle, srvGpuDescHandle);
+
+		dsvDescHandle.Offset(m_DSVDescSize);
+		srvCpuDescHandle.Offset(m_CBV_SRV_UAVDescSize);
+		srvGpuDescHandle.Offset(m_CBV_SRV_UAVDescSize);
+	}
+
+	for (uint32_t i = m_NumDirectionalLights; i < m_NumDirectionalLights + m_NumSpotLights; ++i) {
 		m_ShadowMaps.push_back(std::make_unique<ShadowMap>(m_Device.Get(), 2048, 2048));
 		m_ShadowMaps[i]->BuildDescriptors(dsvDescHandle, srvCpuDescHandle, srvGpuDescHandle);
 

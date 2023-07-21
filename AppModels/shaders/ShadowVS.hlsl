@@ -14,6 +14,7 @@ VertexOut main(VertexIn vin) {
     
     vout.TexC = vin.TexC;
     vout.Norm = vin.Norm;
+    vout.TangentW = vin.TangentU;
     float4 posW = mul(ObjectConstantsCB.ModelMatrix, float4(vin.Pos, 1.0f));
     vout.PosW = posW.xyz;
     vout.PosH = mul(PassConstantsCB.Lights[LightIndex].LightViewProj, posW);

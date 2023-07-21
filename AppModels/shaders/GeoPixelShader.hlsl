@@ -3,7 +3,7 @@
 #endif
 
 #ifndef NUM_SPOT_LIGHTS
-    #define NUM_SPOT_LIGHTS 3
+    #define NUM_SPOT_LIGHTS 8
 #endif
 
 #ifndef NUM_POINT_LIGHTS
@@ -24,7 +24,7 @@ Texture2D ShadowMap[NUM_DIR_LIGHTS + NUM_POINT_LIGHTS] : register(t3);
 SamplerState LinearWrapSampler : register(s0);
 SamplerComparisonState ShadowMapSampler : register(s1);
 
-float CalcShadowFactor(float3 posW, int index) {
+float CalcShadowFactorPCF3x3(float3 posW, int index) {
     float4 projTexC = mul(PassConstantsCB.Lights[index].LightViewProjTex, float4(posW, 1.0f));
     projTexC = projTexC / projTexC.w;
     
@@ -53,11 +53,15 @@ float CalcShadowFactor(float3 posW, int index) {
     return shadowFactor;
 }
 
+float CalcShadowFactorPCF2x2(float3 posW, int index) {
+    float4 projTexC = mul(PassConstantsCB.Lights[index].LightViewProjTex, float4(posW, 1.0f));
+    projTexC = projTexC / projTexC.w;
+    
+    return ShadowMap[index].SampleCmpLevelZero(ShadowMapSampler, projTexC.xy, projTexC.z).r;
+}
+
 float4 main(VertexOut pin) : SV_Target
 {
-    //float4 normalSampled = NormalMap.Sample(LinearWrapSampler, pin.TexC);
-    //return normalSampled;
-    //return float4((pin.TangentU + 1.0f) / 2, 1.0f);
     // init material from MaterialConstants and texture
     Material mat = {
         MaterilaConstantsCB.DiffuseAlbedo * Texture.Sample(LinearWrapSampler, pin.TexC),
@@ -71,7 +75,18 @@ float4 main(VertexOut pin) : SV_Target
     #endif
     
     // normals may lose unit leght during interpolation
+    float3 normalSampled = NormalMap.Sample(LinearWrapSampler, pin.TexC).xyz;
+    //return float4(normalSampled, 1.0f);
+    normalSampled = 2.0f * normalSampled - 1.0f;
+    
     float3 norm = normalize(pin.Norm);
+    //return float4((norm + 1.0f) / 2.0f, 1.0f);
+    float3 tangent = normalize(pin.TangentW - dot(pin.TangentW, norm) * norm);
+    //return float4((tangent + 1.0f) / 2.0f, 1.0f);
+    float3 bitangent = cross(norm, tangent);
+    float3x3 TBN = float3x3(tangent, bitangent, norm);
+    
+    float3 bumpedNormalW = mul(normalSampled, TBN);
     
     // for normals view and ssao normals render
     #ifdef DRAW_NORMS
@@ -81,9 +96,10 @@ float4 main(VertexOut pin) : SV_Target
             return float4(normV, 0.0f);
         #endif
     
-        return float4((norm + 1) / 2, 1.0f);
+        return float4((bumpedNormalW + 1) / 2, 1.0f);
     #endif
     
+    //return float4((bumpedNormalW + 1.0f) / 2.0f, 1.0f);
     // compute inderect light
     float4 inderectLight = mat.DiffuseAlbedo * PassConstantsCB.AmbientLight;
     
@@ -108,13 +124,17 @@ float4 main(VertexOut pin) : SV_Target
     }
     
     // compute shadow factors for directional and spot lights
-    for (i = 0; i < NUM_DIR_LIGHTS + NUM_SPOT_LIGHTS; ++i) {
-        shadowFactors[i] = CalcShadowFactor(pin.PosW, i);
+    for (i = 0; i < NUM_DIR_LIGHTS; ++i) {
+        shadowFactors[i] = CalcShadowFactorPCF3x3(pin.PosW, i);
+    }
+    
+    for (i = NUM_DIR_LIGHTS; i < NUM_DIR_LIGHTS + NUM_SPOT_LIGHTS; ++i) {
+        shadowFactors[i] = CalcShadowFactorPCF2x2(pin.PosW, i);
     }
 
     // compute direct light
     float3 toEye = normalize(PassConstantsCB.EyePos - pin.PosW);
-    float4 directLight = ComputeLighting(PassConstantsCB.Lights, mat, norm, toEye, pin.PosW, shadowFactors);
+    float4 directLight = ComputeLighting(PassConstantsCB.Lights, mat, bumpedNormalW, toEye, pin.PosW, shadowFactors);
     
     // compute final color
     float4 color = inderectLight + directLight;
