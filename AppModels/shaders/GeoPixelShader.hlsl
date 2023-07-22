@@ -84,7 +84,7 @@ float4 main(VertexOut pin) : SV_Target
     
     float3x3 TBN = float3x3(tangentW, bitangentW, normalW);
     float3 bumpedNormalW = mul(normalU, TBN);
-
+    //bumpedNormalW = normalW;
     // for normals view and ssao normals render
     #ifdef DRAW_NORMS
         #ifdef SSAO

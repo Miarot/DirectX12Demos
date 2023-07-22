@@ -31,7 +31,7 @@ bool ModelsApp::Initialize() {
 
 	m_Scene = importer.ReadFile(
 		scenePath.string(),
-		aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder | aiProcess_FlipUVs
+		aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder | aiProcess_FlipUVs | aiProcess_CalcTangentSpace
 	);
 
 	assert(m_Scene && "Scene not loaded");
@@ -1079,7 +1079,7 @@ void ModelsApp::BuildTextures(ComPtr<ID3D12GraphicsCommandList> commandList) {
 	}
 
 	// load blue texture for default normal map
-	CreateTexture(commandList, "normalMapDefault.png");
+	CreateTexture(commandList, "normalMapDefault.jpg");
 }
 
 void ModelsApp::CreateTexture(ComPtr<ID3D12GraphicsCommandList> commandList, std::string relPath) {
@@ -1115,17 +1115,8 @@ void ModelsApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
 			aiVector3D vertexPos = mesh->mVertices[j];
 			aiVector3D vertexTexC = mesh->mTextureCoords[0][j];
 			aiVector3D vertexNorm = mesh->mNormals[j];
-			aiVector3D vertexTangentU;
-			aiVector3D vertexBitangentU;
-
-			if ((mesh->mTangents == NULL) || (mesh->mBitangents == NULL)) {
-				vertexTangentU = { 1.0f, 0.0f, 0.0f };
-				vertexBitangentU = { 0.0f, 1.0f, 0.0f };
-
-			} else {
-				vertexTangentU = mesh->mTangents[j];
-				vertexBitangentU = mesh->mBitangents[j];
-			}
+			aiVector3D vertexTangentU = mesh->mTangents[j];
+			aiVector3D vertexBitangentU = mesh->mBitangents[j];
 
 			vertexes.push_back({
 				XMFLOAT3(vertexPos.x, vertexPos.y, vertexPos.z),
@@ -1203,7 +1194,7 @@ void ModelsApp::BuildMaterials() {
 		aimat->GetTexture(aiTextureType_NORMALS, 0, &normalMapTexPath);
 
 		if (normalMapTexPath.length == 0) {
-			normalMapTexPath = "normalMapDefault.png";
+			normalMapTexPath = "normalMapDefault.jpg";
 		}
 		
 		aiColor3D diffuseColor(0.0f, 0.0f, 0.0f);
