@@ -60,7 +60,6 @@ struct PassConstants {
 struct MaterialConstants {
 	XMFLOAT4 DiffuseAlbedo;
 	XMFLOAT3 FresnelR0;
-	float Roughness;
 };
 
 struct Material {
@@ -71,10 +70,10 @@ struct Material {
 
 	std::string DiffuseTexName = "default";
 	std::string NormalMapTexName = "default";
+	std::string RoughnessMetallicTexName = "default";
 
 	XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 	XMFLOAT3 FresnelR0 = { 0.0f, 0.0f, 0.0f };
-	float Roughness = 1.0f;
 };
 
 struct RenderItem {

@@ -38,5 +38,4 @@ struct MaterialConstants
 {
     float4 DiffuseAlbedo;
     float3 FresnelR0;
-    float Roughness;
 };

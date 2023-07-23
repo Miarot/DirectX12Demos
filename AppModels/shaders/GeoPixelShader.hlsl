@@ -10,7 +10,7 @@
     #define NUM_POINT_LIGHTS 0
 #endif
 
-#define PHONG
+//#define PHONG
 
 #include "Common.hlsli"
 #include "GeoUtils.hlsli"
@@ -20,8 +20,9 @@ ConstantBuffer<MaterialConstants> MaterilaConstantsCB : register(b2);
 
 Texture2D Texture : register(t0);
 Texture2D NormalMap : register(t1);
-Texture2D OcclusionMap : register(t2);
-Texture2D ShadowMap[NUM_DIR_LIGHTS + NUM_POINT_LIGHTS] : register(t3);
+Texture2D RoughnessMetallicTex : register(t2);
+Texture2D OcclusionMap : register(t0, space1);
+Texture2D ShadowMap[NUM_DIR_LIGHTS + NUM_POINT_LIGHTS] : register(t1, space1);
 
 SamplerState LinearWrapSampler : register(s0);
 SamplerComparisonState ShadowMapSampler : register(s1);
@@ -64,11 +65,16 @@ float CalcShadowFactorPCF2x2(float3 posW, int index) {
 
 float4 main(VertexOut pin) : SV_Target
 {
+    float4 roughnessMetallic = RoughnessMetallicTex.Sample(LinearWrapSampler, pin.TexC);
+    float roughness = roughnessMetallic.g;
+    float metallic = roughnessMetallic.b;
+
     // init material from MaterialConstants and texture
     Material mat = {
         MaterilaConstantsCB.DiffuseAlbedo * Texture.Sample(LinearWrapSampler, pin.TexC),
         MaterilaConstantsCB.FresnelR0,
-        1 - MaterilaConstantsCB.Roughness
+        1.0f - roughness,
+        metallic
     };
     
     // discard pixel if it is transparent
