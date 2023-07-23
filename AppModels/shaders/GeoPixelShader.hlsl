@@ -11,6 +11,7 @@
 #endif
 
 //#define PHONG
+//#define BLINNPHONG
 
 #include "Common.hlsli"
 #include "GeoUtils.hlsli"

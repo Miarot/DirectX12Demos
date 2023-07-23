@@ -42,14 +42,17 @@ float3 SchlickFresnel(float3 R0, float3 norm, float3 lightVec) {
     return R0 + (1.0f - R0) * pow((1 - cosTheta), 5);
 }
 
-float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 norm, float3 toEye, Material mat) {
+// from "Introduction to 3D Game Programming with DirectX 12" Frank D. Luna
+// Blinn-Phong model with Schlick's Fresnel factor approximation and some energy conservation
+float3 BlinnPhongModified(float3 lightStrength, float3 lightVec, float3 normal, float3 toEye, Material mat)
+{
     float m = clamp(mat.Shininess * 256.0f, 1.0f, 256.0f);
     float3 h = normalize(toEye + lightVec);
     
     // approximate Fresnel factor with Schlick formula
-    float3 SpecularAlbedo = SchlickFresnel(mat.FresnelR0, norm, lightVec);
+    float3 SpecularAlbedo = SchlickFresnel(mat.FresnelR0, normal, lightVec);
     // model roughness
-    SpecularAlbedo *= (8.0f + m) * pow(max(dot(norm, h), 0.0f), m) / 8.0f;
+    SpecularAlbedo *= (8.0f + m) * pow(max(dot(normal, h), 0.0f), m) / 8.0f;
     // scale down to range from 0 to 1
     SpecularAlbedo = SpecularAlbedo / (SpecularAlbedo + 1.0f);
     
@@ -58,7 +61,7 @@ float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 norm, float3 toE
 
 float3 Phong(float3 lightStrength, float3 lightVec, float3 normal, float3 toEye, Material mat)
 {
-    float m = clamp(mat.Shininess * 256.0f, 1.0f, 256.0f);
+    float m = clamp(mat.Shininess * 64.0f, 1.0f, 64.0f);
     float3 r = reflect(-lightVec, normal);
     
     // model roughness
@@ -67,11 +70,24 @@ float3 Phong(float3 lightStrength, float3 lightVec, float3 normal, float3 toEye,
     return lightStrength * (mat.DiffuseAlbedo.rgb + 0.3 * SpecularAlbedo);
 }
 
+float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 normal, float3 toEye, Material mat)
+{
+    float m = clamp(mat.Shininess * 256.0f, 1.0f, 256.0f);
+    float3 h = normalize(toEye + lightVec);
+    
+    // model roughness
+    float SpecularAlbedo = pow(max(dot(normal, h), 0.0f), m);
+    
+    return lightStrength * (mat.DiffuseAlbedo.rgb + 0.3 * SpecularAlbedo);
+}
+
 float3 ComputeShading(float3 lightStrength, float3 lightVec, float3 normal, float3 toEye, Material mat) {
     #ifdef PHONG
         return Phong(lightStrength, lightVec, normal, toEye, mat);
-    #else
+    #elif defined BLINNPHONG
         return BlinnPhong(lightStrength, lightVec, normal, toEye, mat);
+    #else
+        return BlinnPhongModified(lightStrength, lightVec, normal, toEye, mat);
     #endif
 }
 
@@ -122,28 +138,28 @@ float3 ComputeSpotLight(Light L, Material mat, float3 norm, float3 toEye, float3
     return ComputeShading(lightStrength, lightVec, norm, toEye, mat);
 }
 
-float4 ComputeLighting(Light lights[MaxLights], Material mat, float3 norm, float3 toEye, float3 pos, float shadowFactors[MaxLights]) {
+float4 ComputeLighting(Light lights[MaxLights], Material mat, float3 normal, float3 toEye, float3 pos, float shadowFactors[MaxLights]) {
     float3 res = 0.0f;
     int i = 0;
     
 #if (NUM_DIR_LIGHTS > 0)
         [unroll]
         for (i = 0; i < NUM_DIR_LIGHTS; ++i) {
-            res += shadowFactors[i] * ComputeDirectionalLight(lights[i], mat, norm, toEye);
+            res += shadowFactors[i] * ComputeDirectionalLight(lights[i], mat, normal, toEye);
         }
     #endif
 
     #if (NUM_SPOT_LIGHTS > 0)
         //[unroll]
         for (i = NUM_DIR_LIGHTS; i < NUM_DIR_LIGHTS + NUM_SPOT_LIGHTS; ++i) {
-            res += shadowFactors[i] * ComputeSpotLight(lights[i], mat, norm, toEye, pos);
+            res += shadowFactors[i] * ComputeSpotLight(lights[i], mat, normal, toEye, pos);
         }
     #endif
     
     #if (NUM_POINT_LIGHTS > 0)
         [unroll]
         for (i = NUM_DIR_LIGHTS + NUM_SPOT_LIGHTS; i < NUM_DIR_LIGHTS + NUM_SPOT_LIGHTS + NUM_POINT_LIGHTS; ++i) {
-            res += shadowFactors[i] * ComputePointLight(lights[i], mat, norm, toEye, pos);
+            res += shadowFactors[i] * ComputePointLight(lights[i], mat, normal, toEye, pos);
         }
     #endif
     
