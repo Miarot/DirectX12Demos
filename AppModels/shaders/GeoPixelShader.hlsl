@@ -10,6 +10,8 @@
     #define NUM_POINT_LIGHTS 0
 #endif
 
+#define PHONG
+
 #include "Common.hlsli"
 #include "GeoUtils.hlsli"
 
@@ -83,8 +85,8 @@ float4 main(VertexOut pin) : SV_Target
     float3 bitangentW = normalize(pin.BitangentW - dot(pin.BitangentW, normalW) * normalW - dot(pin.BitangentW, tangentW) * tangentW);
     
     float3x3 TBN = float3x3(tangentW, bitangentW, normalW);
-    float3 bumpedNormalW = mul(normalU, TBN);
-    //bumpedNormalW = normalW;
+    float3 bumpedNormalW = normalize(mul(normalU, TBN));
+    
     // for normals view and ssao normals render
     #ifdef DRAW_NORMS
         #ifdef SSAO
@@ -135,7 +137,7 @@ float4 main(VertexOut pin) : SV_Target
     
     // compute final color
     float4 color = inderectLight + directLight;
-        
+    
     // It is said that it is common convention to take alpha from diffuse material
     color.a = mat.DiffuseAlbedo.a;
     
