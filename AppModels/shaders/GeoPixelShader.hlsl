@@ -12,6 +12,7 @@
 
 //#define PHONG
 //#define BLINNPHONG
+#define PBR
 
 #include "Common.hlsli"
 #include "GeoUtils.hlsli"
@@ -70,13 +71,18 @@ float4 main(VertexOut pin) : SV_Target
     float roughness = roughnessMetallic.g;
     float metallic = roughnessMetallic.b;
 
+    //const float gamma = 1.0f;
+    const float gamma = 2.2f;
     // init material from MaterialConstants and texture
     Material mat = {
-        MaterilaConstantsCB.DiffuseAlbedo * Texture.Sample(LinearWrapSampler, pin.TexC),
+        Texture.Sample(LinearWrapSampler, pin.TexC),
         MaterilaConstantsCB.FresnelR0,
         1.0f - roughness,
         metallic
     };
+    
+    // convert from sRGB to linear space
+    mat.DiffuseAlbedo = pow(mat.DiffuseAlbedo, gamma);
     
     // discard pixel if it is transparent
     #ifdef ALPHA_TEST
@@ -144,6 +150,14 @@ float4 main(VertexOut pin) : SV_Target
     
     // compute final color
     float4 color = inderectLight + directLight;
+    
+    #ifdef PBR
+        // Reinhard tone mapping
+        color = color / (color + 1.0f);
+    #endif
+    
+    // gamma correction
+    color = pow(color, 1 / gamma);
     
     // It is said that it is common convention to take alpha from diffuse material
     color.a = mat.DiffuseAlbedo.a;

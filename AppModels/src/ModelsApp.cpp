@@ -848,7 +848,7 @@ void ModelsApp::InitSceneState() {
 }
 
 void ModelsApp::BuildLights() {
-	m_PassConstants.AmbientLight = XMVectorSet(0.4f, 0.4f, 0.4f, 1.0f);
+	m_PassConstants.AmbientLight = XMVectorSet(0.05f, 0.05f, 0.05f, 1.0f);
 
 	uint32_t curLight = 0;
 
@@ -1236,7 +1236,7 @@ void ModelsApp::BuildMaterials() {
 		mat->NormalMapTexName = normalMapTexPath.C_Str();
 		mat->RoughnessMetallicTexName = roughnessMetallicTexPath.C_Str();
 		mat->DiffuseAlbedo = XMFLOAT4(diffuseColor.r, diffuseColor.g, diffuseColor.b, 1.0f);
-		mat->FresnelR0 = XMFLOAT3(0.1f,0.1f, 0.1f);
+		mat->FresnelR0 = XMFLOAT3(0.04f,0.04f, 0.04f);
 
 		m_Materials.push_back(std::move(mat));
 	}
