@@ -106,13 +106,13 @@ void CreateWICTextureFromFile(
 	ComPtr<ID3D12Resource>& uploadResource)
 {
 	std::unique_ptr<uint8_t[]> ddsData;
-	D3D12_SUBRESOURCE_DATA subresources;
+	D3D12_SUBRESOURCE_DATA subresource;
 
 	ThrowIfFailed(LoadWICTextureFromFile(
 		device.Get(),
 		fileName.c_str(),
 		&resource,
-		ddsData, subresources
+		ddsData, subresource
 	));
 
 	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(
@@ -137,7 +137,7 @@ void CreateWICTextureFromFile(
 		0,
 		0,
 		1,
-		&subresources
+		&subresource
 	);
 
 	CD3DX12_RESOURCE_BARRIER barier = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -245,8 +245,8 @@ ComPtr<IDXGIAdapter4> CreateAdapter(bool useWarp) {
 
 	if (useWarp) {
 		ThrowIfFailed(factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter1)));
-	}
-	else {
+		ThrowIfFailed(adapter1.As(&adapter4));
+	} else {
 		UINT i = 0;
 		SIZE_T maxDedicatedMemory = 0;
 
@@ -362,7 +362,8 @@ ComPtr<ID3D12Resource> CreateDepthStencilBuffer(
 	uint32_t width, uint32_t height, 
 	DXGI_FORMAT bufferFormat, DXGI_FORMAT viewFormat, 
 	float depthClearValue, 
-	uint8_t stencilClearValue)
+	uint8_t stencilClearValue,
+	D3D12_RESOURCE_STATES initialState)
 {
 	ComPtr<ID3D12Resource> depthStencilBuffer;
 
@@ -383,7 +384,7 @@ ComPtr<ID3D12Resource> CreateDepthStencilBuffer(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
 		&dsBufferDesc,
-		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		initialState,
 		&dsClearValue,
 		IID_PPV_ARGS(&depthStencilBuffer)
 	));
@@ -413,25 +414,28 @@ ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(
 ComPtr<ID3D12Resource> CreateGPUResourceAndLoadData(
 	ComPtr<ID3D12Device2> device,
 	ComPtr<ID3D12GraphicsCommandList> commandList,
+	D3D12_RESOURCE_DESC resourceDesc,
 	ComPtr<ID3D12Resource>& intermediateResource,
 	const void* pData,
-	size_t dataSize)
+	size_t rowPitch, size_t slicePitch)
 {
 	ComPtr<ID3D12Resource> destinationResource;
 
 	ThrowIfFailed(device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(dataSize),
+		&resourceDesc,
 		D3D12_RESOURCE_STATE_COPY_DEST,
 		NULL,
 		IID_PPV_ARGS(&destinationResource)
 	));
 
+	uint64_t uploadBufferSize = GetRequiredIntermediateSize(destinationResource.Get(), 0, 1);
+
 	ThrowIfFailed(device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(dataSize),
+		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		NULL,
 		IID_PPV_ARGS(&intermediateResource)
@@ -439,8 +443,8 @@ ComPtr<ID3D12Resource> CreateGPUResourceAndLoadData(
 
 	D3D12_SUBRESOURCE_DATA subresourceData;
 	subresourceData.pData = pData;
-	subresourceData.RowPitch = dataSize;
-	subresourceData.SlicePitch = dataSize;
+	subresourceData.RowPitch = rowPitch;
+	subresourceData.SlicePitch = slicePitch;
 
 	UpdateSubresources(
 		commandList.Get(),

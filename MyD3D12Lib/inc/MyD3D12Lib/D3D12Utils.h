@@ -64,7 +64,8 @@ ComPtr<ID3D12Resource> CreateDepthStencilBuffer(
 	uint32_t width, uint32_t height,
 	DXGI_FORMAT bufferFormat, DXGI_FORMAT viewFormat,
 	float depthClearValue,
-	uint8_t stencilClearValue
+	uint8_t stencilClearValue,
+	D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_DEPTH_WRITE
 );
 
 ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(
@@ -77,7 +78,8 @@ ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(
 ComPtr<ID3D12Resource> CreateGPUResourceAndLoadData(
 	ComPtr<ID3D12Device2> device,
 	ComPtr<ID3D12GraphicsCommandList> commandList,
+	D3D12_RESOURCE_DESC resourceDesc,
 	ComPtr<ID3D12Resource>& intermediateResource,
 	const void* pData,
-	size_t dataSize
+	size_t rowPitch, size_t slicePitch
 );

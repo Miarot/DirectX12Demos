@@ -1,5 +1,6 @@
 #include <ShadowMap.h>
 #include <MyD3D12Lib/Helpers.h>
+#include <MyD3D12Lib/D3D12Utils.h>
 
 #include <d3dx12.h>
 
@@ -13,23 +14,13 @@ ShadowMap::ShadowMap(ID3D12Device2* device, uint32_t width, uint32_t height) :
 }
 
 void ShadowMap::BuildResource() {
-	D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Tex2D(m_Format, m_Width, m_Height);
-
-	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-
-	D3D12_CLEAR_VALUE clearValue;
-	clearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	clearValue.DepthStencil.Depth = 1.0f;
-	clearValue.DepthStencil.Stencil = 0;
-
-	ThrowIfFailed(m_Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&desc,
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-		&clearValue,
-		IID_PPV_ARGS(&m_Resource)
-	));
+	m_Resource = CreateDepthStencilBuffer(
+		m_Device, 
+		m_Width, m_Height, 
+		m_BufferFormat, m_DSVformat, 
+		1.0f, 0,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+	);
 }
 
 void ShadowMap::BuildDescriptors(
@@ -47,7 +38,7 @@ void ShadowMap::BuildDescriptors(
 void ShadowMap::BuildDescriptors() {
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsViewDesc{};
 
-	dsViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	dsViewDesc.Format = m_DSVformat;
 	dsViewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsViewDesc.Flags = D3D12_DSV_FLAG_NONE;
 	dsViewDesc.Texture2D.MipSlice = 0;
@@ -56,7 +47,7 @@ void ShadowMap::BuildDescriptors() {
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvViewDesc{};
 	
-	srvViewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	srvViewDesc.Format = m_SRVformat;
 	srvViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvViewDesc.Texture2D.MostDetailedMip = 0;

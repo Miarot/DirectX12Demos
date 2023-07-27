@@ -137,7 +137,6 @@ float3 DisneyPBR(float3 lightStrength, float3 lightVec, float3 normal, float3 to
     float3 numerator = D * G * F;
     float denominator = 4.0f * max(dot(normal, toEye), 0.0f) * max(dot(normal, lightVec), 0.0f) + 0.0001f;
     float3 specular = numerator / denominator;
-    float m = clamp(mat.Shininess * 256.0f, 1.0f, 256.0f);
     
     // specular light fraction
     float3 kS = F;
@@ -160,7 +159,6 @@ float3 ComputeShading(float3 lightStrength, float3 lightVec, float3 normal, floa
         return BlinnPhongModified(lightStrength, lightVec, normal, toEye, mat);
     #endif
 }
-
 
 float3 ComputeDirectionalLight(Light L, Material mat, float3 norm, float3 toEye) {
     float3 lightVec = -L.Direction;
@@ -212,7 +210,7 @@ float4 ComputeLighting(Light lights[MaxLights], Material mat, float3 normal, flo
     float3 res = 0.0f;
     int i = 0;
     
-#if (NUM_DIR_LIGHTS > 0)
+    #if (NUM_DIR_LIGHTS > 0)
         [unroll]
         for (i = 0; i < NUM_DIR_LIGHTS; ++i) {
             res += shadowFactors[i] * ComputeDirectionalLight(lights[i], mat, normal, toEye);
@@ -220,7 +218,7 @@ float4 ComputeLighting(Light lights[MaxLights], Material mat, float3 normal, flo
     #endif
 
     #if (NUM_SPOT_LIGHTS > 0)
-        //[unroll]
+        [unroll]
         for (i = NUM_DIR_LIGHTS; i < NUM_DIR_LIGHTS + NUM_SPOT_LIGHTS; ++i) {
             res += shadowFactors[i] * ComputeSpotLight(lights[i], mat, normal, toEye, pos);
         }

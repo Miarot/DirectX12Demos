@@ -8,7 +8,7 @@ using Microsoft::WRL::ComPtr;
 template<class T>
 class UploadBuffer {
 public:
-	UploadBuffer(ComPtr<ID3D12Device> device, UINT numElements, bool isConstantBuffer) :
+	UploadBuffer(ComPtr<ID3D12Device> device, size_t numElements, bool isConstantBuffer) :
 		m_IsConstantBuffer(isConstantBuffer)
 	{
 		if (m_IsConstantBuffer) {

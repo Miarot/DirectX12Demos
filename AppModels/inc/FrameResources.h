@@ -9,9 +9,9 @@ class FrameResources {
 public:
 	FrameResources(
 		ComPtr<ID3D12Device> device, 
-		UINT numPassConstants, 
-		UINT numObjectConstants,
-		UINT numMaterialConstants
+		size_t numPassConstants, 
+		size_t numObjectConstants,
+		size_t numMaterialConstants
 	);
 
 	FrameResources(const FrameResources& other) = delete;

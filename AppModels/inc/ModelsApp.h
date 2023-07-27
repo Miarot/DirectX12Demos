@@ -82,8 +82,8 @@ private:
 	void BuildRenderItems();
 	void BuildRecursivelyRenderItems(aiNode* node, XMMATRIX modelMatrix);
 	void BuildFrameResources();
-	void BuildSRViews();
-	void BuildCBViews();
+	void BuildTexturesSRVs();
+	void BuildConstantsCBVs();
 	void BuildRootSignature();
 	void BuildPipelineStateObject();
 
@@ -134,6 +134,7 @@ private:
 	uint32_t m_PassConstantsViewsStartIndex;
 	uint32_t m_MaterialConstantsViewsStartIndex;
 	uint32_t m_NextCBV_SRVDescHeapIndex = 0;
+	uint32_t m_NextRTVDescHeapIndex = m_NumBackBuffers;
 
 	std::unordered_map<std::string, ComPtr<ID3D12RootSignature>> m_RootSignatures;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_PSOs;

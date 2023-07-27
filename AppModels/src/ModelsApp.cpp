@@ -69,8 +69,8 @@ bool ModelsApp::Initialize() {
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	);
 
-	BuildSRViews();
-	BuildCBViews();
+	BuildTexturesSRVs();
+	BuildConstantsCBVs();
 
 	// recreate rtv descriptro heap for effects
 	m_RTVDescHeap = CreateDescriptorHeap(
@@ -82,7 +82,8 @@ bool ModelsApp::Initialize() {
 	UpdateBackBuffersView();
 
 	// for Sobel filter
-	m_SobelTextureRTVIndex = m_NumBackBuffers;
+	m_SobelTextureRTVIndex = m_NextRTVDescHeapIndex;
+	m_NextRTVDescHeapIndex += m_NumSobelRTV;
 	m_SobelTextureSRVIndex = m_NextCBV_SRVDescHeapIndex;
 	m_NextCBV_SRVDescHeapIndex += m_NumSobelSRV;
 	UpdateSobelFrameTexture();
@@ -90,7 +91,8 @@ bool ModelsApp::Initialize() {
 	BuildSobelPipelineStateObject();
 
 	// for SSAO
-	m_SSAO_RTV_StartIndex = m_SobelTextureRTVIndex + m_NumSobelRTV;
+	m_SSAO_RTV_StartIndex = m_NextRTVDescHeapIndex;
+	m_NextRTVDescHeapIndex += m_NumSSAO_RTV;
 	m_SSAO_SRV_StartIndex = m_NextCBV_SRVDescHeapIndex;
 	m_NextCBV_SRVDescHeapIndex += m_NumSSAO_SRV;
 	BuildSSAORootSignature();
@@ -406,7 +408,7 @@ void ModelsApp::RenderRenderItem(ComPtr<ID3D12GraphicsCommandList> commandList, 
 	commandList->IASetIndexBuffer(&ri->m_MeshGeo->IndexBufferView());
 	commandList->IASetPrimitiveTopology(ri->m_PrivitiveType);
 
-	// set object and material constants and texture
+	// set object and material constants; diffuse, normal map and roughness/metallic textures
 	CD3DX12_GPU_DESCRIPTOR_HANDLE objCBDescHandle(
 		m_CBV_SRVDescHeap->GetGPUDescriptorHandleForHeapStart(),
 		m_ObjectConstantsViewsStartIndex + m_CurrentBackBufferIndex * m_RenderItems.size() + ri->m_CBIndex,
@@ -653,21 +655,21 @@ void ModelsApp::RenderBlur(
 	D3D12_GPU_DESCRIPTOR_HANDLE srv,
 	bool isHorizontal)
 {
-	CD3DX12_RESOURCE_BARRIER occlusionMap1Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+	CD3DX12_RESOURCE_BARRIER rtBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
 		rtBuffer.Get(),
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		D3D12_RESOURCE_STATE_RENDER_TARGET
 	);
 
-	CD3DX12_RESOURCE_BARRIER occlusionMap0Barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+	CD3DX12_RESOURCE_BARRIER srBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
 		srBuffer.Get(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET,
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
 	);
 
 	CD3DX12_RESOURCE_BARRIER barriers[] = {
-		occlusionMap0Barrier,
-		occlusionMap1Barrier
+		rtBufferBarrier,
+		srBufferBarrier
 	};
 
 	commandList->ResourceBarrier(_countof(barriers), barriers);
@@ -894,7 +896,7 @@ void ModelsApp::BuildLights() {
 		m_PassConstants.Lights[curLight].Strength = { 0.0f, 1.0f, 0.0f };
 		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
 		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
-		m_PassConstants.Lights[curLight].SpotPower = 20.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 40.0f;
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
 		
@@ -916,7 +918,7 @@ void ModelsApp::BuildLights() {
 		m_PassConstants.Lights[curLight].Strength = { 0.0f, 0.0f, 1.0f };
 		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
 		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
-		m_PassConstants.Lights[curLight].SpotPower = 20.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 40.0f;
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
 
@@ -938,7 +940,7 @@ void ModelsApp::BuildLights() {
 		m_PassConstants.Lights[curLight].Strength = { 1.0f, 0.0f, 0.0f };
 		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
 		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
-		m_PassConstants.Lights[curLight].SpotPower = 20.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 40.0f;
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
 
@@ -960,7 +962,7 @@ void ModelsApp::BuildLights() {
 		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
 		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
 		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
-		m_PassConstants.Lights[curLight].SpotPower = 20.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 40.0f;
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
 
@@ -982,7 +984,7 @@ void ModelsApp::BuildLights() {
 		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
 		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
 		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
-		m_PassConstants.Lights[curLight].SpotPower = 20.0f;
+		m_PassConstants.Lights[curLight].SpotPower = 40.0f;
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
 
@@ -1025,7 +1027,7 @@ void ModelsApp::BuildLights() {
 
 		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
 		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
-		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
 		m_PassConstants.Lights[curLight].SpotPower = 50.0f;
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
@@ -1047,7 +1049,7 @@ void ModelsApp::BuildLights() {
 
 		m_PassConstants.Lights[curLight].Strength = { 1.0f, 1.0f, 1.0f };
 		m_PassConstants.Lights[curLight].FalloffStart = 0.0f;
-		m_PassConstants.Lights[curLight].FalloffEnd = 20.0f;
+		m_PassConstants.Lights[curLight].FalloffEnd = 7.0f;
 		m_PassConstants.Lights[curLight].SpotPower = 50.0f;
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Position, lightViewPos);
 		XMStoreFloat3(&m_PassConstants.Lights[curLight].Direction, XMVector3Normalize(lightViewFocus - lightViewPos));
@@ -1165,17 +1167,19 @@ void ModelsApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) {
 		geo->VertexBufferGPU = CreateGPUResourceAndLoadData(
 			m_Device,
 			commandList,
+			CD3DX12_RESOURCE_DESC::Buffer(vbByteSize),
 			geo->VertexBufferUploader,
 			vertexes.data(),
-			vbByteSize
+			vbByteSize, vbByteSize
 		);
 
 		geo->IndexBufferGPU = CreateGPUResourceAndLoadData(
 			m_Device,
 			commandList,
+			CD3DX12_RESOURCE_DESC::Buffer(ibByteSize),
 			geo->IndexBufferUploader,
 			indexes.data(),
-			ibByteSize
+			ibByteSize, ibByteSize
 		);
 
 		geo->name = mesh->mName.C_Str();
@@ -1302,7 +1306,7 @@ void ModelsApp::BuildFrameResources() {
 	}
 }
 
-void ModelsApp::BuildSRViews() {
+void ModelsApp::BuildTexturesSRVs() {
 	m_TexturesViewsStartIndex = m_NextCBV_SRVDescHeapIndex;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
@@ -1312,7 +1316,11 @@ void ModelsApp::BuildSRViews() {
 	viewDesc.Texture2D.MostDetailedMip = 0;
 	viewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descHandle(
+		m_CBV_SRVDescHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_TexturesViewsStartIndex,
+		m_CBV_SRV_UAVDescSize
+	);
 
 	size_t i = m_TexturesViewsStartIndex;
 	for (auto& it : m_Textures) {
@@ -1331,7 +1339,7 @@ void ModelsApp::BuildSRViews() {
 	m_NextCBV_SRVDescHeapIndex += m_Textures.size();
 }
 
-void ModelsApp::BuildCBViews() {
+void ModelsApp::BuildConstantsCBVs() {
 	// for object constants
 	m_ObjectConstantsViewsStartIndex = m_NextCBV_SRVDescHeapIndex;
 
@@ -1458,16 +1466,16 @@ void ModelsApp::BuildRootSignature() {
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-	// create sampler
+	// create samplers
 	CD3DX12_STATIC_SAMPLER_DESC linearWrapSampler(
 		0,
-		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		D3D12_FILTER_MIN_MAG_MIP_LINEAR,
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP
 	);
 
-	CD3DX12_STATIC_SAMPLER_DESC pointBorderCompSampler(
+	CD3DX12_STATIC_SAMPLER_DESC shadowMapSampler(
 		1,
 		D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
@@ -1478,7 +1486,7 @@ void ModelsApp::BuildRootSignature() {
 		D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK
 	);
 
-	D3D12_STATIC_SAMPLER_DESC samplers[] = { linearWrapSampler, pointBorderCompSampler };
+	D3D12_STATIC_SAMPLER_DESC samplers[] = { linearWrapSampler, shadowMapSampler };
 
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
 	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, _countof(samplers), samplers, rootSignatureFlags);
@@ -1676,6 +1684,7 @@ void ModelsApp::BuildPipelineStateObject() {
 		shadowMapPsoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
 		shadowMapPsoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
+		// set slope dependent depth bias
 		shadowMapPsoDesc.RasterizerState.DepthBias = 5000;
 		shadowMapPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
 		shadowMapPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
@@ -1695,7 +1704,7 @@ void ModelsApp::UpdateSobelFrameTexture() {
 
 	ThrowIfFailed(m_Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+		D3D12_HEAP_FLAG_NONE,
 		&resourceDesc,
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		&clearValue,
@@ -1830,7 +1839,7 @@ void ModelsApp::UpdateSSAOBuffersAndViews() {
 
 	ThrowIfFailed(m_Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+		D3D12_HEAP_FLAG_NONE,
 		&normalMapDesc,
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		&normalMapClearValue,
@@ -1888,7 +1897,7 @@ void ModelsApp::UpdateSSAOBuffersAndViews() {
 
 	ThrowIfFailed(m_Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+		D3D12_HEAP_FLAG_NONE,
 		&occlusionMapDesc,
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		NULL,
@@ -1956,7 +1965,7 @@ void ModelsApp::BuildSSAORootSignature() {
 	// create sampler
 	CD3DX12_STATIC_SAMPLER_DESC depthSamplerDesc(
 		0,
-		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		D3D12_FILTER_MIN_MAG_MIP_LINEAR,
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,
@@ -1967,7 +1976,7 @@ void ModelsApp::BuildSSAORootSignature() {
 
 	CD3DX12_STATIC_SAMPLER_DESC linWrapSamplerDesc(
 		1,
-		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		D3D12_FILTER_MIN_MAG_MIP_LINEAR,
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP
@@ -1975,7 +1984,7 @@ void ModelsApp::BuildSSAORootSignature() {
 
 	CD3DX12_STATIC_SAMPLER_DESC pointClampSamplerDesc(
 		2,
-		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
+		D3D12_FILTER_MIN_MAG_MIP_POINT,
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP
@@ -2115,38 +2124,14 @@ void ModelsApp::BuildRandomMapBufferAndDirections(ComPtr<ID3D12GraphicsCommandLi
 	}
 
 	// crate random vectors buffer and upload buffer
-	ThrowIfFailed(m_Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, texWidth, texHeight, 1, 1),
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		nullptr,
-		IID_PPV_ARGS(&m_RandomMapBuffer)
-	));
-
-	uint64_t uploadBufferSize = GetRequiredIntermediateSize(m_RandomMapBuffer.Get(), 0, 1);
-
-	ThrowIfFailed(m_Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&m_RandomMapUploadBuffer)
-	));
-
-	// load random vectors from CPU to GPU
-	D3D12_SUBRESOURCE_DATA subResouceData = {};
-	subResouceData.pData = data;
-	subResouceData.RowPitch = texWidth * sizeof(PackedVector::XMCOLOR);
-	subResouceData.SlicePitch = subResouceData.RowPitch * texHeight;
-
-	UpdateSubresources(
-		commandList.Get(),
-		m_RandomMapBuffer.Get(),
-		m_RandomMapUploadBuffer.Get(),
-		0, 0, 1,
-		&subResouceData
+	m_RandomMapBuffer = CreateGPUResourceAndLoadData(
+		m_Device,
+		commandList,
+		CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, texWidth, texHeight),
+		m_RandomMapUploadBuffer,
+		data,
+		texWidth * sizeof(PackedVector::XMCOLOR), 
+		texWidth * sizeof(PackedVector::XMCOLOR) * texHeight
 	);
 
 	D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(

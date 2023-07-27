@@ -73,6 +73,7 @@ float4 main(VertexOut pin) : SV_Target
 
     //const float gamma = 1.0f;
     const float gamma = 2.2f;
+
     // init material from MaterialConstants and texture
     Material mat = {
         Texture.Sample(LinearWrapSampler, pin.TexC),

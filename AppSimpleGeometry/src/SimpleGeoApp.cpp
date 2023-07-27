@@ -760,17 +760,19 @@ void SimpleGeoApp::BuildGeometry(ComPtr<ID3D12GraphicsCommandList> commandList) 
 	boxAndPiramidGeo->VertexBufferGPU = CreateGPUResourceAndLoadData(
 		m_Device,
 		commandList,
+		CD3DX12_RESOURCE_DESC::Buffer(vbByteSize),
 		boxAndPiramidGeo->VertexBufferUploader,
 		vertexes.data(),
-		vbByteSize
+		vbByteSize, vbByteSize
 	);
 
 	boxAndPiramidGeo->IndexBufferGPU = CreateGPUResourceAndLoadData(
 		m_Device,
 		commandList,
+		CD3DX12_RESOURCE_DESC::Buffer(ibByteSize),
 		boxAndPiramidGeo->IndexBufferUploader,
 		indexes.data(),
-		ibByteSize
+		ibByteSize, ibByteSize
 	);
 
 	boxAndPiramidGeo->name = "BoxAndPiramid";
