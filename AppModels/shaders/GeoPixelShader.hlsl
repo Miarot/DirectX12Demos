@@ -12,7 +12,7 @@
 
 //#define PHONG
 //#define BLINNPHONG
-#define PBR
+//#define PBR
 
 #include "Common.hlsli"
 #include "GeoUtils.hlsli"

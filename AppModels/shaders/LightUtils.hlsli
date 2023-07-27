@@ -127,7 +127,7 @@ float3 DisneyPBR(float3 lightStrength, float3 lightVec, float3 normal, float3 to
     // set F0 depending on metallic
     mat.FresnelR0 = lerp(mat.FresnelR0, mat.DiffuseAlbedo.xyz, mat.Metallic);
     // calculate Fresnel factor
-    float3 F = SchlickFresnel(mat.FresnelR0, normal, v);
+    float3 F = SchlickFresnel(mat.FresnelR0, normal, lightVec);
     // calculate normal distribution function
     float D = DistributionGGX(normal, h, roughness);
     // calculate geometry attenuation factor
